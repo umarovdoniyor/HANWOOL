@@ -25,7 +25,17 @@ class LeaveManage_List(View):
 
         # 캘린더 이벤트에서 휴가 리스트만 가져오기
         leave_category = CodeMaster.objects.filter(company=request_user.company, name="휴가").last()
-        qs = EventMaster.objects.filter(company=request_user.company, category=leave_category).order_by('-start_date')
+        qs = (
+            EventMaster.objects.filter(company=request_user.company, category=leave_category)
+            .select_related(
+                'category',
+                'approval',
+                'created_by',
+                'created_by__team',
+                'created_by__job_level',
+            )
+            .order_by('-start_date')
+        )
 
         # 일반 사용자는 자신의 기록만 볼 수 있음
         if request_user.is_authenticated:
@@ -36,8 +46,17 @@ class LeaveManage_List(View):
             qs = qs.none()
 
         if user_gantt == 'true':
-            leave_category = CodeMaster.objects.filter(company=request_user.company, name="휴가").last()
-            qs = EventMaster.objects.filter(company=request_user.company, category=leave_category).order_by('-start_date')
+            qs = (
+                EventMaster.objects.filter(company=request_user.company, category=leave_category)
+                .select_related(
+                    'category',
+                    'approval',
+                    'created_by',
+                    'created_by__team',
+                    'created_by__job_level',
+                )
+                .order_by('-start_date')
+            )
 
         # 기간 검색
         if fr_date:
@@ -257,7 +276,12 @@ class LeaveReport_List(View):
         )
 
         # 모든 사용자 가져오기
-        all_users = UserMaster.objects.filter(work_type="관리직", company=request_user.company, is_staff=True).order_by('join_date')
+        all_users = (
+            UserMaster.objects
+            .filter(work_type="관리직", company=request_user.company, is_staff=True)
+            .select_related('team', 'job_level')
+            .order_by('join_date')
+        )
 
         # 사용자의 권한에 따라 필터링 (일반사용자는 본인것만 보기)
         if request_user.is_authenticated:
