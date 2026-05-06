@@ -83,6 +83,7 @@ class LeaveManage_List(View):
                         Q(title__icontains=keyword) |
                         Q(desc__icontains=keyword) |
                         Q(change_type__icontains=keyword) |
+                        Q(change_reason__icontains=keyword) |
                         Q(created_by__name__icontains=keyword) |
                         Q(created_by__team__name__icontains=keyword) |
                         Q(approval__status__icontains=keyword)

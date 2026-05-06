@@ -418,7 +418,6 @@ function a_create_modal_reset(popup_off) {
 }
 
 function a_create_submit() {
-    console.log($('#a_create_modal #change_type').val())
     if (is_empty($('#a_create_modal #change_user').val()) === true) {
         alert("[조정 대상] 항목을 선택하세요.");
         return;
@@ -570,7 +569,7 @@ $(document).ready(function () {
 });
 
 function openBadgeLink(apvIdCate, apvId) {
-    let url = `/approval/progress/${apvIdCate}/${apvId}`;
+    let url = `/approval/progress/${apvIdCate}/${apvId}/`;
     let newWindow = window.open(url, '_blank', 'width=1300,height=900,scrollbars=yes,resizable=yes');
 }
 
