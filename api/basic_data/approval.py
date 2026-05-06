@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
 from django.http import JsonResponse
 from django.db import transaction, DatabaseError
-from django.db.models import Q, OuterRef, Subquery, Max, Sum
+from django.db.models import Q, OuterRef, Subquery, Max, Sum, Count
 from api.models import ApvMaster, CommentMaster, ApvSubItem, ApvApprover, ApvCC, UserMaster, ReadStatus, EventMaster, \
     CodeMaster, BoardMaster, CompanyInfo
 from api.lib import Pagenation, get_excep_msg
@@ -25,7 +25,38 @@ class Approval_List(View):
         fr_date = request.GET.get('fr_date', '')
         to_date = request.GET.get('to_date', '')
 
-        qs = ApvMaster.objects.filter(company=request_user.company).order_by('-updated_at', '-apv_no')
+        qs = (
+            ApvMaster.objects.filter(company=request_user.company)
+            .select_related(
+                'created_by',
+                'created_by__team',
+                'created_by__job_level',
+            )
+            .prefetch_related(
+                'apv_approver',
+                'apv_approver__approver1__job_level',
+                'apv_approver__approver2__job_level',
+                'apv_approver__approver3__job_level',
+                'apv_approver__approver4__job_level',
+                'apv_cc__user',
+            )
+            .annotate(comment_count_annotated=Count('comment_apv'))
+            .order_by('-updated_at', '-apv_no')
+        )
+
+        # ORM-side "next approver is request_user" Q, avoids iterating qs in Python
+        next_approver_is_user_q = (
+            Q(apv_approver__approver1=request_user, apv_approver__approver1_status='대기') |
+            (Q(apv_approver__approver2=request_user, apv_approver__approver2_status='대기')
+             & ~Q(apv_approver__approver1_status='대기')) |
+            (Q(apv_approver__approver3=request_user, apv_approver__approver3_status='대기')
+             & ~Q(apv_approver__approver1_status='대기')
+             & ~Q(apv_approver__approver2_status='대기')) |
+            (Q(apv_approver__approver4=request_user, apv_approver__approver4_status='대기')
+             & ~Q(apv_approver__approver1_status='대기')
+             & ~Q(apv_approver__approver2_status='대기')
+             & ~Q(apv_approver__approver3_status='대기'))
+        )
 
         # 사용자의 권한에 따라 필터링
         if request_user.is_authenticated:
@@ -56,7 +87,7 @@ class Approval_List(View):
         read_status = ReadStatus.objects.filter(user=request_user).values_list('approval', flat=True)
         read_documents = set(read_status)
         unread_docs = qs.exclude(id__in=read_documents).count()
-        waiting_docs = qs.filter(id__in=[apv.id for apv in qs if Approval_Read.get_next_approver(apv) == request_user]).exclude(status="반려").count()
+        waiting_docs = qs.filter(next_approver_is_user_q).exclude(status='반려').distinct().count()
         temp_docs = qs.filter(status="임시").count()
 
         # 기간 검색
@@ -91,7 +122,7 @@ class Approval_List(View):
         # 액션필터 검색
         action_filter = request.GET.get('action_filter', '')
         if action_filter == 'waiting_docs':
-            qs = qs.filter(id__in=[apv.id for apv in qs if Approval_Read.get_next_approver(apv) == request_user]).exclude(status="반려").distinct()
+            qs = qs.filter(next_approver_is_user_q).exclude(status='반려').distinct()
         if action_filter == 'unread_docs':
             subquery = ReadStatus.objects.filter(approval=OuterRef('pk'), user=request_user)
             qs = qs.filter(
@@ -139,11 +170,10 @@ class Approval_List(View):
 
         results = []
         for row in qs_ps:
-            cc_list = ApvCC.objects.filter(approval=row)
             cc_data = [{
                 'user_id': cc.user.id if cc.user else '',
                 'username': cc.user.name if cc.user else '',
-            } for cc in cc_list]
+            } for cc in row.apv_cc.all()]
 
             result = get_obj(row)
             result['apv_cc'] = cc_data
@@ -440,8 +470,8 @@ class Approval_Read(View):
 
     @staticmethod
     def get_next_approver(apv_master):
-        approvers = ApvApprover.objects.filter(approval=apv_master)
-        for approver in approvers:
+        # Use the related manager so callers that prefetched apv_approver hit cache.
+        for approver in apv_master.apv_approver.all():
             for i in range(1, 5):
                 status = getattr(approver, f'approver{i}_status', None)
                 approver_obj = getattr(approver, f'approver{i}', None)
@@ -838,7 +868,11 @@ class Approval_Delete(View):
 
 
 def get_obj(obj):
-    comment_count = CommentMaster.objects.filter(approval=obj.id).count()
+    # Prefer annotated count if the caller used .annotate(comment_count_annotated=...)
+    if hasattr(obj, 'comment_count_annotated'):
+        comment_count = obj.comment_count_annotated
+    else:
+        comment_count = CommentMaster.objects.filter(approval=obj.id).count()
 
     return {
         'id': obj.id,
