@@ -52,6 +52,10 @@ class CompanyInfo_Update(View):
             obj.check_out = check_out
             obj.hourly_rate = hourly_rate
 
+            for i in range(1, 6):
+                if f'apv_memo_{i}' in request.POST:
+                    setattr(obj, f'apv_memo_{i}', request.POST.get(f'apv_memo_{i}', ''))
+
             if logo_delete:
                 obj.logo.delete(save=False)
                 obj.logo = None
@@ -121,6 +125,11 @@ def get_obj(obj):
         'check_in': obj.check_in.strftime('%H:%M') if obj.check_in else '',
         'check_out': obj.check_out.strftime('%H:%M') if obj.check_out else None,
         'hourly_rate': obj.hourly_rate or '',
+        'apv_memo_1': obj.apv_memo_1 or '',
+        'apv_memo_2': obj.apv_memo_2 or '',
+        'apv_memo_3': obj.apv_memo_3 or '',
+        'apv_memo_4': obj.apv_memo_4 or '',
+        'apv_memo_5': obj.apv_memo_5 or '',
     }
 
 

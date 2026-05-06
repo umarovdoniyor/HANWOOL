@@ -179,6 +179,40 @@
                                         <input type="text" class="form-control" id="hourly_rate" onkeyup="checkNumber(this, 2)">
                                     </div>
                                 </div>
+
+                                <hr class="my-3">
+                                <label class="form-label fw-bold d-block mb-2">전자결재 양식별 참고사항</label>
+
+                                <div class="row">
+                                    <div class="col-md-12 mb-2">
+                                        <label for="apv_memo_1" class="form-label">휴가신청서</label>
+                                        <textarea class="form-control" id="apv_memo_1" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-2">
+                                        <label for="apv_memo_2" class="form-label">출장신청서</label>
+                                        <textarea class="form-control" id="apv_memo_2" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-2">
+                                        <label for="apv_memo_3" class="form-label">지출결의서</label>
+                                        <textarea class="form-control" id="apv_memo_3" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-2">
+                                        <label for="apv_memo_4" class="form-label">비용청구서</label>
+                                        <textarea class="form-control" id="apv_memo_4" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-2">
+                                        <label for="apv_memo_5" class="form-label">일반신청서</label>
+                                        <textarea class="form-control" id="apv_memo_5" rows="2"></textarea>
+                                    </div>
+                                </div>
                             </div>
 
                             {% comment %}<div class="tab-pane" id="company_menu" role="tabpanel">
@@ -285,7 +319,11 @@ function a_draw_table(done) {
     let approvalEmailValue = data.approval_email === true ? "true" : "false";
     $(`input[name="approval_email"][value="${approvalEmailValue}"]`).prop('checked', true);
     $(`input[name="annual_leave_payment"][value="${data.annual_leave_payment}"]`).prop('checked', true);
-    
+
+    for (let i = 1; i <= 5; i++) {
+        $(`#apv_memo_${i}`).val(data[`apv_memo_${i}`] || '');
+    }
+
     image_preview(data);
 }
 
@@ -310,6 +348,9 @@ function a_update_submit() {
         api_data.append("check_in", nullapply($('#company_check_in').val()));
         api_data.append("check_out", nullapply($('#company_check_out').val()));
         api_data.append("hourly_rate", nullapply(del_comma($('#hourly_rate').val())));
+        for (let i = 1; i <= 5; i++) {
+            api_data.append(`apv_memo_${i}`, $(`#apv_memo_${i}`).val() || '');
+        }
         if (company_logo) api_data.append("logo", company_logo);
         if (company_stamp) api_data.append("stamp", company_stamp);
         if (logo_deleted) api_data.append("logo_delete", true);
