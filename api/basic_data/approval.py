@@ -600,43 +600,32 @@ class Approval_Create(View):
 
             # 캘린더 등록
             if (category == 1 or category == 2) and status in ['진행', '완료']:
-                event_category = CodeMaster.objects.filter(company=request_user.company, name="휴가").last()
-                annual_leave_days = leave_days
-                change_type = event_category.name
-                if obj.detail:
-                    event_desc = obj.leave_reason + ' (' + obj.detail + ')'
-                else:
-                    event_desc = obj.leave_reason
+                category_name = "휴가" if category == 1 else "출장"
+                event_category = CodeMaster.objects.filter(company=request_user.company, name=category_name).last()
 
-                if category == 1:
-                    if leave_reason != "연차":
+                if event_category:
+                    if category == 1:
+                        annual_leave_days = leave_days if leave_reason == "연차" else 0
+                        event_desc = obj.leave_reason + (' (' + obj.detail + ')' if obj.detail else '')
+                    else:  # category == 2
                         annual_leave_days = 0
-                if category == 2:
-                    event_category = CodeMaster.objects.filter(company=request_user.company, name="출장").last()
-                    annual_leave_days = 0
-                    change_type = event_category.name
-                    if obj.detail:
-                        event_desc = obj.purpose + ' (' + obj.detail + ')'
-                    else:
-                        event_desc = obj.purpose
+                        event_desc = obj.purpose + (' (' + obj.detail + ')' if obj.detail else '')
 
-                event_title = event_category.name + ' (' + obj.created_by.name + ')'
+                    EventMaster.objects.create(
+                        approval=obj,
+                        title=event_category.name + ' (' + obj.created_by.name + ')',
+                        desc=event_desc,
+                        start_date=obj.start_datetime,
+                        end_date=obj.end_datetime,
+                        category=event_category,
+                        annual_leave_days=annual_leave_days,
+                        change_type=event_category.name,
+                        trip_with=obj.trip_with,
 
-                event_obj = EventMaster.objects.create(
-                    approval=obj,
-                    title=event_title,
-                    desc=event_desc,
-                    start_date=obj.start_datetime,
-                    end_date=obj.end_datetime,
-                    category=event_category,
-                    annual_leave_days=annual_leave_days,
-                    change_type=change_type,
-                    trip_with=obj.trip_with,
-
-                    created_by=obj.created_by,
-                    updated_by=obj.created_by,
-                    company=obj.created_by.company,
-                )
+                        created_by=obj.created_by,
+                        updated_by=obj.created_by,
+                        company=obj.created_by.company,
+                    )
 
             context = get_obj(obj)
             return JsonResponse(context)
@@ -781,43 +770,32 @@ class Approval_Update(View):
             # 캘린더 기존객체 삭제 후 재등록
             EventMaster.objects.filter(approval=obj).delete()
             if (category == 1 or category == 2) and status in ['진행', '완료']:
-                event_category = CodeMaster.objects.filter(company=request_user.company, name="휴가").last()
-                annual_leave_days = leave_days
-                change_type = event_category.name
-                if obj.detail:
-                    event_desc = obj.leave_reason + ' (' + obj.detail + ')'
-                else:
-                    event_desc = obj.leave_reason
+                category_name = "휴가" if category == 1 else "출장"
+                event_category = CodeMaster.objects.filter(company=request_user.company, name=category_name).last()
 
-                if category == 1:
-                    if leave_reason != "연차":
+                if event_category:
+                    if category == 1:
+                        annual_leave_days = leave_days if leave_reason == "연차" else 0
+                        event_desc = obj.leave_reason + (' (' + obj.detail + ')' if obj.detail else '')
+                    else:  # category == 2
                         annual_leave_days = 0
-                if category == 2:
-                    event_category = CodeMaster.objects.filter(company=request_user.company, name="출장").last()
-                    change_type = event_category.name
-                    annual_leave_days = 0
-                    if obj.detail:
-                        event_desc = obj.purpose + ' (' + obj.detail + ')'
-                    else:
-                        event_desc = obj.purpose
+                        event_desc = obj.purpose + (' (' + obj.detail + ')' if obj.detail else '')
 
-                event_title = event_category.name + ' (' + obj.created_by.name + ')'
+                    EventMaster.objects.create(
+                        approval=obj,
+                        title=event_category.name + ' (' + obj.created_by.name + ')',
+                        desc=event_desc,
+                        start_date=obj.start_datetime,
+                        end_date=obj.end_datetime,
+                        category=event_category,
+                        annual_leave_days=annual_leave_days,
+                        change_type=event_category.name,
+                        trip_with=obj.trip_with,
 
-                event_obj = EventMaster.objects.create(
-                    approval=obj,
-                    title=event_title,
-                    desc=event_desc,
-                    start_date=obj.start_datetime,
-                    end_date=obj.end_datetime,
-                    category=event_category,
-                    annual_leave_days=annual_leave_days,
-                    change_type=change_type,
-                    trip_with=obj.trip_with,
-
-                    created_by=obj.created_by,
-                    updated_by=obj.created_by,
-                    company=obj.created_by.company,
-                )
+                        created_by=obj.created_by,
+                        updated_by=obj.created_by,
+                        company=obj.created_by.company,
+                    )
 
             context = get_obj(obj)
 
