@@ -1,16 +1,15 @@
 import smtplib
 from email.mime.text import MIMEText
+from django.conf import settings
 
-B_EMAIL_HOST = 'smtp.gmail.com'
-B_EMAIL_PORT = 587
-B_EMAIL_USE_TLS = True
-B_EMAIL_HOST_USER = 'tostoffice.com@gmail.com'
-B_EMAIL_HOST_PASSWORD = 'iykv qprp asrk pdyi'
 
 def send_approval_mail_fn(title, sub_title, recipient, url_path):
     try:
         if not recipient.email:
             # print("이메일 주소 없음")
+            return
+        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+            # SMTP 미설정 환경 - 조용히 스킵
             return
 
         subject = f"[토스트 오피스 - {sub_title}] {title}"
@@ -44,15 +43,15 @@ def send_approval_mail_fn(title, sub_title, recipient, url_path):
         """
         msg = MIMEText(body, "html")
         msg['Subject'] = subject
-        msg['From'] = B_EMAIL_HOST_USER
+        msg['From'] = settings.EMAIL_HOST_USER
         msg['To'] = recipient.email
 
         # print("SMTP 연결 시도 중...")
-        server = smtplib.SMTP(B_EMAIL_HOST, B_EMAIL_PORT)
-        if B_EMAIL_USE_TLS:
+        server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+        if settings.EMAIL_USE_TLS:
             server.starttls()
-        server.login(B_EMAIL_HOST_USER, B_EMAIL_HOST_PASSWORD)
-        server.sendmail(B_EMAIL_HOST_USER, [recipient.email], msg.as_string())
+        server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+        server.sendmail(settings.EMAIL_HOST_USER, [recipient.email], msg.as_string())
         server.quit()
         # print("이메일 전송 성공")
 
