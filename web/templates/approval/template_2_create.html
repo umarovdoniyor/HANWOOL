@@ -190,7 +190,7 @@
                                     </div>
                                     {% endif %}
                                 </div>
-                                <div class="card border border-secondary-subtle p-3" id="apv_memo" contenteditable="false">
+                                <div class="card border border-secondary-subtle p-3" id="apv_memo" contenteditable="false" style="white-space: pre-wrap;">
                                     {% if apv_memo_2 %}
                                         {{ apv_memo_2|safe }}
                                     {% else %}
@@ -520,7 +520,7 @@ function update_doc_title(purpose) {
 function a_apv_memo_submit($memoApv) {
     let api_data = new FormData();
         api_data.append("category", categoryId);
-        api_data.append("apv_memo", $memoApv.html());
+        api_data.append("apv_memo", $memoApv[0].innerText);
 
     fetch_gp('/approval_memo_update_fn/', 'post', true, api_data, (done) => {
         alert("참고사항을 변경하였습니다.");
