@@ -186,31 +186,31 @@
                                 <div class="row">
                                     <div class="col-md-12 mb-2">
                                         <label for="apv_memo_1" class="form-label">휴가신청서</label>
-                                        <textarea class="form-control" id="apv_memo_1" rows="2"></textarea>
+                                        <textarea class="form-control apv-memo-input" id="apv_memo_1" rows="1" style="resize: none; overflow: hidden;"></textarea>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-12 mb-2">
                                         <label for="apv_memo_2" class="form-label">출장신청서</label>
-                                        <textarea class="form-control" id="apv_memo_2" rows="2"></textarea>
+                                        <textarea class="form-control apv-memo-input" id="apv_memo_2" rows="1" style="resize: none; overflow: hidden;"></textarea>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-12 mb-2">
                                         <label for="apv_memo_3" class="form-label">지출결의서</label>
-                                        <textarea class="form-control" id="apv_memo_3" rows="2"></textarea>
+                                        <textarea class="form-control apv-memo-input" id="apv_memo_3" rows="1" style="resize: none; overflow: hidden;"></textarea>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-12 mb-2">
                                         <label for="apv_memo_4" class="form-label">비용청구서</label>
-                                        <textarea class="form-control" id="apv_memo_4" rows="2"></textarea>
+                                        <textarea class="form-control apv-memo-input" id="apv_memo_4" rows="1" style="resize: none; overflow: hidden;"></textarea>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-12 mb-2">
                                         <label for="apv_memo_5" class="form-label">일반신청서</label>
-                                        <textarea class="form-control" id="apv_memo_5" rows="2"></textarea>
+                                        <textarea class="form-control apv-memo-input" id="apv_memo_5" rows="1" style="resize: none; overflow: hidden;"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -323,6 +323,7 @@ function a_draw_table(done) {
     for (let i = 1; i <= 5; i++) {
         $(`#apv_memo_${i}`).val(data[`apv_memo_${i}`] || '');
     }
+    autosize_apv_memo();
 
     image_preview(data);
 }
@@ -427,15 +428,28 @@ function clear_stamp(init_reset) {
 $(document).ready(function () {
     $("input[name='menu_factory']").on('change', function () {
         let menu_factory = $(this).val();  // "true" 또는 "false"
-        
+
         let api_data = new FormData();
         api_data.append("menu_factory", menu_factory);
-        
+
         fetch_gp('/company_menu_update_fn/', 'POST', true, api_data, (done) => {
             notiToast("메뉴 설정이 업데이트 되었습니다.<br>변경된 메뉴는 새로고침 후 반영됩니다.")
         });
     });
+
+    // 참고사항 textarea 자동 리사이즈 (입력에 맞춰 높이 변경, 내부 스크롤 없음)
+    $(document).on('input', '.apv-memo-input', function () {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight + 2) + 'px';
+    });
 });
+
+function autosize_apv_memo() {
+    document.querySelectorAll('.apv-memo-input').forEach(function (el) {
+        el.style.height = 'auto';
+        el.style.height = (el.scrollHeight + 2) + 'px';
+    });
+}
 
 function company_exit_request() {
     let res = prompt('정말로 토스트 오피스를 탈퇴하시겠습니까?\n탈퇴 후 1주일 내로 개인정보를 포함한 모든 정보는\n 전부 삭제되어 복구할 수 없습니다.\n\n탈퇴하시려면 [지금탈퇴] 글자를 입력해주세요.');
