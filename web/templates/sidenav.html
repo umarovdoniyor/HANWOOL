@@ -161,6 +161,11 @@ fetch_gp("/sel2_code_menu/", 'GET', true, {}, (done) => {
     } catch (error) {
         console.log("error:", error)
     }
+    const SIDEBAR_WHITELIST = {
+        "전자결제": null,
+        "인사관리": ["연차관리", "연차통계"],
+        "시스템관리": ["총원데이터/권한", "전자계약/서명관리", "기초코드", "환경설정"],
+    };
     for (let i = 0; i < done.results.length; i++) {
         let item = done.results[i];
         if (!item.desc1) {
@@ -168,10 +173,13 @@ fetch_gp("/sel2_code_menu/", 'GET', true, {}, (done) => {
             for (let j = 0; j < done.results.length; j++) {
                 let item2 = done.results[j];
                 if (item2.desc1 == item.id && !item2.desc2) {
+                    if (!(item2.text in SIDEBAR_WHITELIST)) continue;
                     let sub_heml = [];
                     for (let k = 0; k < done.results.length; k++) {
                         let item3 = done.results[k];
                         if (item3.desc1 == item.id && item3.desc2 == item2.id) {
+                            const _allowed = SIDEBAR_WHITELIST[item2.text];
+                            if (_allowed !== null && !_allowed.includes(item3.text)) continue;
                             let access_yn = "N";
                             {% if request.user.is_master %}
                                 access_yn = "Y";
