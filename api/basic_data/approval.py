@@ -16,6 +16,28 @@ from api.basic_data.email import send_approval_mail_fn
 from django.db.models.functions import TruncMonth
 
 
+# 첨부파일 검증
+APV_ATTACH_MAX_BYTES = 5 * 1024 * 1024  # 5 MB - matches the JS check in html_lib.html
+APV_ATTACH_ALLOWED_EXTS = {
+    'pdf', 'jpg', 'jpeg', 'png',
+    'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+    'hwp', 'hwpx', 'txt', 'zip',
+}
+
+
+def _validate_apv_attach(f):
+    """첨부파일 사이즈/확장자 검증. 문제 없으면 None, 잘못된 경우 에러 메시지 반환."""
+    if not f:
+        return None
+    if f.size > APV_ATTACH_MAX_BYTES:
+        return "첨부파일 용량은 5MB를 초과할 수 없습니다."
+    ext = (f.name.rsplit('.', 1)[-1] if '.' in f.name else '').lower()
+    if ext not in APV_ATTACH_ALLOWED_EXTS:
+        allowed = ', '.join(sorted(APV_ATTACH_ALLOWED_EXTS))
+        return f"허용되지 않는 파일 형식입니다. (허용: {allowed})"
+    return None
+
+
 class Approval_List(View):
     @transaction.atomic
     def get(self, request, *args, **kwargs):
@@ -532,6 +554,9 @@ class Approval_Create(View):
             leave_days = request.POST.get('leave_days', '')
             leave_days = None if leave_days == '' else leave_days
             apv_attach = request.FILES.get("apv_attach", None)
+            err = _validate_apv_attach(apv_attach)
+            if err:
+                return JsonResponse({'error': True, 'message': err})
 
             deadline = request.POST.get('deadline', None)
             deadline = deadline.strip() if deadline else None
@@ -708,6 +733,9 @@ class Approval_Update(View):
             end_half = request.POST.get('end_half', '')
             leave_days = request.POST.get('leave_days', None)
             apv_attach = request.FILES.get("apv_attach", None)
+            err = _validate_apv_attach(apv_attach)
+            if err:
+                return JsonResponse({'error': True, 'message': err})
 
             deadline = request.POST.get('deadline', None)
             deadline = deadline.strip() if deadline else None
