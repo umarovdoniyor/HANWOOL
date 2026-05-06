@@ -497,7 +497,8 @@ function a_create_modal_in() {
 
 function apv_create_confirm(apv_type, category_id) {
     if (confirm(`[${apv_type}]\n전자결재를 작성하시겠습니까?`)) {
-        window.location.href = `/approval/create/${category_id}`;
+        $('#a_create_modal').modal('hide');
+        window.location.href = `/approval/create/${category_id}/`;
     }
 }
 
