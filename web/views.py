@@ -197,8 +197,15 @@ def approval_list_page(request):
 
 def approval_create_page(request, category_id, apv_id=None):
     if apv_id:
-        # 임시문서만 수정 가능 (status != '임시'면 차단)
-        if not ApvMaster.objects.filter(id=apv_id, status='임시').exists():
+        # 수정 가능 조건:
+        #   - 임시문서 (작성 중인 드래프트)
+        #   - 본인이 작성한 반려문서 (수정 후 재요청)
+        apv = ApvMaster.objects.filter(id=apv_id).only('status', 'created_by_id').first()
+        if apv is None:
+            return HttpResponseForbidden("잘못된 요청입니다.")
+        is_draft = apv.status == '임시'
+        is_owner_resubmit = apv.status == '반려' and apv.created_by_id == request.user.id
+        if not (is_draft or is_owner_resubmit):
             return HttpResponseForbidden("잘못된 요청입니다.")
 
     user = request.user

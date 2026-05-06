@@ -186,6 +186,10 @@
                         <button type="button" class="d-none btn btn-danger text-nowrap w-100 px-3" id="cancelApprovalBtn" onclick="a_cancel_approval_submit()">
                             <i class="fa-solid fa-paper-plane fa-rotate-90 me-2"></i>승인취소
                         </button>
+                        <button type="button" class="d-none btn btn-primary text-nowrap w-100 px-3" id="resubmitBtn"
+                                onclick="$('#fullscreenLoader').removeClass('d-none'); window.location.href = '/approval/create/{{ category_id }}/{{ apv_id }}/'">
+                            <i class="fa-solid fa-rotate-right me-2"></i>수정 후 재요청
+                        </button>
                         <button type="button" class="btn btn-warning text-nowrap w-100 px-3" onclick="window.location.href = '{% url 'approval_list_page' %}'">
                             <i class="fa-solid fa-bars me-2"></i>목록
                         </button>
@@ -252,6 +256,9 @@ function a_draw_table(done) {
     }
     if (last_approver === currentUserId) {
         $('#cancelApprovalBtn').removeClass('d-none');
+    }
+    if (data.status === '반려' && created_by_id === currentUserId) {
+        $('#resubmitBtn').removeClass('d-none');
     }
 
     let createDay = new Date(data.updated_at); // 문자열을 Date 객체로 변환
