@@ -894,7 +894,7 @@ def get_obj(obj):
         'payment_method': obj.payment_method if obj.payment_method is not None else '',
         'trip_with': obj.trip_with if obj.trip_with is not None else '',
         'apv_attach': obj.apv_attach.url if hasattr(obj, 'apv_attach') and obj.apv_attach else '',
-        'apv_attach_size': obj.apv_attach.size if hasattr(obj, 'apv_attach') and obj.apv_attach else None,
+        'apv_attach_size': obj.apv_attach.size if hasattr(obj, 'apv_attach') and obj.apv_attach and obj.apv_attach.storage.exists(obj.apv_attach.name) else None,
         'comment_count': comment_count,
     }
 
