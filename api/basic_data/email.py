@@ -1,6 +1,9 @@
+import logging
 import smtplib
 from email.mime.text import MIMEText
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 def send_approval_mail_fn(title, sub_title, recipient, url_path):
@@ -55,5 +58,5 @@ def send_approval_mail_fn(title, sub_title, recipient, url_path):
         server.quit()
         # print("이메일 전송 성공")
 
-    except Exception as e:
-        print("이메일 전송 실패:", e)
+    except Exception:
+        logger.exception("이메일 전송 실패")

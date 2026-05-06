@@ -10,10 +10,13 @@ from datetime import datetime, date, time
 from django.utils import timezone
 import base64
 import json
+import logging
 from django.views.decorators.csrf import csrf_exempt
 from api.basic_data.notification import noti_create_fn
 from api.basic_data.email import send_approval_mail_fn
 from django.db.models.functions import TruncMonth
+
+logger = logging.getLogger(__name__)
 
 
 # 첨부파일 검증
@@ -428,7 +431,7 @@ class Approval_Read(View):
                             url_path=f"/approval/progress/{apv_master.category}/{apv_master.id}/"
                         )
                     except Exception as e:
-                        print("이메일 발송 실패:", e)
+                        logger.exception("이메일 발송 실패")
 
             else:
                 # 다음 승인자에게 알림 전송
@@ -449,7 +452,7 @@ class Approval_Read(View):
                             url_path=f"/approval/progress/{apv_master.category}/{apv_master.id}/"
                         )
                     except Exception as e:
-                        print("이메일 발송 실패:", e)
+                        logger.exception("이메일 발송 실패")
 
             return JsonResponse({'success': 'Status updated'}, status=200)
 
@@ -481,7 +484,7 @@ class Approval_Read(View):
                             url_path=f"/approval/progress/{apv_master.category}/{apv_master.id}/"
                         )
                     except Exception as e:
-                        print("이메일 발송 실패:", e)
+                        logger.exception("이메일 발송 실패")
 
             if not updated:
                 return JsonResponse({'error': 'Failed to update status'}, status=500)
@@ -634,7 +637,7 @@ class Approval_Create(View):
                             url_path=f"/approval/progress/{category}/{obj.id}/"
                         )
                     except Exception as e:
-                        print("이메일 발송 실패:", e)
+                        logger.exception("이메일 발송 실패")
 
             for apv_cc_user in apv_cc_users:
                 ApvCC.objects.create(approval=obj, user=apv_cc_user)
@@ -807,7 +810,7 @@ class Approval_Update(View):
                             url_path=f"/approval/progress/{category}/{obj.id}/"
                         )
                     except Exception as e:
-                        print("이메일 발송 실패:", e)
+                        logger.exception("이메일 발송 실패")
 
             ApvCC.objects.filter(approval=obj).delete()
             for apv_cc_user in apv_cc_users:
@@ -857,9 +860,8 @@ class Approval_Update(View):
 
             context = get_obj(obj)
 
-        except Exception as e:
-            print('Exception 오류 발생')
-            print(e)
+        except Exception:
+            logger.exception('전자결재 처리 중 예외 발생')
             msg = "입력한 데이터에 오류가 존재합니다.\n"
             for i in e.args:
                 if i == 1062:
@@ -884,9 +886,8 @@ class Approval_Delete(View):
             if obj.apv_attach:
                 obj.apv_attach.delete(save=False)
             obj.delete()
-        except Exception as e:
-            print('삭제 실패')
-            print(e)
+        except Exception:
+            logger.exception('전자결재 삭제 실패')
             msg = ["사용중인 데이터 입니다. 관련 데이터 삭제 후 다시 시도해주세요."]
             return JsonResponse({'error': True, 'message': msg})
 
