@@ -197,39 +197,22 @@ def approval_list_page(request):
 
 def approval_create_page(request, category_id, apv_id=None):
     if apv_id:
-        # 업데이트
-        apv_document = get_object_or_404(ApvMaster, id=apv_id)
-        apv_status = apv_document.status
-        if apv_status != '임시':
+        # 임시문서만 수정 가능 (status != '임시'면 차단)
+        if not ApvMaster.objects.filter(id=apv_id, status='임시').exists():
             return HttpResponseForbidden("잘못된 요청입니다.")
-    else:
-        # 신규생성
-        apv_document = None
 
-    user = get_object_or_404(UserMaster, id=request.user.id)
-    approver_list = (UserMaster.objects.filter(is_staff='1').exclude(id__in=[user.id]).order_by('team', 'name'))
-    approver_choices = [(approver.team, approver.name, approver.id) for approver in approver_list]
-    leave_choices = ApvMaster.LEAVE_CHOICES
-    category_name = ApvMaster.CATEGORY_CHOICES
+    user = request.user
     create_template = 'approval/template_' + category_id + '_create.html'
     company_info = CompanyInfo.objects.filter(company=user.company).first()
-    apv_memo_1 = getattr(company_info, "apv_memo_1", None) if company_info else None
-    apv_memo_2 = getattr(company_info, "apv_memo_2", None) if company_info else None
-    apv_memo_3 = getattr(company_info, "apv_memo_3", None) if company_info else None
-    apv_memo_4 = getattr(company_info, "apv_memo_4", None) if company_info else None
-    apv_memo_5 = getattr(company_info, "apv_memo_5", None) if company_info else None
     context = {
         'category_id': category_id,
-        'category_name': category_name,
         'apv_id': apv_id,
-        'leave_choices': leave_choices,
-        'approver_list': approver_choices,
-        'apv_document': apv_document,
-        'apv_memo_1': apv_memo_1,
-        'apv_memo_2': apv_memo_2,
-        'apv_memo_3': apv_memo_3,
-        'apv_memo_4': apv_memo_4,
-        'apv_memo_5': apv_memo_5,
+        'leave_choices': ApvMaster.LEAVE_CHOICES,
+        'apv_memo_1': getattr(company_info, "apv_memo_1", None) if company_info else None,
+        'apv_memo_2': getattr(company_info, "apv_memo_2", None) if company_info else None,
+        'apv_memo_3': getattr(company_info, "apv_memo_3", None) if company_info else None,
+        'apv_memo_4': getattr(company_info, "apv_memo_4", None) if company_info else None,
+        'apv_memo_5': getattr(company_info, "apv_memo_5", None) if company_info else None,
     }
     return render(request, create_template, context)
 
