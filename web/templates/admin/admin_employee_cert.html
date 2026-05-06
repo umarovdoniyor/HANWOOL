@@ -1,0 +1,362 @@
+<!-- 증명서 발급 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+@media print {
+    body {
+        zoom: 0.8; /* 전체 75% 축소 */
+    }
+
+    .no-print, .btn, .navbar, .footer {
+        display: none !important;
+    }
+
+    #print_area {
+        width: 100%;
+        height: auto;
+        margin: 0 auto;
+        padding: 0;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    body, html {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+    }
+}
+</style>
+
+<!-- Content Area -->
+<div class="row py-3 px-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12 no-print">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                        <i class="fa-solid fa-file-pdf me-2"></i>증명서 발급
+                    </div>
+                    <div class="d-flex">
+                        <select class="form-select" id="cert_list" onchange="a_search_ready()" style="min-width: 150px;">
+                            <option value="working" selected>재직증명서</option>
+                            <option value="retire">경력증명서</option>
+                        </select>
+
+                        <button class="btn btn-sm btn-primary text-nowrap ms-1 px-2.5" onclick="save_pdf()">
+                            <i class="fa-solid fa-file-pdf me-2"></i>PDF 저장
+                        </button>
+
+                        <button class="btn btn-sm btn-success text-nowrap ms-1 px-2.5" onclick="window.print()">
+                            <i class="fa-solid fa-print me-2"></i>인쇄
+                        </button>
+
+                        <button class="btn btn-sm btn-secondary text-nowrap ms-1 px-2.5" onclick="window.close()">
+                            <i class="fa-solid fa-xmark me-2"></i>닫기
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 본문 -->
+            <div class="col-12 p-2">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+
+                        <div id="print_area" class="p-3">
+                            {% with company_info=user.company.company_info.first %}
+                                {% if company_info and company_info.logo %}
+                                    <img src="{{ company_info.logo.url }}" alt="watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.05; z-index: 1; width: 700px; pointer-events: none;">
+                                {% else %}
+                                    <img src="{% static 'img/tost_office_color_1200px.png' %}" alt="watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.05; z-index: 1; width: 700px; pointer-events: none;">
+                                {% endif %}
+                            {% endwith %}
+
+                            <!-- 전자결재 본문 -->
+                            <div class="row my-4">
+                                <div class="d-flex text-left p-2">
+                                    <div class="col-12 text-center fw-bold w-100 position-relative">
+                                        <div style="color: #000; font-size: 32px; letter-spacing: 3px;" id="title"></div>
+                                        {% with company_info=user.company.company_info.first %}
+                                            {% if company_info and company_info.logo %}
+                                                <img src="{{ company_info.logo.url }}" alt="company_logo" style="max-width: 200px; max-height: 60px; top: -10px; left: 30px;" class="position-absolute">
+                                            {% else %}
+                                                <img src="{% static 'img/tost_office_color_1200px.png' %}" alt="company_logo" style="max-width: 200px; max-height: 60px; top: -10px; left: 30px;" class="position-absolute">
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row px-3">
+                                <div class="col-12">
+                                    <div class="p-2">
+                                        <span style="color: #000; font-size: 20px;">인적 사항</span>
+                                        <hr class="mt-2" style="border: 1px solid #666;">
+
+                                        <table class="table border-top">
+                                            <tbody>
+                                                <tr class="text-nowrap" style="text-align: start;">
+                                                    <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 25%;">성명</th>
+                                                    <td class="py-2 px-3" style="color: #333; font-size: 14px; width: 75%;">
+                                                        <input type="text" placeholder="직접 입력하세요." value="{{ user.name }}"
+                                                               class="form-control border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                    </td>
+                                                </tr>
+                                                <tr class="text-nowrap" style="text-align: start;">
+                                                    <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">생년월일</th>
+                                                    <td class="py-2 px-3" style="">
+                                                        <input type="text" placeholder="직접 입력하세요."
+                                                               class="form-control border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                    </td>
+                                                </tr>
+                                                <tr class="text-nowrap" style="text-align: start;">
+                                                    <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">부서</th>
+                                                    <td class="py-2 px-3" style="color: #333; font-size: 14px;">
+                                                        <input type="text" placeholder="직접 입력하세요." value="{{ user.team.name }}"
+                                                               class="form-control border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                    </td>
+                                                </tr>
+                                                <tr class="text-nowrap" style="text-align: start;">
+                                                    <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">직책</th>
+                                                    <td class="py-2 px-3" style="color: #333; font-size: 14px;">
+                                                        <input type="text" placeholder="직접 입력하세요." value="{{ user.job_title.name }}"
+                                                               class="form-control border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="p-2">
+                                        <span style="color: #000; font-size: 20px;">재직 정보</span>
+                                        <hr class="mt-2" style="border: 1px solid #666;">
+
+                                        <table class="table border-top">
+                                            <tbody>
+                                                <tr class="text-nowrap" style="text-align: start;">
+                                                    <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 25%;">근무기간</th>
+                                                    <td class="py-2 px-3" style="color: #333; font-size: 14px; width: 75%;">
+                                                        <input type="text" placeholder="직접 입력하세요." value="{{ user.join_date }}&nbsp;&nbsp;~&nbsp;&nbsp;현재까지"
+                                                               class="form-control border-0 p-0" style="color: #333 !important; font-size: 14px;"
+                                                               id="period">
+                                                        </td>
+                                                </tr>
+                                                <tr class="text-nowrap" style="text-align: start;">
+                                                    <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">근무내용</th>
+                                                    <td class="py-2 px-3" style="">
+                                                        <input type="text" placeholder="직접 입력하세요."
+                                                               class="form-control border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="p-2">
+                                        <span style="color: #000; font-size: 20px;">문서 정보</span>
+                                        <hr class="mt-2" style="border: 1px solid #666;">
+
+                                        <table class="table border-top">
+                                            <tbody>
+                                                <tr class="text-nowrap" style="text-align: start; ">
+                                                    <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 25%;">제출처</th>
+                                                    <td class="py-2 px-3" style="width: 75%;">
+                                                        <input type="text" placeholder="직접 입력하세요."
+                                                               class="form-control border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                    </td>
+                                                </tr>
+                                                <tr class="text-nowrap" style="text-align: start; ">
+                                                    <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">유효기간</th>
+                                                    <td class="py-2 px-3" style="color: #333 !important; font-size: 14px;">
+                                                        <input type="text" placeholder="직접 입력하세요." value="발급일로부터 30일"
+                                                               class="form-control border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 my-5">
+                                    <div class="text-center mb-1" style="color: #333; font-size: 16px;">
+                                        상기와 같이 증명합니다.
+                                    </div>
+                                    <div class="text-center" id="issue_date" style="color: #333; font-size: 16px;"></div>
+                                </div>
+
+                                <div class="col-12 d-flex justify-content-center align-items-center">
+                                    <div class="py-2 px-5">
+                                        <table class="table borderless">
+                                            <tbody>
+                                                <tr class="text-nowrap" style="text-align: start; border: none !important;">
+                                                    <th class="text-end py-1 px-3" style="color: #333; font-size: 16px; font-weight: bold; width: 300px; border: none !important;">회사명</th>
+                                                    <td class="py-1 px-3" style="color: #333; font-size: 16px; width: 400px; border: none !important;">
+                                                        {{ user.company.company_info.first.company_name }}
+                                                    </td>
+                                                </tr>
+                                                <tr class="text-nowrap" style="text-align: start; border: none !important;">
+                                                    <th class="text-end py-1 px-3" style="color: #333; font-size: 16px; font-weight: bold; border: none !important;">사업자 등록번호</th>
+                                                    <td class="py-1 px-3" style="color: #333; font-size: 16px; border: none !important;">{{ user.company.company_info.first.license }}</td>
+                                                </tr>
+                                                <tr class="text-nowrap" style="text-align: start; border: none !important;">
+                                                    <th class="text-end py-1 px-3" style="color: #333; font-size: 16px; font-weight: bold; border: none !important;">대표이사</th>
+                                                    <td class="position-relative py-1 px-3" style="color: #333; font-size: 16px; border: none !important;">{{ user.company.company_info.first.ceo.name }}
+                                                        <div class="position-relative">
+                                                            {% with company_info=user.company.company_info.first %}
+                                                                {% if company_info and company_info.stamp %}
+                                                                    <img class="position-absolute" src="{{ company_info.stamp.url }}"
+                                                                         alt="company_stamp" style="max-width: 50px; top: -25px; left: 50px;">
+                                                                {% else %}
+                                                                    <img class="position-absolute" src="{% static 'img/stamp_approved.png' %}"
+                                                                         alt="company_stamp" style="max-width: 50px; top: -25px; left: 50px;">
+                                                                {% endif %}
+                                                            {% endwith %}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script type="text/javascript" src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+let a_cert_selected;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    a_search_ready();
+    set_issue_date();
+}
+
+function a_search_ready() {
+    a_cert_selected = $('#cert_list').val();
+
+    a_search();
+}
+
+function a_search() {
+    const joinDate = new Date("{{ user.join_date|date:'Y-m-d' }}");
+    const retireDateStr = "{{ user.retire_date }}";
+    const isWorking = a_cert_selected === "working";
+
+    $('#title').text(isWorking ? "재 직 증 명 서" : "경 력 증 명 서");
+
+    if (isWorking || !retireDateStr) {
+        $('#period').val("{{ user.join_date }}  ~  현재까지");
+    } else {
+        const retireDate = new Date("{{ user.retire_date|date:'Y-m-d' }}");
+        const diffYears = retireDate.getFullYear() - joinDate.getFullYear();
+        const diffMonths = retireDate.getMonth() - joinDate.getMonth();
+        const totalMonths = diffYears * 12 + diffMonths;
+        const years = Math.floor(totalMonths / 12);
+        const months = totalMonths % 12;
+
+        const duration = `${years}년 ${months}개월`;
+        $('#period').val(`{{ user.join_date }}  ~  {{ user.retire_date }} (${duration})`);
+    }
+}
+
+function set_issue_date() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = today.getMonth() + 1;
+    const dd = today.getDate();
+
+    $('#issue_date').text(`${yyyy}년 ${mm}월 ${dd}일`);
+}
+
+function save_pdf() {
+    let element = document.getElementById('print_area');
+
+    window.scrollTo(0, 0); // 스크롤이 PDF생성화면에 영향을 주기 때문에 반드시 최상단으로 이동
+
+    let options = {
+        filename: get_pdf_name(),
+        image: { type: 'jpeg', quality: 0.6 }, // 이미지 품질 100%
+        html2canvas: {
+            scale: 3, // 캔버스의 해상도를 높임
+            useCORS: true, // CORS 문제 방지
+        },
+        jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait',
+            precision: 16,
+        },
+        pagebreak: {
+            mode: ['avoid-all', 'css', 'legacy']
+        }
+    };
+
+    html2pdf().from(element).set(options).save();
+}
+
+function get_pdf_name() {
+    const isWorking = a_cert_selected === "working";
+    const pdf_title = isWorking ? "재직증명서" : "경력증명서";
+
+    const userName = "{{ user.name }}";
+
+    const today = new Date();
+    const yy = String(today.getFullYear()).slice(2); // 년도 뒤 2자리
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yy}${mm}${dd}`; // 예: 250520
+
+    return `${userName}_${pdf_title}_${todayStr}.pdf`;
+}
+
+</script>
+
+{% if messages %}
+<script>
+    {% for message in messages %}
+        alert("{{ message }}");
+        window.close();
+    {% endfor %}
+</script>
+{% endif %}

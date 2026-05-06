@@ -1,0 +1,1084 @@
+<!-- 팩토리 > 영업관리 > 출하관리 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+<style>
+/* select2 컨테이너 너비 지정 */
+#sch_customer + .select2-container {
+    width: 250px !important;
+}
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_customer + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+/* 선택된 항목 텍스트 정렬 */
+#sch_customer + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+/* 화살표 위치 조정 */
+#sch_customer + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+/* 클리어버튼 위치 조정 */
+#sch_customer + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+
+/* 테이블 높이 작게 */
+.smaller_table tbody tr td, .smaller_table thead tr th  {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 13px;
+}
+
+.progress-container {
+    width: 100%;
+    height: 20px;
+    background-color: #d2d2d2;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: lightskyblue;
+    width: 0;
+    transition: width 1s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+}
+
+.progress-text {
+    font-size: 10px;
+    color: white;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-handshake-simple me-2"></i>출하관리
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 고객사에서 수주받은 주문서의 출하 업무를 관리하는 페이지 입니다.<br>• 출하수량, 출하창고, 출하일자 등 출하 정보를 등록하여 주문을 완료하세요."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="납품 요청일 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                </div>
+                                
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="고객사 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_customer"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1" data-toggle="tooltip" data-placement="top" title="주문번호, 기타정보, 주문품목 등 텍스트 검색">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_status" style="width: 100px;"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="주문 진행상태로 검색">
+                                    <option value="">전체</option>
+                                    <option value="대기/진행">대기/진행</option>
+                                    <option value="대기">대기</option>
+                                    <option value="진행">진행</option>
+                                    <option value="완료">완료</option>
+                                    <option value="보류">보류</option>
+                                </select>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="d-flex flex-column flex-lg-row justify-content-between">
+                            <div class="col-12 col-lg-6">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <!-- 주문서 목록 -->
+                                        <div class="d-flex justify-content-between align-items-center fw-bold mb-2" style="font-size: 16px; color: #2a3040;">주문서 목록
+                                            <div class="d-flex p-0">
+                                                <button class="btn btn-sm btn-success text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">출하현황 등록</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="custom_table table-responsive">
+                                            <table class="table">
+                                                <thead class="thead-light">
+                                                    <tr class="text-nowrap">
+                                                        <th>순번</th>
+                                                        <th>주문번호</th>
+                                                        <th>주문일자</th>
+                                                        <th>고객사</th>
+                                                        <th>납품요청일</th>
+                                                        <th>남은일수</th>
+                                                        <th>출하완료일</th>
+                                                        <th>진행상태</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="a_tbody"></tbody>
+                                            </table>
+                                        </div>
+                                        <div class="div_center mt-3" id="a_nation_id"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-lg-6 ps-0 ps-lg-2">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <!-- 주문 정보 -->
+                                        <div class="d-flex justify-content-between align-items-center fw-bold mb-2" style="font-size: 16px; color: #2a3040;">주문서 정보
+                                            <div class="d-flex p-0">
+                                                <button type="button" class="btn btn-sm btn-info text-nowrap ms-1 px-2.5" onclick="notiToast('출하지시서 생성 기능은 추후 개발 예정입니다')">
+                                                    <i class="fa-solid fa-print"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">출하지시서</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <colgroup>
+                                                    <col style="width: 10%;">
+                                                    <col style="width: 25%;">
+                                                    <col style="width: 10%;">
+                                                    <col style="width: 25%;">
+                                                </colgroup>
+                                                <tbody class="text-nowrap">
+                                                    <tr class="border-top">
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">주문 번호</th>
+                                                        <td class="p-2 ps-3"><span id="code"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">주문 일자</th>
+                                                        <td class="p-2 ps-3"><span id="order_date"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">고객사</th>
+                                                        <td class="p-2 ps-3"><span id="customer_name"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">납품 요청일</th>
+                                                        <td class="p-1 ps-3 align-middle"><span id="request_date"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">담당자</th>
+                                                        <td class="p-2 ps-3"><span id="customer_charge_name"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">납품 기간</th>
+                                                        <td class="p-2 ps-3"><span id="leadtime"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">담당자 연락처</th>
+                                                        <td class="p-2 ps-3"><span id="customer_mobile"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">출하 담당자</th>
+                                                        <td class="p-2 ps-3"><span id="delivery_user_name"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">이메일</th>
+                                                        <td class="p-2 ps-3"><span id="customer_email"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">출하진행 상태</th>
+                                                        <td class="p-2 ps-3"><span id="receive_status"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">특이 사항</th>
+                                                        <td class="p-2 ps-3" colspan="3"><span id="desc1" class="text-wrap"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">요청 사항</th>
+                                                        <td class="p-2 ps-3" colspan="3"><span id="desc2" class="text-wrap"></span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center fw-bold mb-2" style="font-size: 16px; color: #2a3040;">주문 품목</div>
+                                        <div class="custom_table smaller_table table-responsive">
+                                            <table class="table">
+                                                <thead class="thead-light">
+                                                    <tr class="text-nowrap">
+                                                        <th style="width: 5%;">순번</th>
+                                                        <th style="width: 10%;">품명</th>
+                                                        <th style="width: 10%;">품목정보1</th>
+                                                        <th style="width: 5%;">현재고</th>
+                                                        <th style="width: 5%;">주문수량</th>
+                                                        <th style="width: 5%;">출하수량</th>
+                                                        <th style="width: 5%;">출하진행률</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="c_tbody">
+                                                    <tr><td colspan="99" class="text-center">주문서 목록에서 주문서를 먼저 선택하세요.</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="div_center mt-3 d-none" id="c_nation_id"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xxl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">출하현황관리 <i class="fa-solid fa-angle-right px-1"></i> 출하현황</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 px-4 py-3">
+                <div class="row">
+                    <div class="col-12 col-md-3 mb-3">
+                        <label for="code" class="form-label">주문 코드</label>
+                        <input type="text" class="form-control" id="code" disabled>
+                    </div>
+                    
+                    <div class="col-12 col-md-3 mb-3">
+                        <label for="customer" class="form-label">고객사</label>
+                        <select class="form-control" id="customer" disabled></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="order_date" class="form-label">주문 일자</label>
+                        <input type="text" class="form-control date_flatpickr" id="order_date" disabled>
+                    </div>
+                    
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="request_date" class="form-label">납품 요청일</label>
+                        <input type="text" class="form-control date_flatpickr" id="request_date" disabled>
+                    </div>
+
+                    <div class="col-12 col-md-6 mb-3">
+                        <label for="desc1" class="form-label">특이사항</label>
+                        <input type="text" class="form-control" id="desc1" disabled>
+                    </div>
+
+                    <div class="col-12 col-md-6 mb-3">
+                        <label for="desc2" class="form-label">요청사항</label>
+                        <input type="text" class="form-control" id="desc2" disabled>
+                    </div>
+                    
+                    <div class="col-12 col-md-3 mb-3">
+                        <label for="approver" class="form-label">주문 담당자</label>
+                        <select class="form-control" id="approver" disabled></select>
+                    </div>
+                    
+                    <div class="col-12 col-md-3 mb-3">
+                        <label for="delivery_user" class="form-label fw-bold">출하 담당자</label>
+                        <select class="form-control div_required" id="delivery_user"></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="receive_status" class="form-label">출하진행 상태</label>
+                        <select class="text-left form-select" id="receive_status">
+                            <option value="대기">대기</option>
+                            <option value="진행">진행</option>
+                            <option value="완료">완료</option>
+                            <option value="보류">보류</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="delivery_date" class="form-label">출하 완료일
+                            <i class="fa-regular fa-circle-question fa-sm mx-1" style="vertical-align: super;"
+                               data-toggle="tooltip" data-placement="top" title="빈칸으로 출하 완료시, 현재 날짜를 완료 날짜로 자동 저장합니다."></i></label>
+                        <input type="text" class="form-control date_flatpickr" id="delivery_date">
+                    </div>
+                </div>
+
+                <div class="row border-top mt-1 mb-3"></div>
+                
+                <div class="row">
+                    <label class="form-label">품목 목록</label>
+                    <div class="custom_table smaller_table table-responsive">
+                        <table class="table">
+                            <thead class="thead-light">
+                                <tr class="text-nowrap">
+                                    <th style="width: 1%;">순번</th>
+                                    <th style="width: 5%;">품번</th>
+                                    <th style="width: 10%;">품명</th>
+                                    <th style="width: 10%;">품목정보1</th>
+                                    <th style="width: 5%;">현재고</th>
+                                    <th style="width: 5%;">주문수량</th>
+                                    <th style="width: 10%;">출하일자</th>
+                                    <th style="width: 5%;">출하수량<i class="fa-regular fa-circle-question fa-sm mx-1" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="출하완료시 자동 출고처리의 '출고수량'으로 반영됩니다."></i></th>
+                                    <th style="width: 15%;">출하창고</th>
+                                    <th style="width: 15;">특이사항</th>
+                                </tr>
+                            </thead>
+                            <tbody id="i_tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-danger text-nowrap me-1 px-2.5 d-none read_only_show"
+                            onclick="alert(`출하가 완료된 주문서는 수정이 제한됩니다.\n복제 등록을 하거나 신규로 주문서를 생성해야 합니다.`)">
+                        <i class="fa-solid fa-xmark me-2"></i>읽기모드(수정불가)
+                    </button>
+
+                    <button class="btn btn-secondary text-nowrap me-1 px-3 read_only_hide" onclick="a_update_modal_reset()">초기화</button>
+                    <button class="btn btn-secondary text-nowrap me-1 px-3 read_only_hide" onclick="a_update_submit()">저장</button>
+                    <button class="btn btn-secondary text-nowrap px-3" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let sch_id = "{{ sch_id|default:'' }}";
+
+let a_click_id;
+let a_click_code;
+let a_click_customer_id;
+let a_click_customer_name;
+let a_click_customer_charge_name;
+let a_click_customer_mobile;
+let a_click_customer_email;
+let a_click_approver_id;
+let a_click_approver_name;
+let a_click_delivery_user_id;
+let a_click_delivery_user_name;
+let a_click_status;
+let a_click_order_date;
+let a_click_request_date;
+let a_click_delivery_date;
+let a_click_desc1;
+let a_click_desc2;
+
+let a_click_created_at;
+let a_click_updated_at;
+let a_click_created_by_id;
+let a_click_created_by_name;
+let a_click_updated_by_id;
+let a_click_updated_by_name;
+
+let fr_date;
+let to_date;
+let all_sch;
+let sch_customer;
+let sch_status;
+let shortcut_popup = true;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+let c_nation_data = {
+    cname: 'c_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'c_nation_id',
+    range: 5,
+    page_size: 10,  // 세로 Row 수
+};
+let c_nation = new Nations(c_nation_data, c_search); // 인스턴스 명
+c_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('factory_delivery_list_page_size', $(this).val());
+});
+
+$('#sch_status').on('change', function () {
+    localStorage.setItem('factory_delivery_list_sch_status', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    let baseUrl = window.location.origin + window.location.pathname;
+    window.location.href = baseUrl;
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('factory_delivery_list_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    let savedStatus = localStorage.getItem('factory_delivery_list_sch_status');
+    if (savedStatus) { $('#sch_status').val(savedStatus);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_customer', '고객사 검색', '/sel2_factory_customer/', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+}
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    all_sch = $('#all_sch').val();
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    sch_customer = $('#sch_customer').val();
+    sch_status = $('#sch_status').val();
+
+    a_search();
+}
+
+// 선택대상 유지 : 주로 update 후 호출
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (sch_id) { query += "&sch_id=" + sch_id; }
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (fr_date) { query += "&fr_req_date=" + fr_date; }
+    if (to_date) { query += "&to_req_date=" + to_date; }
+    if (sch_customer) { query += "&sch_customer=" + sch_customer; }
+    if (sch_status) { query += "&sch_status=" + sch_status; }
+
+    fetch_gp("/factory_customer_order_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (sch_id && data.length === 0) {
+        notiToast("해당 주문서가 삭제되어 찾을 수 없습니다.");
+        return;
+    }
+    
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr class="empty-row">
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        
+        let requestDate = new Date(item.request_date);
+        let today = new Date();
+        today.setHours(0, 0, 0, 0);
+        requestDate.setHours(0, 0, 0, 0);
+        let diffTime = requestDate - today;
+        let remaining_days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        let remaining_days_text = item.status !== '완료' ? `${remaining_days}일` : '';
+        let remaining_days_class = item.status !== '완료' && remaining_days <= 0 ? 'text-danger' : '';
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor: pointer;'>
+            <td>${num + i}</td>
+            <td name='code'>${item.code || ""}</td>
+            <td name='order_date'>${item.order_date || ""}</td>
+            <td name='customer_name'>${item.customer_name || ""}</td>
+            <td name='request_date'>${item.request_date || ""}</td>
+            <td class="${remaining_days_class}">${remaining_days_text}</td>
+            <td name='delivery_date'>${item.delivery_date || ""}</td>
+            <td name='status_badge'>
+                <span class="badge 
+                    ${item.status === '진행' ? 'bg-primary' :
+                      item.status === '대기' ? 'bg-warning' : 
+                      item.status === '완료' ? 'bg-success' : 
+                      item.status === '보류' ? 'bg-secondary' : 'bg-warning'} 
+                    font-size-12 px-2 py-1" style="width: 50px;">
+                    ${item.status || '대기'}
+                </span>
+            </td>
+            
+            <td name='customer_id' class='d-none'>${item.customer_id || ""}</td>
+            <td name='customer_charge_name' class='d-none'>${item.customer_charge_name || ""}</td>
+            <td name='customer_mobile' class='d-none'>${item.customer_mobile || ""}</td>
+            <td name='customer_email' class='d-none'>${item.customer_email || ""}</td>
+            <td name='approver_id' class='d-none'>${item.approver.id || ""}</td>
+            <td name='approver_name' class='d-none'>${item.approver.name || ""} ${item.approver.job_level || ""}</td>
+            <td name='delivery_user_id' class='d-none'>${item.delivery_user.id || ""}</td>
+            <td name='delivery_user_name' class='d-none'>${item.delivery_user.name || ""} ${item.delivery_user.job_level || ""}</td>
+            <td name='price' class='d-none'>${formatNumber(item.price, 2) || ""}</td>
+            <td name='is_vat' class='d-none'>${item.is_vat || ""}</td>
+            <td name='status' class='d-none'>${item.status || "대기"}</td>
+            <td name='delivery_date' class='d-none'>${item.delivery_date || ""}</td>
+            <td name='desc1' class='d-none'>${item.desc1 || ""}</td>
+            <td name='desc2' class='d-none'>${item.desc2 || ""}</td>
+            
+            <td name='created_at' class='d-none'>${item.created_at}</td>
+            <td name='updated_at' class='d-none'>${item.updated_at}</td>
+            <td name='created_by_id' class='d-none'>${item.created_by.id}</td>
+            <td name='created_by_name' class='d-none'>${item.created_by.name}</td>
+            <td name='updated_by_id' class='d-none'>${item.updated_by.id}</td>
+            <td name='updated_by_name' class='d-none'>${item.updated_by.name}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_code = $(this).find("[name='code']").text();
+        a_click_customer_id = $(this).find("[name='customer_id']").text();
+        a_click_customer_name = $(this).find("[name='customer_name']").text();
+        a_click_customer_charge_name = $(this).find("[name='customer_charge_name']").text();
+        a_click_customer_mobile = $(this).find("[name='customer_mobile']").text();
+        a_click_customer_email = $(this).find("[name='customer_email']").text();
+        a_click_approver_id = $(this).find("[name='approver_id']").text();
+        a_click_approver_name = $(this).find("[name='approver_name']").text();
+        a_click_delivery_user_id = $(this).find("[name='delivery_user_id']").text();
+        a_click_delivery_user_name = $(this).find("[name='delivery_user_name']").text();
+        a_click_is_vat = $(this).find("[name='is_vat']").text();
+        a_click_price = $(this).find("[name='price']").text();
+        a_click_status = $(this).find("[name='status']").text();
+        a_click_order_date = $(this).find("[name='order_date']").text();
+        a_click_request_date = $(this).find("[name='request_date']").text();
+        a_click_delivery_date = $(this).find("[name='delivery_date']").text();
+        a_click_desc1 = $(this).find("[name='desc1']").text();
+        a_click_desc2 = $(this).find("[name='desc2']").text();
+
+        a_click_created_at = $(this).find("[name='created_at']").text();
+        a_click_updated_at = $(this).find("[name='updated_at']").text();
+        a_click_created_by_id = $(this).find("[name='created_by_id']").text();
+        a_click_created_by_name = $(this).find("[name='created_by_name']").text();
+        a_click_updated_by_id = $(this).find("[name='updated_by_id']").text();
+        a_click_updated_by_name = $(this).find("[name='updated_by_name']").text();
+        
+        b_draw_table();
+        c_search();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_update_modal_in();
+    });
+    
+    // 바로가기 링크에서는 자동으로 모달 팝업
+    if (sch_id && data.length === 1 && shortcut_popup === true) {
+        $('#a_tbody > tr').trigger('click');
+        $('#a_tbody > tr').trigger('dblclick');
+        shortcut_popup = false;
+    }
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+    
+    if (a_click_status === "완료") {
+        $('#a_update_modal').find('.read_only_hide').addClass('d-none');
+        $('#a_update_modal').find('.read_only_show').removeClass('d-none');
+    } else {
+        $('#a_update_modal').find('.read_only_hide').removeClass('d-none');
+        $('#a_update_modal').find('.read_only_show').addClass('d-none');
+    }
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    $('#a_update_modal #code').val(a_click_code);
+    $('#a_update_modal #order_date').val(a_click_order_date);
+    $('#a_update_modal #request_date').val(a_click_request_date);
+    $('#a_update_modal #delivery_date').val(a_click_delivery_date);
+    $('#a_update_modal #desc1').val(a_click_desc1);
+    $('#a_update_modal #desc2').val(a_click_desc2);
+    $('#a_update_modal #receive_status').val(a_click_status || '대기');
+    
+    init_Select2_modal('#a_update_modal #customer', '선택', '/sel2_factory_customer/', {id: 'id', txt: item => `${item.text}`}, a_click_customer_id);
+    init_Select2_modal('#a_update_modal #approver', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`}, a_click_approver_id);
+    init_Select2_modal('#a_update_modal #delivery_user', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`}, a_click_delivery_user_id);
+        
+    let query = "?page=1&page_size=9999&customer_order=" + a_click_id;
+    fetch_gp("/factory_customer_order_item_list_fn/" + query, 'GET', true, {}, (done) => {
+        i_draw_table(done, 'a_update_modal');
+    });
+    
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    if ($('#a_update_modal #receive_status').val() === "완료") {
+        let proceed = confirm("[출하 진행상태] 가 완료처리 되면\n주문서의 출고내역이 [재고관리 > 재고출고]에 등록이 되며\n해당 주문서는 더 이상 수정할 수 없습니다.\n\n완료 처리하시겠습니까?");
+        if (!proceed) return;
+    }
+    
+    if (is_empty($('#a_update_modal #delivery_user').val()) === true) {
+        alert("[출하 담당자] 항목을 선택하세요.");
+        return;
+    }
+    
+    let item_data = [];
+    $('#a_update_modal #i_tbody > tr').each(function (index, tr) {
+        let $tr = $(tr);
+        let row_id = $tr.attr('id');
+        let item_id = $tr.find("td[name='item_id']").text(); // 품번_id
+
+        if (item_id) {
+            let delivery_date = $tr.find("td[name='delivery_date'] input").val();
+            let delivery_qty = del_comma($tr.find("td[name='delivery_qty'] input").val());
+            let warehouse = $tr.find("select[id^='warehouse_']").val();
+            let desc1 = $tr.find("td[name='desc1'] input").val();
+
+            item_data.push({
+                row_id: row_id,
+                item_id: item_id,
+                delivery_date: delivery_date,
+                delivery_qty: delivery_qty,
+                warehouse: warehouse,
+                desc1: desc1,
+            });
+        }
+    });
+
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("delivery_user", nullapply($('#a_update_modal #delivery_user').val()));    
+        api_data.append("delivery_date", nullapply($('#a_update_modal #delivery_date').val()));
+        api_data.append("status", nullapply($('#a_update_modal #receive_status').val()));
+        api_data.append("itemData", JSON.stringify(item_data));
+
+    fetch_gp('/factory_customer_order_item_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search();
+        alert("주문출하 정보가 저장되었습니다.");
+        
+        b_draw_table(done);
+        c_search();
+    });
+}
+
+
+// 주문 정보 영역 --------------------------------------------------------------------------------------------------------
+function b_draw_table(done) {
+    // a_delete 직후 보여줄 데이터
+    if (done === 'none') {
+        $('#code').text('');
+        $('#customer_name').text('');
+        $('#customer_charge_name').text('');
+        $('#customer_mobile').text('');
+        $('#customer_email').text('');
+        $('#desc1').text('');
+        $('#desc2').text('');
+        $('#order_date').text('');
+        $('#request_date').text('');
+        $('#leadtime').text('');
+        $('#delivery_user_name').text('');
+        $('#receive_status').text('');
+    }
+    
+    // a_update 직후 보여줄 데이터
+    else if (done) {
+        let leadtime = new Date(done.request_date) - new Date(done.order_date);
+        let leadtime_days = Math.floor(leadtime / (1000 * 60 * 60 * 24)) + 1;
+        
+        $('#code').text(done.code);
+        $('#customer_name').text(done.customer_name);
+        $('#customer_charge_name').text(done.customer_charge_name);
+        $('#customer_mobile').text(done.customer_mobile);
+        $('#customer_email').text(done.customer_email);
+        $('#desc1').text(done.desc1);
+        $('#desc2').text(done.desc2);
+        $('#order_date').text(done.order_date);
+        $('#request_date').text(done.request_date);
+        $('#leadtime').text(leadtime_days + ' 일');
+        $('#delivery_user_name').text((done.delivery_user.name || "") + " " + (done.delivery_user.job_level || ""));
+
+        let status_class = 'bg-danger';
+        if (done.status === '진행') status_class = 'bg-primary';
+        else if (done.status === '대기') status_class = 'bg-warning';
+        else if (done.status === '완료') status_class = 'bg-success';
+        else if (done.status === '보류') status_class = 'bg-secondary';
+        $('#receive_status').attr('class', `badge ${status_class} font-size-12 px-2 py-1`).text(done.status);
+    }
+        
+    // a_click 직후 보여줄 데이터
+    else {
+        let leadtime = new Date(a_click_request_date) - new Date(a_click_order_date);
+        let leadtime_days = Math.floor(leadtime / (1000 * 60 * 60 * 24)) + 1;
+        
+        $('#code').text(a_click_code);
+        $('#customer_name').text(a_click_customer_name);
+        $('#customer_charge_name').text(a_click_customer_charge_name);
+        $('#customer_mobile').text(a_click_customer_mobile);
+        $('#customer_email').text(a_click_customer_email);
+        $('#desc1').text(a_click_desc1);
+        $('#desc2').text(a_click_desc2);
+        $('#order_date').text(a_click_order_date);
+        $('#request_date').text(a_click_request_date);
+        $('#leadtime').text(leadtime_days + ' 일');
+        $('#delivery_user_name').text(a_click_delivery_user_name);
+
+        let status_class = 'bg-danger';
+        if (a_click_status === '진행') status_class = 'bg-primary';
+        else if (a_click_status === '대기') status_class = 'bg-warning';
+        else if (a_click_status === '완료') status_class = 'bg-success';
+        else if (a_click_status === '보류') status_class = 'bg-secondary';
+        $('#receive_status').attr('class', `badge ${status_class} font-size-12 px-2 py-1`).text(a_click_status);
+    }
+}
+
+// 발주 품목 영역 --------------------------------------------------------------------------------------------------------
+function c_search() {
+    let query = "?page=1&page_size=9999";
+    query += "&customer_order=" + a_click_id;
+
+    fetch_gp("/factory_customer_order_item_list_fn/" + query, 'GET', true, {}, (done) => {
+        c_draw_table(done);
+    });
+}
+
+function c_draw_table(done) {
+    // console.log("c_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#c_tbody').html(emptyRow);
+        return;
+    }
+    
+    let num = 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let deliveryRate = item.total_qty ? (item.delivery_qty / item.total_qty * 100) : 0;
+        deliveryRate = Math.round(deliveryRate * 100) / 100;
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap'>
+            <td>${num + i}</td>
+            <td name='item_name'>${item.item_name || ""}</td>
+            <td name='item_desc1'>${item.item_desc1 || ""}</td>
+            <td name='item_stock'>${formatNumber(item.item_stock, 2) || ""}</td>
+            <td name='total_qty'>${formatNumber(item.total_qty, 2) || ""}</td>
+            <td name='delivery_qty'>${formatNumber(item.delivery_qty, 2) || ""}</td>
+            <td><div class="progress-container">
+                    <span class="progress-text">${deliveryRate}%</span>
+                    <div class="progress-bar" 
+                         data-rate="${deliveryRate}" style="width: ${deliveryRate}%;"></div>
+                </div></td>
+        </tr>`;
+        rows += row;
+    }
+    
+    c_nation.nation_display(done);
+    $('#c_tbody').html(rows);
+}
+
+
+// 기타 함수 영역 --------------------------------------------------------------------------------------------------------
+function i_draw_table(done, modalType) {
+    // console.log("i_draw_table: ", done);
+    
+    let data = done.results;
+    let num = 1;
+    let rows = "";
+
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let row = `
+        <tr id='${item.id}' class="align-middle">
+            <td name='item_no'>${num + i}</td>
+            <td name='item_id' class="d-none">${item.item_id}</td>
+            <td name='item_code' class="text-nowrap">${item.item_code}</td>
+            <td name='item_name' class="text-nowrap">${item.item_name}</td>
+            <td name='item_desc1' class='text-nowrap text-truncate' style="max-width: 150px;">${item.item_desc1}</td>
+            <td name='item_stock'>${formatNumber(item.item_stock, 2)}</td>
+            <td name='total_qty'>${formatNumber(item.total_qty, 2)}</td>
+            <td name='delivery_date'><input type="text" value="${item.delivery_date || date_today_str}" class="form-control form-control-sm date_flatpickr"></td>
+            <td name='delivery_qty'>
+              <input type="text" value="${formatNumber(item.delivery_qty || item.total_qty, 2)}" class="form-control form-control-sm receive_qty" onkeyup="checkNumber(this, 2)">
+            </td>
+            <td name='warehouse'><select class="form-control" id="warehouse_${item.id}"></select></td>
+            <td name='desc1'><input type="text" value="${item.desc1}" class="form-control form-control-sm"></td>
+        </tr>`;
+        rows += row;
+    }
+    
+    $(`#${modalType} #i_tbody`).html(rows);
+    
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        init_Select2_modal(`#a_update_modal #warehouse_${item.id}`, '선택', '/sel2_code_warehouse/', {id: 'id', txt: item => `${item.text}`}, item.warehouse_id || item.item_warehouse);
+    }
+    init_date_flatpickr();
+}
+
+
+// 거래처 선택시 정보 불러오기
+$(document).ready(function () {
+    $('#a_create_modal #customer').on('change', function () {
+        const customerId = $(this).val();
+        if (customerId) {
+            fetch_gp(`/factory_customer_list_fn/?select=${customerId}`, 'GET', true, {}, (done) => {
+                let data = done.results[0];
+
+                $('#a_create_modal #customer_charge_name').val(data.charge_name);
+                $('#a_create_modal #customer_mobile').val(data.mobile);
+                $('#a_create_modal #customer_email').val(data.email);
+            });
+        } else {
+            $('#a_create_modal #customer_charge_name').val('');
+            $('#a_create_modal #customer_mobile').val('');
+            $('#a_create_modal #customer_email').val('');
+        }
+    });
+
+    $('#a_update_modal #customer').on('change', function () {
+        const customerId = $(this).val();
+        if (customerId) {
+            fetch_gp(`/factory_customer_list_fn/?select=${customerId}`, 'GET', true, {}, (done) => {
+                let data = done.results[0];
+
+                $('#a_update_modal #customer_charge_name').val(data.charge_name);
+                $('#a_update_modal #customer_mobile').val(data.mobile);
+                $('#a_update_modal #customer_email').val(data.email);
+            });
+        } else {
+            $('#a_update_modal #customer_charge_name').val('');
+            $('#a_update_modal #customer_mobile').val('');
+            $('#a_update_modal #customer_email').val('');
+        }
+    });
+});
+
+// 품목 선택시 정보 불러오기
+$(document).ready(function () {
+    $('#a_create_modal #item').on('change', function () {
+        const itemId = $(this).val();
+        if (itemId) {
+            fetch_gp(`/factory_item_list_fn/?item_select=${itemId}`, 'GET', true, {}, (done) => {
+                let data = done.results[0];
+
+                $('#a_create_modal #item_code').val(data.code);
+                $('#a_create_modal #item_name').val(data.name);
+                $('#a_create_modal #item_desc1').val(data.desc1);
+                $('#a_create_modal #item_desc2').val(data.desc2);
+                $('#a_create_modal #item_desc3').val(data.desc3);
+                $('#a_create_modal #unit_price').val(formatNumber(data.sell_price, 2));
+                $('#a_create_modal #total_qty').val(formatNumber('', 2));
+                $('#a_create_modal #item_stock').val(formatNumber(data.item_stock, 2));
+            });
+        } else {
+            $('#a_create_modal #item_code').val('');
+            $('#a_create_modal #item_name').val('');
+            $('#a_create_modal #item_desc1').val('');
+            $('#a_create_modal #item_desc2').val('');
+            $('#a_create_modal #item_desc3').val('');
+            $('#a_create_modal #unit_price').val(formatNumber('', 2));
+            $('#a_create_modal #total_qty').val(formatNumber('', 2));
+            $('#a_create_modal #item_stock').val(formatNumber('', 2));
+        }
+    });
+
+    $('#a_update_modal #item').on('change', function () {
+        const itemId = $(this).val();
+        if (itemId) {
+            fetch_gp(`/factory_item_list_fn/?item_select=${itemId}`, 'GET', true, {}, (done) => {
+                let data = done.results[0];
+
+                $('#a_update_modal #item_code').val(data.code);
+                $('#a_update_modal #item_name').val(data.name);
+                $('#a_update_modal #item_desc1').val(data.desc1);
+                $('#a_update_modal #item_desc2').val(data.desc2);
+                $('#a_update_modal #item_desc3').val(data.desc3);
+                $('#a_update_modal #unit_price').val(formatNumber(data.sell_price, 2));
+                $('#a_update_modal #total_qty').val(formatNumber('', 2));
+                $('#a_update_modal #item_stock').val(formatNumber(data.item_stock, 2));
+            });
+        } else {
+            $('#a_update_modal #item_code').val('');
+            $('#a_update_modal #item_name').val('');
+            $('#a_update_modal #item_desc1').val('');
+            $('#a_update_modal #item_desc2').val('');
+            $('#a_update_modal #item_desc3').val('');
+            $('#a_update_modal #unit_price').val(formatNumber('', 2));
+            $('#a_update_modal #total_qty').val(formatNumber('', 2));
+            $('#a_update_modal #item_stock').val(formatNumber('', 2));
+        }
+    });
+});
+
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

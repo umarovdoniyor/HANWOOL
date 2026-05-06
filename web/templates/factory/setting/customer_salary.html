@@ -1,0 +1,303 @@
+<!-- 거래처/현장관리 > 거래처정보 > 급여항목설정 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+/* select2 컨테이너 너비 지정 */
+#sch_customer + .select2-container {
+    width: 200px !important;
+}
+
+#sch_customer_class + .select2-container {
+    width: 200px !important;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-handshake me-2"></i>거래처정보 <i class="fa-solid fa-angle-right px-1"></i> 급여항목설정
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+                                
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="거래처 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_customer_class"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+                                
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="센터 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_customer"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1" data-toggle="tooltip" data-placement="top" title="담당자명, 주소, 업태, 종목 등 텍스트 검색">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="save_salary()">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">급여항목 저장</span>
+                                </button>
+                                <button class="btn btn-secondary text-nowrap ms-1 px-2.5" onclick="window.close()">
+                                    <i class="fa-solid fa-xmark"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">창닫기</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th>순번</th>
+                                            <th>거래처</th>
+                                            <th>센터</th>
+                                            <th>단기직 급여항목</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let all_sch;
+let sch_customer;
+let sch_customer_class;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('customer_salary_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('customer_salary_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_customer_class', '거래처 대분류 검색', '/sel2_code_customer_class/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_customer', '거래처 소분류 검색', '/sel2_factory_all_customer/', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+}
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    all_sch = $('#all_sch').val();
+    sch_customer = $('#sch_customer').val();
+    sch_customer_class = $('#sch_customer_class').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&center=true";
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_customer) { query += "&sch_customer=" + sch_customer; }
+    if (sch_customer_class) { query += "&sch_customer_class=" + sch_customer_class; }
+
+    fetch_gp("/factory_customer_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        $('#a_tbody').html(`
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+
+    // 체크박스로 표시할 필드들
+    const toggle_fields = [
+        { key: "basic_start_time", label: "기준출근" },
+        { key: "basic_end_time", label: "기준퇴근" },
+        { key: "basic_work_dur", label: "기준근무" },
+        { key: "late_dur", label: "지각시간" },
+        { key: "early_dur", label: "조출시간" },
+        { key: "total_dur", label: "총근무시간" },
+        { key: "late", label: "지각금" },
+        { key: "ot", label: "연장수당" },
+        { key: "night", label: "야간수당" },
+        { key: "late_ot_night", label: "OT/지각금액" },
+        { key: "wk", label: "주휴수당" },
+        { key: "meal", label: "식대" },
+        { key: "tran", label: "교통비" },
+        { key: "early", label: "조출수당" },
+        { key: "full", label: "만근수당" },
+        { key: "title", label: "직책수당" },
+        { key: "cdc", label: "CDC" },
+        { key: "extra", label: "추가지급액" },
+        { key: "special", label: "특별수당" },
+        { key: "promo", label: "프로모션" },
+        { key: "work", label: "업무수당" },
+        { key: "pension", label: "국민연금" },
+        { key: "health", label: "건강보험" },
+        { key: "emp", label: "고용보험" },
+        { key: "acc", label: "산재보험" },
+        { key: "fee", label: "수수료" }
+    ];
+
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        let checkboxes = "";
+
+        const checkedFields = item.daily_field || [];  // 저장된 필드 (없을 수도 있으니 기본값 [])
+
+        for (let field of toggle_fields) {
+            const isChecked = checkedFields.includes(field.key) ? "checked" : "";
+            checkboxes += `
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="${field.key}_${item.id}" name="${field.key}" value="1" ${isChecked}>
+                <label class="form-check-label" for="${field.key}_${item.id}">${field.label}</label>
+            </div>`;
+        }
+
+        rows += `
+        <tr id="${item.id}" class="align-middle text-nowrap">
+            <td>${num + i}</td>
+            <td>${item.customer_class_name || ""}</td>
+            <td>${item.name || ""}</td>
+            <td>${checkboxes}</td>
+        </tr>`;
+    }
+
+    $('#a_tbody').html(rows);
+    a_nation.nation_display(done);
+}
+
+
+function save_salary() {
+    let salaryData = [];
+
+    $('#a_tbody tr').each(function () {
+        let row = $(this);
+        let workerId = row.attr('id');
+        if (!workerId) return;
+
+        let daily_field = [];
+
+        row.find('input[type="checkbox"]:checked').each(function () {
+            let field = $(this).attr('name');
+            if (field) {
+                daily_field.push(field);
+            }
+        });
+
+        salaryData.push({
+            id: parseInt(workerId),
+            daily_field: daily_field
+        });
+    });
+
+    if (salaryData.length === 0) {
+        alert("저장할 데이터가 없습니다.");
+        return;
+    }
+
+    let api_data = new FormData();
+    api_data.append('salary_data', JSON.stringify(salaryData));
+
+    fetch_gp('/factory_customer_salary_update_fn/', 'post', true, api_data, (done) => {
+        a_search();
+        alert(txt.update_ed);
+    });
+}
+
+
+</script>

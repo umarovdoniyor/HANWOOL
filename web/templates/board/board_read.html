@@ -1,0 +1,95 @@
+<style>
+.row.mt-4.px-2 img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+</style>
+
+<div class="col-xxl-12">
+    <div class="card border border-light">
+        <div class="card-body">
+            <div class="d-flex text-left mb-4">
+                <div class="col-8 col-xxl-10">
+                    <p class="text-success text-uppercase mb-2">{{ board.category.name }}</p>
+                    <h4 class="text-dark fw-semibold mb-2">{{ board.title }}</h4>
+                    <span class="text-muted mb-4">
+                        <i class="fa-regular fa-calendar-days me-1"></i>{{ board.created_at|date:"Y년 n월 j일 G시 i분" }}
+                        <div class="d-flex d-md-inline align-items-center m-0 p-0">
+                            <i class="fa-solid fa-eye ms-0 ms-md-3 me-1"></i>{{ board.views_count }}
+                            <i class="fa-solid fa-comment-dots ms-3 me-1"></i>{{ comment_count }}
+                        </div>
+                    </span>
+                </div>
+
+                <div class="col-4 col-xxl-2 d-flex justify-content-end align-items-center pe-0 pe-md-2">
+                    <div class="d-flex justify-content-start align-items-center flex-md-row flex-column">
+                        <div class="flex-shrink-0 mb-1">
+                             <img src="{{ board.created_by.profile_image.url }}" alt="{{ board.created_by }}" class="avatar-sm p-1" style="border-radius: 8px;">
+                        </div>
+                        <div class="d-inline text-start ms-1" style="font-size: 11px;">
+                            <h6 class="fw-bold" style="margin-bottom: 2px;">{{ board.created_by.name }} {{ board.created_by.job_level.name|default_if_none:"" }}</h6>
+                            <span>{{ board.created_by.team.name|default_if_none:"" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4 px-2">
+                <p class="mb-3" id="content">{{ board.content|safe }}</p>
+            </div>
+
+            {% if board.upload_file %}
+            <div class="row mt-4 px-2">
+                <div class="p-3 bg-success-subtle rounded">
+                    <i class="fa-solid fa-paperclip me-2"></i><strong>첨부파일</strong>
+                    <a href="{{ board.upload_file.url }}" download class="text-dark ms-4">
+                        {{ board.upload_file.name|cut:"upload_file/" }}
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 코멘트 -->
+            <div class="row mt-4 px-2">
+                <div class="p-3 border border-secondary-subtle rounded">
+                    <div class="mb-3" id="comment_list"></div>
+                    <div class="d-flex align-items-center p-2 bg-white border rounded">
+                        <img class="avatar-sm p-1 me-2" src="{{ request.user.profile_image.url }}" alt="프로필 사진"
+                             style="border-radius: 8px; width: 40px; height: 40px; object-fit: cover;">
+
+                        <textarea id="comment_input" class="form-control border-0 flex-grow-1"
+                                  placeholder="댓글을 입력하세요." rows="2" style="resize: none;"></textarea>
+
+                        <button class="btn btn-dark text-nowrap mx-2 px-3" onclick="comment_create_submit('board', {{ board.id }})">등록</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+window.boardId = '{{ board.id }}';
+window.boardCreatedBy = '{{ board.created_by.id }}'; 
+
+$(function () {
+    comment_draw_table('board', window.boardId);
+});
+
+function a_delete_board_in() {
+    if (!confirm("게시물을 삭제하시겠습니까?")) {
+        return;
+    }
+    
+    let api_data = new FormData();
+    api_data.append('pk', {{ board.id }});
+
+    fetch_gp('/board_delete_fn/', 'post', true, api_data, (done) => {
+        a_search_ready();
+        notiToast(txt.delete_ed);
+    });
+}
+
+</script>

@@ -1,0 +1,503 @@
+<!-- 시스템관리 > 전자계약/서명관리 > 파견정규직 근로계약 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+/* select2 컨테이너 너비 지정 */
+#sch_subsidiary + .select2-container {
+    width: 180px !important;
+}
+
+#sch_customer + .select2-container {
+    width: 220px !important;
+}
+
+.sub_title {
+    color: rgba(42,48,64,0.4);
+    font-size: 20px;
+    cursor: pointer;
+    font-weight: 1000;
+    transition: color 0.2s;
+}
+.sub_title:hover {
+    color: #2a3040;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-12">
+                <div class="d-flex justify-content-between">
+                    <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                        <i class="fa-solid fa-file-signature me-2"></i>전자계약/서명관리 <i class="fa-solid fa-angle-right px-1"></i> 파견정규직
+                        <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                        title="• 파견정규직 근무자의 전자계약/서명을 관리하는 페이지입니다."></i>
+                    </div>
+
+                    <div class="d-inline-block align-items-center mb-3 sub_title" onclick="url_click_request('{% url 'daily_contract_manage' %}')">
+                        단기직
+                    </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange position-relative w-auto me-1"
+                                     id="date_filter" data-toggle="tooltip" data-placement="top" title="근무일자 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px; border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
+
+                                    <div id="date_dropdown" class="d-none position-absolute bg-light border border-secondary-subtle rounded shadow-sm p-1"
+                                         style="top: 100%; left: 0; z-index: 1000; min-width: 150px;">
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('yesterday')">어제</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('today')">오늘</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('tomorrow')">내일</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_week')">지난주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_week')">이번주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_week')">다음주</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_month')">지난달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_month')">이번달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_month')">다음달</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_year')">작년</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_year')">올해</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_year')">내년</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-none d-lg-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="관리법인 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_subsidiary"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="거래처 소분류 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_customer"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_status"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="근로계약 상태로 검색">
+                                    <option value="" selected>모두</option>
+                                    <option value="진행">진행</option>
+                                    <option value="완료">완료</option>
+                                </select>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1" data-toggle="tooltip" data-placement="top"
+                                         title="문서번호, 근무자 이름, 연락처로 텍스트 검색">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="send_contract()">
+                                    <i class="fa-solid fa-comment"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">근로계약 발송</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th id="check_box" style="text-align: center; vertical-align: middle;" class="form-check-info min_width">
+                                            <input class="form-check-input checkbox_lg" type="checkbox" id="select_all"></th>
+                                            <th>순번</th>
+                                            <th>근무시작일</th>
+                                            <th>근무종료일</th>
+                                            <th>관리법인</th>
+                                            <th>근무센터</th>
+                                            <th>근무자</th>
+                                            <th>연락처</th>
+                                            <th>입사지원서</th>
+                                            <th>근로계약 현황</th>
+                                            <th>전자서명</th>
+                                            <th>서명일자</th>
+                                            <th>업무기능</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let fr_date;
+let to_date;
+let all_sch;
+let sch_subsidiary;
+let sch_customer;
+let sch_status;
+
+let a_click_id;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('contract_manage_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('contract_manage_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_subsidiary', '관리법인 검색', '/sel2_hanwool_subsidiary/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_customer', '거래처 소분류 검색', '/sel2_hanwool_customer/', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+}
+
+$(document).ready(function () {
+    $('#select_all').on('change', function (e) {
+        let checked = $(this).is(':checked');
+        $('.td_chk_box').each(function () {
+            $(this).prop('checked', checked);
+            $(this).closest('tr').toggleClass('bg-light', checked);
+        });
+    });
+});
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    all_sch = $('#all_sch').val();
+    sch_subsidiary = $('#sch_subsidiary').val();
+    sch_customer = $('#sch_customer').val();
+    sch_status = $('#sch_status').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (fr_date) { query += "&fr_date=" + fr_date; }
+    if (to_date) { query += "&to_date=" + to_date; }
+    if (sch_subsidiary) { query += "&sch_subsidiary=" + sch_subsidiary; }
+    if (sch_customer) { query += "&sch_customer=" + sch_customer; }
+    if (sch_status) { query += "&sch_status=" + sch_status; }
+
+    fetch_gp("/general_worker_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;" class="no_data">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let profileImage = item.user.profile_image ? `<img src="${item.user.profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">` : "";
+
+        let fileTd = item.doc_url
+            ? `<div class="d-flex align-items-center gap-1" id="doc_wrap_${item.id}">
+                    <input type="file" class="form-control form-control-sm d-none" id="doc_file_${item.id}" name="doc_file_${item.id}" autocomplete="off">
+                    <a href="${item.doc_url}" download class="btn btn-outline-primary btn-sm flex-fill" id="doc_download_${item.id}">
+                        <i class="fa-solid fa-download"></i> 입사지원서
+                    </a>
+                </div>`
+            : ``;
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor: pointer;'>
+            <td name="check_box" class="form-check-info" style="text-align: center; vertical-align: middle;">
+                ${item.status === "진행" ? `<input type="checkbox" class="form-check-input checkbox_lg td_chk_box" value="${item.id}">` : ""}
+            </td>
+            <td>${num + i}</td>
+            <td>${item.start_date || ""}</td>
+            <td>${item.end_date || ""}</td>
+            <td>${item.subsidiary_name || ""}</td>
+            <td>${item.customer_name || ""}</td>
+            <td name='user_name'>${profileImage} ${item.user.name || ""}</td>
+            <td>${item.user.phone || ""}</td>
+            <td>${fileTd}</td>
+            <td name='status_badge'>
+                <span class="badge ${item.status === "완료" ? 'bg-success' : 'bg-primary'} font-size-12 px-2 py-1" style="width: 50px;">
+                    ${item.status === "완료" ? '완료' : '진행'}
+                </span>
+            </td>
+            <td class="py-0">${item.image ? `<img src="${item.image}" style="max-height:40px; height:auto; width:auto;">` : ""}</td>
+            <td name='date'>${item.date || ""}</td>
+            <td class="py-0">
+                <button class="btn btn-primary text-nowrap px-2.5" onclick="a_popup_open(${item.work_order_id})">
+                    <i class="fa-solid fa-file-signature"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">근로계약</span>
+                </button>
+                <button class="btn btn-info text-nowrap px-2.5 ms-1" onclick="b_popup_open(${item.work_order_id}, ${item.id})">
+                    <i class="fa-solid fa-file-contract"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">근로계약서</span>
+                </button>
+            </td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    $('#a_tbody').on('click', '.td_chk_box', function (e) {
+        let row = $(this).closest('tr'); // 체크박스가 속한 행 선택
+        if (this.checked) {
+            row.addClass('bg-light');  // 체크되었을 때 배경색 변경
+        } else {
+            row.removeClass('bg-light');  // 체크 해제 시 배경색 제거
+        }
+    });
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+    });
+}
+
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let confirmed = confirm("해당 근로계약건을 삭제하시겠습니까?\n");
+    if (confirmed) {
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/general_contract_delete_fn/', 'post', true, api_data, (done) => {
+            a_nation.page = 1;
+            a_click_id = null;
+
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+
+function send_contract() {
+    let checkedBoxes = $('.td_chk_box:checked');
+    if (checkedBoxes.length === 0) {
+        alert("근로계약서를 발송할 대상을 선택하세요.");
+        return;
+    }
+
+    let ids = checkedBoxes.map(function () {
+        return $(this).val();
+    }).get();  // jQuery map 결과를 일반 배열로 변환
+    alert("선택된 ID: " + ids.join(", "));
+}
+
+
+// 근로계약 팝업
+function a_popup_open(work_order_id) {
+    let popupUrl = `/general/worker_list/${work_order_id}`;
+
+    const popup = window.open(
+        popupUrl,
+        'workerListPopup',
+        `width=${screen.width},height=${screen.height},top=0,left=0,scrollbars=yes,resizable=yes`
+    );
+
+    if (popup) {
+        popup.moveTo(0, 0);
+        popup.resizeTo(screen.width, screen.height);
+        popup.focus();
+    }
+}
+
+// 근로계약서 팝업
+function b_popup_open(work_order_id, worker_id) {
+    let url = `/general/con/${work_order_id}/${worker_id}/`;
+    window.open(url, '_blank', 'width=1000,height=1000,scrollbars=yes,resizable=yes');
+}
+
+
+function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+// 데이트 필터 드랍다운 이벤트
+$('#date_filter').on('mouseenter', function () {
+    $('#date_dropdown').removeClass('d-none');
+});
+$('#date_filter').on('mouseleave', function () {
+    $('#date_dropdown').addClass('d-none');
+});
+
+function set_date_range(range) {
+    const today = new Date();
+    let start, end;
+
+    if (range === 'yesterday') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end.setDate(today.getDate() - 1);
+    } else if (range === 'today') {
+        start = end = new Date(today);
+    } else if (range === 'tomorrow') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() + 1);
+        end.setDate(today.getDate() + 1);
+    } else if (range === 'last_week') {
+        const day = today.getDay() || 7;
+        end = new Date(today);
+        end.setDate(today.getDate() - day);
+        start = new Date(end);
+        start.setDate(end.getDate() - 6);
+    } else if (range === 'this_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 1);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'next_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 8);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (range === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (range === 'next_month') {
+        start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    }
+
+    else if (range === 'last_year') {
+        start = new Date(today.getFullYear() - 1, 0, 1);
+        end = new Date(today.getFullYear() - 1, 11, 31); }
+
+    else if (range === 'this_year') {
+        start = new Date(today.getFullYear(), 0, 1);
+        end = new Date(today.getFullYear(), 11, 31); }
+
+    else if (range === 'next_year') {
+        start = new Date(today.getFullYear() + 1, 0, 1);
+        end = new Date(today.getFullYear() + 1, 11, 31); }
+
+
+    $('#fr_date').val(formatDate(start));
+    $('#to_date').val(formatDate(end));
+    a_search_ready();
+}
+
+</script>

@@ -1,0 +1,403 @@
+<!-- 휴가관리 > 연차통계 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.progress-container {
+    width: 100%;
+    height: 20px;
+    background-color: #d2d2d2;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: lightskyblue;
+    width: 0;
+    transition: width 1s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+}
+
+.progress-text {
+    font-size: 10px;
+    color: white;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-house-laptop me-2"></i>연차통계
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 연간 월별 연차사용량과 잔여 연차를 확인할 수 있는 페이지입니다.<br>• 연차를 사용하면 합산값이 표시되며, 미사용은 빈칸으로 표시됩니다."></i>
+                </div>
+            </div>
+        
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+                                
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_year_filter" onchange="a_search_ready()">
+                                    {% for year in year_range %}
+                                        <option value="{{ year }}" {% if year == default_year %}selected{% endif %}>{{ year }}년</option>
+                                    {% endfor %}
+                                </select>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            {% comment %}<div class="d-flex p-0">
+                                <button class="btn btn-info text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                    <i class="fa-regular fa-calendar-check"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">연차 정보</span>
+                                </button>
+                            </div>{% endcomment %}
+                        </div>
+                        
+                        <div class="custom_table table-responsive text-nowrap">
+                            <table class="table">
+                                <thead class="thead-light">
+                                    <tr class="text-nowrap">
+                                        <th class="d-none d-md-table-cell min_width">순번</th>
+                                        <th>이름</th>
+                                        <th class="d-none d-md-table-cell">부서</th>
+                                        <th class="d-none d-md-table-cell">입사일</th>
+                                        <th class="d-none d-md-table-cell">근속연수</th>
+                                        <th class="text-center">이월</th>
+                                        <th class="text-center">1월</th>
+                                        <th class="text-center">2월</th>
+                                        <th class="text-center">3월</th>
+                                        <th class="text-center">4월</th>
+                                        <th class="text-center">5월</th>
+                                        <th class="text-center">6월</th>
+                                        <th class="text-center">7월</th>
+                                        <th class="text-center">8월</th>
+                                        <th class="text-center">9월</th>
+                                        <th class="text-center">10월</th>
+                                        <th class="text-center">11월</th>
+                                        <th class="text-center">12월</th>
+                                        <th class="text-center">잔여</th>
+                                        <th class="d-none d-md-table-cell">잔여율<i class="fa-regular fa-circle-question fa-sm ms-1" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="초록색: 3개월 이내 연차 충전<br>하늘색: 6개월 이내 연차 충전<br>노란색: 9개월 이내 연차 충전<br>빨간색: 12개월 이내 연차 충전"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="a_tbody"></tbody>
+                            </table>
+                            <div class="div_center" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="true" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">연차 통계 <i class="fa-solid fa-angle-right px-1"></i> 연차 정보</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <!-- 단일 영역 -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="col-12 mb-3" style="line-height: 200%;">
+                            {% if request.user.company.company_info.first.annual_leave_payment == "join_date" %}
+                            1. '{{ request.user.company.company_info.first.company_name }}'는 <b>입사일 기준</b>으로 근로기준법에 따라 연차가 부여됩니다.<br>
+                            {% else %}
+                            1. '{{ request.user.company.company_info.first.company_name }}'는 <b>회계일 기준(매년 1월 1일)</b>으로 근로기준법에 따라 연차가 부여됩니다.<br>
+                            {% endif %}
+                            2. [전자결재]를 통해 사용한 연차가 월별 합산되어 표시되며, 올해의 잔여연차는 다음연도의 이월연차로 등록됩니다.<br>
+                            3. [전재결재]가 '진행', '완료' 상태에서는 연차사용이 유효한 것으로 계산됩니다. '기안취소', '반려'시 연차정보는 삭제됩니다.<br>
+                            4. 합산된 연차를 클릭하면 해당 [전자결재]의 합산 내역을 확인할 수 있습니다.<br>
+                            5. [잔여율]은 다음 연차 발생시기를 고려하여 남은 연차를 효과적으로 사용하도록 돕는 지표입니다.<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;예를 들어, 잔여율이 80% + 초록색(3개월내 연차충전)이라면 연차소모를 촉진해야하며,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;잔여율이 20% + 빨간색(12개월내 연차충전)이라면 연차를 아껴서 사용해야할 것입니다.<br>
+                            6. 연차 관련 세부 적용사항은 업체별로 조금씩 다를 수 있으니 자세한 내용은 회사의 인사담당자와 확인해주세요.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_year_filter;
+let all_sch;
+let company_annual_leave_payment = `{{ request.user.company.company_info.first.annual_leave_payment }}`
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('leave_report_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('leave_report_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    select_this_year();
+    a_search_ready();
+}
+
+function select_this_year() {
+    let selectElement = document.getElementById("a_year_filter");
+    let currentYear = new Date().getFullYear();
+
+    for (let i = 0; i < selectElement.options.length; i++) {
+        if (selectElement.options[i].value == currentYear) {
+            selectElement.selectedIndex = i;
+            break;
+        }
+    }
+}
+    
+function a_search_ready() {
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+    
+    all_sch = $('#all_sch').val();
+    a_year_filter = $("#a_year_filter").val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&all_sch=" + all_sch;
+    query += "&year_sch=" + a_year_filter;
+
+    fetch_gp("/leave_report_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <tr><td colspan="99" style="background-color: white; text-align:center;">등록된 데이터가 없습니다.</td></tr>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let annual_leave_count = [11, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25];
+
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        // 연차소모율 계산
+        let user_annual_leave_count = item.working_years > 21 ? 25 : annual_leave_count[item.working_years];
+        let leaveRate = (item.leave_balance / user_annual_leave_count * 100).toFixed(0);
+
+        let profileImage = item.profile_image
+            ? `<img src="${item.profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">`
+            : "";
+
+        let createLink = (count, detail) => {
+            if (!count) return "";
+
+            let year = detail.year; // details 배열에서 연도 가져오기
+            let month = detail.month; // details 배열에서 월 가져오기
+            let name = encodeURIComponent(item.user_name); // 사용자 이름 인코딩  # 동명이인은 동시에 검색되는 문제 있음
+        
+            return `<a href="#" onclick="openAndExecuteScript(${year}, ${month}, '${name}'); return false;">${count}</a>`;
+        };
+
+        let row = `
+        <tr id='${item.details[0].year}_${item.created_by}' class='align-middle'>
+            <td class="d-none d-md-table-cell">${num + i}</td>
+            <td name='user_info'>${profileImage} ${item.user_name} ${item.job_level || ""}</td>
+            <td name='team' class="d-none d-md-table-cell">${item.team || ""}</td>
+            <td name='join_date' class="d-none d-md-table-cell">${item.join_date}</td>
+            <td name='working_years' class="d-none d-md-table-cell" style="border-right: 1px solid #d9dee3;">${item.working_years + "년차"}</td>
+            <td name='initial_balance' class="text-center px-1" style="border-right: 1px solid #d9dee3;">${item.initial_balance}</td>
+            ${item.details.map(detail => `
+                <td name='m${String(detail.month).padStart(2, '0')}' class="text-center px-1" style="border-right: 1px solid #d9dee3;">
+                    ${createLink(detail.total_leave_count, detail)}
+                </td>`).join('')}
+            <td name='leave_balance' class="text-center px-1">${item.leave_balance}</td>
+            <td name='leave_rate' class="d-none d-md-table-cell">
+                <div class="progress-container">
+                    <span class="progress-text">${leaveRate}%</span>
+                    <div class="progress-bar ${getProgressBarColor(item.join_date)}" 
+                         data-rate="${leaveRate}" style="width: ${leaveRate}%;"></div>
+                </div>
+            </td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+}
+    
+function getProgressBarColor(join_date) {
+    const today = new Date();
+    let grantDate;
+
+    if (company_annual_leave_payment === "join_date") {
+        const join = new Date(join_date);
+        grantDate = new Date(today.getFullYear(), join.getMonth(), join.getDate());
+        if (grantDate < today) {
+            grantDate.setFullYear(today.getFullYear() + 1);
+        }
+    } else {
+        grantDate = new Date(today.getFullYear() + 1, 0, 1); // 내년 1월 1일
+    }
+
+    const diffTime = grantDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffMonths = diffDays / 30; // 대략적인 개월 수
+
+    if (diffMonths < 3) return "bg-success";  // 3개월 이내
+    if (diffMonths < 6) return "bg-info";     // 3~6개월
+    if (diffMonths < 9) return "bg-warning";  // 6~9개월
+    return "bg-danger";                       // 9~12개월
+}
+
+function openAndExecuteScript(year, month, name) {
+    let url = `/leave/manage?year=${year}&month=${month}&name=${name}`;
+    let newWindow = window.open(url, '_blank', 'width=1300,height=800,scrollbars=yes,resizable=yes');
+}
+
+function a_create_modal_in() {
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

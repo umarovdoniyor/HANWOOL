@@ -1,0 +1,645 @@
+<!-- 일정관리 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+{% include 'basic/calendar_lib.html' %}
+
+<style>
+{% for category in event_category %}
+    .event-color-{{ category.id }}:checked {
+        background-color: {{ category.desc3 }} !important;
+        border-color: {{ category.desc3 }} !important;
+        filter: brightness(100%);
+    }
+    .event-color-{{ category.id }} {
+        background-color: {{ category.desc3 }} !important;
+        border-color: {{ category.desc3 }} !important;
+        filter: brightness(60%);
+    }
+{% endfor %}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-calendar-days me-2"></i>일정관리
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 구성원의 일정을 캘린더로 볼 수 있는 페이지 입니다.<br>• 일정 종류를 세분화하여 효율적으로 일정을 관리하세요.<br>• 날짜에서 마우스 오른버튼을 클릭하면 해당 날짜에 등록창이 생성됩니다."></i>
+                </div>
+            </div>
+
+            <!-- 좌측 메뉴 -->
+            <div class="col-md-3 col-xl-2">
+                <div class="card border border-light">
+                    <div class="card-body bg-white p-3">
+                        <div class="d-flex w-100">
+                            <button type="button" class="btn btn-success text-nowrap mx-1 px-3 w-100" onclick="a_create_modal_in()">
+                                <i class="fa-regular fa-calendar-plus fa-lg me-2"></i>새 일정 등록
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border border-light">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center text-muted">
+                            <small class="text-uppercase align-middle font-size-12">Calendar Filter</small>
+                            {% if request.user.is_master %}
+                            <button class="btn btn-sm px-1 py-0" onclick="openCodePage('event_category', 'create')">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex flex-wrap flex-md-column font-size-14 gap-1 p-1">
+                        {% for category in event_category %}
+                            <div class="form-check form-check-primary me-3">
+                                <input class="form-check-input event_filter_item checkbox_md event-color-{{ category.id }}" type="checkbox"
+                                onchange="fetchFilteredEvents()" id="event_{{ category.id }}" checked>
+                                <label class="form-check-label text-nowrap" for="event_{{ category.id }}" style="padding-top: 1px; padding-left: 1px;">
+                                    {{ category.name }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="card border border-light">
+                    <div class="card-body">
+                        <small class="text-muted text-uppercase align-middle font-size-12" id="today_date"></small>
+                        <div id="event_list" style="max-height: 200px; min-height: 80px; overflow-y: auto; overflow-x: hidden;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메인 캘린더 영역 -->
+            <div class="col-md-9 col-xl-10">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div id="main_calendar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">일정 관리 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <!-- 상단 영역 -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="title" class="form-label fw-bold">일정 제목</label>
+                        <input type="text" class="form-control div_required" id="title">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="category" class="form-label fw-bold">일정 종류
+                        <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                        data-toggle="tooltip" data-placement="top" title="휴가, 출장은 전자결재를 통해서만 등록할 수 있습니다."></i></label>
+                        <select class="form-control div_required" id="category" {% comment %}onchange="update_title($('#a_create_modal #category option:selected').text())"{% endcomment %}></select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="start_date" class="form-label fw-bold">일정 시작</label>
+                        <input type="text" class="form-control datetime_flatpickr div_required"
+                               data-default-time="{{ request.user.company.company_info.first.check_in | time:"H:i" }}"
+                               id="start_date">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="end_date" class="form-label fw-bold">일정 종료</label>
+                        <input type="text" class="form-control datetime_flatpickr div_required"
+                               data-default-time="{{ request.user.company.company_info.first.check_out | time:"H:i" }}"
+                               id="end_date">
+                    </div>
+                </div>
+
+                <!-- 하단 영역 -->
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="trip_with" class="form-label">참석 인원
+                        <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                           data-toggle="tooltip" data-placement="top" title="Ctrl 키를 누르면 목록창이 유지됩니다."></i></label>
+                        <select class="form-control flex-wrap" id="trip_with"></select>
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <label for="desc" class="form-label">일정 세부내용</label>
+                        <textarea class="form-control" id="desc" rows="4"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">일정 관리 <i class="fa-solid fa-angle-right px-1"></i> 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <!-- 상단 영역 -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="title" class="form-label fw-bold">일정 제목</label>
+                        <input type="text" class="form-control div_required" id="title">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="category" class="form-label fw-bold">일정 종류
+                        <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                        data-toggle="tooltip" data-placement="top" title="휴가, 출장은 전자결재를 통해서만 등록할 수 있습니다."></i></label>
+                        <select class="form-control div_required" id="category" {% comment %}onchange="update_title($('#a_create_modal #category option:selected').text())"{% endcomment %}></select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="start_date" class="form-label fw-bold">일정 시작</label>
+                        <input type="text" class="form-control datetime_flatpickr div_required"
+                               data-default-time="{{ request.user.company.company_info.first.check_in | time:"H:i" }}"
+                               id="start_date">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="end_date" class="form-label fw-bold">일정 종료</label>
+                        <input type="text" class="form-control datetime_flatpickr div_required"
+                               data-default-time="{{ request.user.company.company_info.first.check_out | time:"H:i" }}"
+                               id="end_date">
+                    </div>
+                </div>
+
+                <!-- 하단 영역 -->
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="trip_with" class="form-label">참석 인원
+                        <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                           data-toggle="tooltip" data-placement="top" title="Ctrl 키를 누르면 목록창이 유지됩니다."></i></label>
+                        <select class="form-control flex-wrap" id="trip_with"></select>
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <label for="desc" class="form-label">일정 세부내용</label>
+                        <textarea class="form-control" id="desc" rows="4"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer d-flex justify-content-between align-items-center">
+                <div class="d-flex">
+                    <div class="btn btn-success text-nowrap mx-1 px-3 d-none" id="apvBtn" onclick="approvalLink(a_click_category_name, a_click_apv_id)">전자결재 열기</div>
+                </div>
+                <div class="d-flex">
+                    <div class="btn btn-danger text-nowrap mx-1 px-3" onclick="a_delete_submit()">삭제</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_read_modal -->
+<div class="modal fade" id="a_read_modal" tabindex="-1" role="dialog" aria-labelledby="a_read_modal"
+     data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">일정 관리 <i class="fa-solid fa-angle-right px-1"></i> 보기</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_read"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <!-- 상단 영역 -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="title" class="form-label text-muted">일정 제목</label>
+                        <input type="text" class="form-control border border-none" id="title" disabled>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="category" class="form-label text-muted">일정 종류</label>
+                        <select class="form-control border border-none" id="category" disabled></select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="start_date" class="form-label fw-bold">일정 시작</label>
+                        <input type="text" class="form-control datetime_flatpickr"
+                               data-default-time="{{ request.user.company.company_info.first.check_in | time:"H:i" }}"
+                               id="start_date" disabled>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="end_date" class="form-label fw-bold">일정 종료</label>
+                        <input type="text" class="form-control datetime_flatpickr"
+                               data-default-time="{{ request.user.company.company_info.first.check_out | time:"H:i" }}"
+                               id="end_date" disabled>
+                    </div>
+                </div>
+
+                <!-- 하단 영역 -->
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="trip_with" class="form-label text-muted">참석 인원</label>
+                        <select class="form-control flex-wrap border border-none" id="trip_with" disabled></select>
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <label for="desc" class="form-label text-muted">일정 세부내용</label>
+                        <textarea class="form-control border border-none" id="desc" rows="4" disabled></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-between align-items-center">
+                <div class="d-flex">
+                    <div class="btn btn-success text-nowrap mx-1 px-3 d-none" id="apvBtn" onclick="approvalLink(a_click_category_name, a_click_apv_id)">전자결재 열기</div>
+                </div>
+                <div class="d-flex">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let main_calendar;
+let event_list;
+let clicked_date;
+let a_click_id;
+let a_click_title;
+let a_click_category;
+let a_click_start_date;
+let a_click_end_date;
+let a_click_trip_with;
+let a_click_desc;
+let a_click_created_by;
+let a_click_apv_id;
+let a_click_category_name;
+let a_click_select_start_date;
+let a_click_select_end_date;
+let start_val, end_val;
+
+let company_check_in = '{{ request.user.company.company_info.first.check_in | time:"H:i" }}';  // 회사기본 출근시간
+let company_check_out = '{{ request.user.company.company_info.first.check_out | time:"H:i" }}';  // 회사기본 퇴근시간
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_datetime_flatpickr();
+}
+
+function fetchFilteredEvents() {
+    let selected = [];
+    document.querySelectorAll('.event_filter_item:checked').forEach(el => {
+        selected.push(el.id.replace('event_', ''));
+    });
+
+    fetch(`/event_read_fn/?event_filter=${selected.join(',')}`)
+        .then(res => res.json())
+        .then(data => {
+            // 받은 데이터 처리
+            // console.log("event_read_fn: ", data);
+            main_calendar.removeAllEvents(); // 기존 이벤트 삭제
+            main_calendar.addEventSource(data); // 새 이벤트 추가
+            today_event_list.removeAllEvents(); // 기존 이벤트 삭제
+            today_event_list.addEventSource(data); // 새 이벤트 추가
+        });
+}
+
+function a_create_modal_in(clicked_date, view_type = 'default') {
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    init_datetime_flatpickr("#a_create_modal #start_date");
+    init_datetime_flatpickr("#a_create_modal #end_date");
+
+    let start_val, end_val;
+
+    if (a_click_select_start_date && a_click_select_end_date) {
+        start_val = a_click_select_start_date;
+        end_val = a_click_select_end_date;
+
+    } else if (clicked_date) {
+        if (view_type === 'month') {
+            start_val = clicked_date + " " + company_check_in;
+            end_val = clicked_date + " " + company_check_out;
+        } else {
+            start_val = clicked_date;
+            end_val = clicked_date;
+        }
+    }
+
+    let start_fp = document.querySelector("#a_create_modal #start_date")._flatpickr;
+    let end_fp = document.querySelector("#a_create_modal #end_date")._flatpickr;
+    if (start_fp && start_val) start_fp.setDate(start_val, true);
+    if (end_fp && end_val) end_fp.setDate(end_val, true);
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    $('#a_create_modal #title').val('');
+    $('#a_create_modal #start_date').val('');
+    $('#a_create_modal #end_date').val('');
+    $("#a_create_modal #desc").val('');
+    init_Select2_modal('#a_create_modal #category', '선택', '/sel2_code_event_category/?cal=true', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_multiple('#a_create_modal #trip_with', '  선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`});
+
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_submit() {
+    if (is_empty($('#a_create_modal #title').val()) === true) {
+        alert("[일정 제목] 항목을 입력하세요.");
+        return;
+    }
+    
+    if (is_empty($('#a_create_modal #category').val()) === true) {
+        alert("[일정 종류] 항목을 입력하세요.");
+        return;
+    }
+    
+    if (is_empty($('#a_create_modal #start_date').val()) === true) {
+        alert("[일정 시작] 항목을 입력하세요.");
+        return;
+    }
+    
+    if (is_empty($('#a_create_modal #end_date').val()) === true) {
+        alert("[일정 종료] 항목을 입력하세요.");
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("title", nullapply($('#a_create_modal #title').val()));
+        api_data.append("category", nullapply($('#a_create_modal #category').val()));
+        api_data.append("start_date", nullapply($('#a_create_modal #start_date').val()));
+        api_data.append("end_date", nullapply($('#a_create_modal #end_date').val()));
+        api_data.append("trip_with", nullapply($('#a_create_modal #trip_with').val()));
+        api_data.append("desc", nullapply($('#a_create_modal #desc').val()));
+
+    fetch_gp('/event_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        fetchFilteredEvents();
+        alert(txt.create_ed);
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    init_datetime_flatpickr("#a_update_modal #start_date");
+    init_datetime_flatpickr("#a_update_modal #end_date");
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    $('#a_update_modal #title').val(a_click_title);
+    $('#a_update_modal #start_date').val(a_click_start_date.replace('T', ' ').slice(0, 16));
+    $('#a_update_modal #end_date').val(a_click_end_date.replace('T', ' ').slice(0, 16));
+    $("#a_update_modal #desc").val(a_click_desc);
+    init_Select2_modal('#a_update_modal #category', '선택', '/sel2_code_event_category/?cal=true', {id: 'id', txt: item => `${item.text}`}, a_click_category);
+    let trip_with = a_click_trip_with.split(',').map(Number); // 숫자를 문자열로 변환
+    init_Select2_multiple('#a_update_modal #trip_with', '  없음', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`}, trip_with);
+
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    if (is_empty($('#a_update_modal #title').val()) === true) {
+        alert("[일정 제목] 항목을 입력하세요.");
+        return;
+    }
+    
+    if (is_empty($('#a_update_modal #category').val()) === true) {
+        alert("[일정 종류] 항목을 입력하세요.");
+        return;
+    }
+    
+    if (is_empty($('#a_update_modal #start_date').val()) === true) {
+        alert("[일정 시작] 항목을 입력하세요.");
+        return;
+    }
+    
+    if (is_empty($('#a_update_modal #end_date').val()) === true) {
+        alert("[일정 종료] 항목을 입력하세요.");
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("title", nullapply($('#a_update_modal #title').val()));
+        api_data.append("category", nullapply($('#a_update_modal #category').val()));
+        api_data.append("start_date", nullapply($('#a_update_modal #start_date').val()));
+        api_data.append("end_date", nullapply($('#a_update_modal #end_date').val()));
+        api_data.append("trip_with", nullapply($('#a_update_modal #trip_with').val()));
+        api_data.append("desc", nullapply($('#a_update_modal #desc').val()));
+
+    fetch_gp('/event_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        fetchFilteredEvents();
+        alert(txt.update_ed);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt(txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/event_delete_fn/', 'post', true, api_data, (done) => {
+            $('#a_update_modal').modal("hide");
+            a_click_id = null;
+            fetchFilteredEvents();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function a_read_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    $('#a_read_modal #title').val(a_click_title);
+    $('#a_read_modal #start_date').val(a_click_start_date.replace('T', ' ').slice(0, 16));
+    $('#a_read_modal #end_date').val(a_click_end_date.replace('T', ' ').slice(0, 16));
+    $("#a_read_modal #desc").val(a_click_desc);
+    init_Select2_modal('#a_read_modal #category', '선택', '/sel2_code_event_category/', {id: 'id', txt: item => `${item.text}`}, a_click_category);
+    let trip_with = a_click_trip_with.split(',').map(Number); // 숫자를 문자열로 변환
+    init_Select2_multiple('#a_read_modal #trip_with', '  없음', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`}, trip_with);
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_read').trigger('click');
+    }
+
+    init_datetime_flatpickr("#a_read_modal #start_date");
+    init_datetime_flatpickr("#a_read_modal #end_date");
+
+    $('#a_read_modal').modal("show");
+}
+
+{% comment %}function update_title(category) {
+    if (!category) {
+        document.getElementById('title').value = ``;
+    } else {
+        document.getElementById('title').value = `${category} ({{ request.user.name }})`;
+    }
+}{% endcomment %}
+
+function approvalLink(cateName, ApprovalId) {
+    if (!cateName || !ApprovalId) {
+        notiToast('관련 전자결재 문서를 찾을 수 없습니다.');
+        return;
+    }
+
+    let cateId = cateName === "휴가" ? '1' : '2';
+    let headCheckUrl = `/approval_read_fn/?apv_id=${ApprovalId}`;
+    let approvalUrl = `/approval/progress/${cateId}/${ApprovalId}`;
+
+    // 먼저 권한 체크
+    fetch(headCheckUrl, { method: 'HEAD' })
+        .then(response => {
+            if (response.status === 403) {
+                notiToast('해당 전자결재 문서에 접근 권한이 없습니다.');
+            } else {
+                let newWindow = window.open(approvalUrl, '_blank', 'width=1300,height=900,scrollbars=yes,resizable=yes');
+            }
+            $('#a_update_modal').modal("hide");
+            $('#a_read_modal').modal("hide");
+        })
+        .catch(error => {
+            // console.error("오류 발생:", error);
+            notiToast("요청 중 오류가 발생했습니다.");
+        });
+}
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+    { modalId: 'a_read_modal', iconId: 'md_fullscreen_read' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

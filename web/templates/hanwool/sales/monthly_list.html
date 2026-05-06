@@ -1,0 +1,1126 @@
+<!-- 매출/지출관리 > 매출관리 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+/* select2 컨테이너 너비 지정 */
+#sch_subsidiary + .select2-container {
+    width: 180px !important;
+}
+
+#sch_customer_class + .select2-container {
+    width: 160px !important;
+}
+
+#sch_customer + .select2-container {
+    width: 220px !important;
+}
+
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-money-check-dollar me-2"></i>매출관리
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 월별 매출을 관리하는 페이지 입니다.<br>• 수정하려는 항목에서 더블클릭하면 수정 팝업이 열립니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <select id="sch_year" class="page_size form-select form-select-sm me-1"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="청구연도 검색">
+                                    <option value="">전체</option>
+                                    {% for year in year_range %}
+                                        <option value="{{ year }}" {% if year == default_year %}selected{% endif %}>{{ year }}년</option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <select id="sch_month" class="page_size form-select form-select-sm me-1"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="청구월 검색">
+                                    <option value="">전체</option> <option value="01">1월</option > <option value="02">2월</option>
+                                    <option value="03">3월</option> <option value="04">4월</option> <option value="05">5월</option>
+                                    <option value="06">6월</option> <option value="07">7월</option> <option value="08">8월</option>
+                                    <option value="09">9월</option> <option value="10">10월</option> <option value="11">11월</option>
+                                    <option value="12">12월</option>
+                                </select>
+                                        
+                                        
+                                <div class="d-none d-lg-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="관리법인 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_subsidiary"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+                                
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="거래처 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_customer_class"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="센터 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_customer"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                </button>
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 건별 게시물 -->
+                        <div class="custom_table table-responsive">
+                            <table class="table">
+                                <thead class="thead-light">
+                                    <tr class="text-nowrap">
+                                        <th>순번</th>
+                                        <th>청구월</th>
+                                        <th>관리법인</th>
+                                        <th>거래처</th>
+                                        <th>센터</th>
+
+                                        <th>단기청구액</th>
+                                        <th>파견정규청구액</th>
+                                        <th>부가세(VAT)</th>
+                                        <th>총 청구액</th>
+                                        <th>이익금</th>
+                                        
+                                        <th>단기청구 데이터</th>
+                                        <th>파견정규청구 데이터</th>
+                                        <th>청구서</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="a_tbody"></tbody>
+                            </table>
+                        </div>
+                        <div class="div_center mt-3" id="a_nation_id"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">매출 관리 <i class="fa-solid fa-angle-right px-1"></i> 월별 청구 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <!-- 단일 영역 -->
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">청구 일자</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="year" class="form-label mb-0">청구연도</label>
+                            <select id="year" class="form-select form-select-sm me-3" style="width: auto;"></select>
+                            <label for="month" class="form-label mb-0">청구월</label>
+                            <select id="month" class="form-select form-select-sm" style="width: auto;"></select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">청구 항목</label>
+                        <div class="d-flex flex-row flex-md-column">
+                            <div class="d-flex align-items-center">
+                                <label for="is_daily" class="form-label my-0 me-1">단기청구</label>
+                                <input id="is_daily" class="form-check-input checkbox_lg my-0 me-5" type="checkbox">
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <label for="is_general" class="form-label my-0 me-1">정규파견청구</label>
+                                <input id="is_general" class="form-check-input checkbox_lg my-0" type="checkbox">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="subsidiary" class="form-label fw-bold">관리 법인
+                            <button class="btn btn-sm px-1 py-0"
+                                    onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                <i class="fa-solid fa-up-right-from-square"></i>
+                            </button>
+                        </label>
+                        <select class="form-control div_required" id="subsidiary"></select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="customer" class="form-label fw-bold">센터
+                            <button class="btn btn-sm px-1 py-0"
+                                    onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                <i class="fa-solid fa-up-right-from-square"></i>
+                            </button>
+                        </label>
+                        <select class="form-control div_required" id="customer"></select>
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc1" class="form-label">추가기입 항목명 #1</label>
+                        <input id="desc1" type="text" class="form-control">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="desc1_price" class="form-label">추가기입 금액 #1</label>
+                        <input id="desc1_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc2" class="form-label">추가기입 항목명 #2</label>
+                        <input id="desc2" type="text" class="form-control">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="desc2_price" class="form-label">추가기입 금액 #2</label>
+                        <input id="desc2_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc3" class="form-label">추가기입 항목명 #3</label>
+                        <input id="desc3" type="text" class="form-control">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="desc3_price" class="form-label">추가기입 금액 #3</label>
+                        <input id="desc3_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc4" class="form-label">추가기입 항목명 #4</label>
+                        <input id="desc4" type="text" class="form-control">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="desc4_price" class="form-label">추가기입 금액 #4</label>
+                        <input id="desc4_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+                </div>
+
+                <div class="row mt-4 px-2.5">
+                    <hr class="border-light">
+                </div>
+
+                <div class="row">
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="daily_price" class="form-label">단기청구액</label>
+                        <input id="daily_price" type="text" class="form-control" oninput="calc_profit('create', 'daily')" onkeyup="checkNumber(this, 2)">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="general_price" class="form-label">파견정규청구액</label>
+                        <input id="general_price" type="text" class="form-control" oninput="calc_profit('create', 'general')" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="vat" class="form-label">부가세</label>
+                        <input id="vat" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="total_price" class="form-label">총 청구액</label>
+                        <input id="total_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="daily_profit" class="form-label">단기청구 이익금</label>
+                        <input id="daily_profit" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="general_profit" class="form-label">정규파견청구 이익금</label>
+                        <input id="general_profit" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="daily_salary" class="form-label">단기급여</label>
+                        <input id="daily_salary" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="general_salary" class="form-label">파견정규급여</label>
+                        <input id="general_salary" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        &nbsp;
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="total_salary" class="form-label">총 급여</label>
+                        <input id="total_salary" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="daily_salary_profit" class="form-label">단기급여 이익금</label>
+                        <input id="daily_salary_profit" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="general_salary_profit" class="form-label">파견정규급여 이익금</label>
+                        <input id="general_salary_profit" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">매출 관리 <i class="fa-solid fa-angle-right px-1"></i> 월별 청구 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <!-- 단일 영역 -->
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">청구 일자</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="year" class="form-label mb-0">청구연도</label>
+                            <select id="year" class="form-select form-select-sm me-3" style="width: auto;"></select>
+                            <label for="month" class="form-label mb-0">청구월</label>
+                            <select id="month" class="form-select form-select-sm" style="width: auto;"></select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">청구 항목</label>
+                        <div class="d-flex flex-row flex-md-column">
+                            <div class="d-flex align-items-center">
+                                <label for="is_daily" class="form-label my-0 me-1">단기청구</label>
+                                <input id="is_daily" class="form-check-input checkbox_lg my-0 me-5" type="checkbox">
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <label for="is_general" class="form-label my-0 me-1">정규파견청구</label>
+                                <input id="is_general" class="form-check-input checkbox_lg my-0" type="checkbox">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="subsidiary" class="form-label fw-bold">관리 법인
+                            <button class="btn btn-sm px-1 py-0"
+                                    onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                <i class="fa-solid fa-up-right-from-square"></i>
+                            </button>
+                        </label>
+                        <select class="form-control div_required" id="subsidiary"></select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="customer" class="form-label fw-bold">센터
+                            <button class="btn btn-sm px-1 py-0"
+                                    onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                <i class="fa-solid fa-up-right-from-square"></i>
+                            </button>
+                        </label>
+                        <select class="form-control div_required" id="customer"></select>
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc1" class="form-label">추가기입 항목명 #1</label>
+                        <input id="desc1" type="text" class="form-control">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="desc1_price" class="form-label">추가기입 금액 #1</label>
+                        <input id="desc1_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc2" class="form-label">추가기입 항목명 #2</label>
+                        <input id="desc2" type="text" class="form-control">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="desc2_price" class="form-label">추가기입 금액 #2</label>
+                        <input id="desc2_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc3" class="form-label">추가기입 항목명 #3</label>
+                        <input id="desc3" type="text" class="form-control">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="desc3_price" class="form-label">추가기입 금액 #3</label>
+                        <input id="desc3_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc4" class="form-label">추가기입 항목명 #4</label>
+                        <input id="desc4" type="text" class="form-control">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="desc4_price" class="form-label">추가기입 금액 #4</label>
+                        <input id="desc4_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)">
+                    </div>
+                </div>
+
+                <div class="row mt-4 px-2.5">
+                    <hr class="border-light">
+                </div>
+
+                <div class="row">
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="daily_price" class="form-label">단기청구액</label>
+                        <input id="daily_price" type="text" class="form-control" oninput="calc_profit('update', 'daily')" onkeyup="checkNumber(this, 2)">
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="general_price" class="form-label">파견정규청구액</label>
+                        <input id="general_price" type="text" class="form-control" oninput="calc_profit('update', 'general')" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="vat" class="form-label">부가세</label>
+                        <input id="vat" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="total_price" class="form-label">총 청구액</label>
+                        <input id="total_price" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="daily_profit" class="form-label">단기청구 이익금</label>
+                        <input id="daily_profit" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="general_profit" class="form-label">정규파견청구 이익금</label>
+                        <input id="general_profit" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="daily_salary" class="form-label">단기급여</label>
+                        <input id="daily_salary" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="general_salary" class="form-label">파견정규급여</label>
+                        <input id="general_salary" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        &nbsp;
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="total_salary" class="form-label">총 급여</label>
+                        <input id="total_salary" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="daily_salary_profit" class="form-label">단기급여 이익금</label>
+                        <input id="daily_salary_profit" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <label for="general_salary_profit" class="form-label">파견정규급여 이익금</label>
+                        <input id="general_salary_profit" type="text" class="form-control" onkeyup="checkNumber(this, 2)" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_year;
+let a_click_month;
+let a_click_subsidiary_id;
+let a_click_subsidiary_name;
+let a_click_customer_id;
+let a_click_customer_name;
+let a_click_is_daily;
+let a_click_is_general;
+let a_click_daily_price;
+let a_click_general_price;
+let a_click_vat;
+let a_click_total_price;
+let a_click_daily_profit;
+let a_click_general_profit;
+let a_click_desc1;
+let a_click_desc1_price;
+let a_click_desc2;
+let a_click_desc2_price;
+let a_click_desc3;
+let a_click_desc3_price;
+let a_click_desc4;
+let a_click_desc4_price;
+
+let sch_year;
+let sch_month;
+let sch_subsidiary;
+let sch_customer;
+let sch_customer_class;
+
+let daily_cost = 0;
+let general_cost = 0;
+let etc_cost = 0;
+let daily_salary_profit = 0;
+let general_salary_profit = 0;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('monthly_list_page_size', $(this).val());
+});
+$('#sch_month').on('change', function () {
+    localStorage.setItem('monthly_list_sch_month', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('monthly_list_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    let saved_sch_month = localStorage.getItem('monthly_list_sch_month');
+    if (saved_sch_month) { $('#sch_month').val(saved_sch_month);}
+
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    a_search_ready();
+    
+    init_Select2('#sch_subsidiary', '관리법인 검색', '/sel2_hanwool_subsidiary/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_customer', '센터 검색', '/sel2_hanwool_customer/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_customer_class', '거래처 검색', '/sel2_code_customer_class/', {id: 'id', txt: item => `${item.text}`});
+}
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    sch_year = $('#sch_year').val();
+    sch_month = $('#sch_month').val();
+    sch_subsidiary = $('#sch_subsidiary').val();
+    sch_customer = $('#sch_customer').val();
+    sch_customer_class = $('#sch_customer_class').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (sch_year) { query += "&sch_year=" + sch_year; }
+    if (sch_month) { query += "&sch_month=" + sch_month; }
+    if (sch_subsidiary) { query += "&sch_subsidiary=" + sch_subsidiary; }
+    if (sch_customer) { query += "&sch_customer=" + sch_customer; }
+    if (sch_customer_class) { query += "&sch_customer_class=" + sch_customer_class; }
+
+    fetch_gp("/sales_monthly_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        
+        let dailyBtns = '';
+        if (item.is_daily) {
+            dailyBtns = `
+                <button class="btn btn-primary text-nowrap px-2.5" onclick="b_popup_open(${item.year}, ${item.month}, ${item.customer_id}, ${item.id})">
+                    <i class="fa-solid fa-users"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">가져오기</span>
+                </button>`;
+        }
+        
+        let generalBtns = '';
+        if (item.is_general) {
+            generalBtns = `
+                <button class="btn btn-info text-nowrap px-2.5" onclick="c_popup_open(${item.year}, ${item.month}, ${item.customer_id}, ${item.id})">
+                    <i class="fa-solid fa-user-tag"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">가져오기</span>
+                </button>`;
+        }
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td>${num + i}</td>
+            <td name='year_month'>${item.year || ""}년 ${item.month || ""}월</td>
+            <td name='subsidiary_name'>${item.subsidiary_name || ""}</td>
+            <td name='customer_class_name'>${item.customer_class_name || ""}</td>
+            <td name='customer_name'>${item.customer_name || ""}</td>
+            <td name='daily_price'>${formatNumber(item.daily_price, 2) || ""}</td>
+            <td name='general_price'>${formatNumber(item.general_price, 2) || ""}</td>
+            <td name='vat'>${formatNumber(item.vat, 2) || ""}</td>
+            <td name='total_price'>${formatNumber(item.total_price, 2) || ""}</td>
+            <td name='profit'>${formatNumber(item.daily_profit + item.general_profit, 2) || ""}</td>
+            <td class="py-0">
+                ${dailyBtns}
+            </td>
+            <td class="py-0">
+                ${generalBtns}
+            </td>
+            <td class="py-0">
+                <button class="btn btn-success text-nowrap px-2.5" onclick="a_popup_open(${item.id})">
+                    <i class="fa-solid fa-print"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">보기</span>
+                </button>
+            </td>
+
+            <td name='desc1' class='d-none'>${item.desc1 || ""}</td>
+            <td name='desc1_price' class='d-none'>${formatNumber(item.desc1_price, 2) || ""}</td>
+            <td name='desc2' class='d-none'>${item.desc2 || ""}</td>
+            <td name='desc2_price' class='d-none'>${formatNumber(item.desc2_price, 2) || ""}</td>
+            <td name='desc3' class='d-none'>${item.desc3 || ""}</td>
+            <td name='desc3_price' class='d-none'>${formatNumber(item.desc3_price, 2) || ""}</td>
+            <td name='desc4' class='d-none'>${item.desc4 || ""}</td>
+            <td name='desc4_price' class='d-none'>${formatNumber(item.desc4_price, 2) || ""}</td>
+            <td name='year' class='d-none'>${item.year}</td>
+            <td name='month' class='d-none'>${item.month}</td>
+            <td name='subsidiary_id' class='d-none'>${item.subsidiary_id || ""}</td>
+            <td name='customer_id' class='d-none'>${item.customer_id || ""}</td>
+            <td name='daily_profit' class='d-none'>${formatNumber(item.daily_profit, 2) || ""}</td>
+            <td name='general_profit' class='d-none'>${formatNumber(item.general_profit, 2) || ""}</td>
+            <td name='is_daily' class='d-none'>${item.is_daily}</td>
+            <td name='is_general' class='d-none'>${item.is_general}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_year = $(this).find("[name='year']").text();
+        a_click_month = $(this).find("[name='month']").text();
+        a_click_subsidiary_id = $(this).find("[name='subsidiary_id']").text();
+        a_click_subsidiary_name = $(this).find("[name='subsidiary_name']").text();
+        a_click_customer_id = $(this).find("[name='customer_id']").text();
+        a_click_customer_name = $(this).find("[name='customer_name']").text();
+        a_click_is_daily = $(this).find("[name='is_daily']").text();
+        a_click_is_general = $(this).find("[name='is_general']").text();
+        a_click_daily_price = $(this).find("[name='daily_price']").text();
+        a_click_general_price = $(this).find("[name='general_price']").text();
+        a_click_vat = $(this).find("[name='vat']").text();
+        a_click_total_price = $(this).find("[name='total_price']").text();
+        a_click_daily_profit = $(this).find("[name='daily_profit']").text();
+        a_click_general_profit = $(this).find("[name='general_profit']").text();
+        a_click_desc1 = $(this).find("[name='desc1']").text();
+        a_click_desc1_price = $(this).find("[name='desc1_price']").text();
+        a_click_desc2 = $(this).find("[name='desc2']").text();
+        a_click_desc2_price = $(this).find("[name='desc2_price']").text();
+        a_click_desc3 = $(this).find("[name='desc3']").text();
+        a_click_desc3_price = $(this).find("[name='desc3_price']").text();
+        a_click_desc4 = $(this).find("[name='desc4']").text();
+        a_click_desc4_price = $(this).find("[name='desc4_price']").text();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_update_modal_in();
+    });
+}
+
+function a_create_modal_in() {
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    $("#a_create_modal #is_daily").prop('checked', false);
+    $("#a_create_modal #is_general").prop('checked', false);
+    $("#a_create_modal #daily_price").val('');
+    $("#a_create_modal #general_price").val('');
+    $("#a_create_modal #vat").val('');
+    $("#a_create_modal #total_price").val('');
+    $("#a_create_modal #daily_profit").val('');
+    $("#a_create_modal #general_profit").val('');
+    $("#a_create_modal #desc1").val('');
+    $("#a_create_modal #desc1_price").val('');
+    $("#a_create_modal #desc2").val('');
+    $("#a_create_modal #desc2_price").val('');
+    $("#a_create_modal #desc3").val('');
+    $("#a_create_modal #desc3_price").val('');
+    $("#a_create_modal #desc4").val('');
+    $("#a_create_modal #desc4_price").val('');
+    
+    init_year_month('a_create_modal');
+    init_Select2_modal('#a_create_modal #subsidiary', '선택', '/sel2_hanwool_subsidiary/', {id: 'id', txt: item => `${item.text}`});
+    $("#a_create_modal #subsidiary").on('change', function () {
+        let subsidiary = $(this).val();
+        $('#a_create_modal #customer').html("");
+        $('#a_create_modal #customer').trigger('change');
+        init_Select2_modal('#a_create_modal #customer', '선택', `/sel2_hanwool_customer/?subsidiary=${subsidiary}`, {id: 'id', txt: item => `${item.text}`});
+    });
+    $("#a_create_modal #is_daily, #a_create_modal #is_general").on('click', function () {
+        display_kpi_center_summary('#a_create_modal');
+    });
+    $("#a_create_modal #year, #a_create_modal #month, #a_create_modal #customer").on('change', function () {
+        display_kpi_center_summary('#a_create_modal');
+    });
+    display_kpi_center_summary('#a_create_modal');
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function display_kpi_center_summary(modalType) {
+    console.log("modalType:", modalType);
+    $(`${modalType} #daily_profit`).val("");
+    $(`${modalType} #general_profit`).val("");
+    if ($(`${modalType} #is_daily`).prop("checked") || $(`${modalType} #is_general`).prop("checked")) {
+        if ($(`${modalType} #customer`).val()) {
+            query = "?sch_year=" +  $(`${modalType} #year`).val()
+            query += "&sch_month=" +  $(`${modalType} #month`).val()
+            query += "&sch_customer_class=" + $(`${modalType} #customer`).val();
+            fetch_gp("/kpi_center_summary_fn/" + query, 'GET', true, {}, (done) => {
+                console.log("kpi_center_summary_fn:", done);
+                daily_cost = 0;
+                general_cost = 0;
+                etc_cost = 0;
+                for (let i = 0; i < done.customer_list.length; i++) {
+                    let customer_item = done.customer_list[i];
+
+                    for (let k = 0; k < done.daily_summary_list.length; k++) {
+                        let summary_item = done.daily_summary_list[k];
+                        if (customer_item.id == summary_item.customer_id) {
+                            daily_cost += parseInt(summary_item.sum_result_price);
+                            daily_salary_profit += parseInt(summary_item.profit);
+                        }
+                    }
+                    for (let k = 0; k < done.general_summary_list.length; k++) {
+                        let summary_item = done.general_summary_list[k];
+                        if (customer_item.id == summary_item.customer_id) {
+                            general_cost += parseInt(summary_item.sum_result_price);
+                            general_salary_profit += parseInt(summary_item.profit);
+                        }
+                    }
+                    for (let k = 0; k < done.recruit_list.length; k++) {
+                        let recruit_item = done.recruit_list[k];
+                        if (customer_item.id == recruit_item.customer_id) {
+                            etc_cost += recruit_item.total_cost;
+                        }
+                    }
+                    for (let k = 0; k < done.cost_list.length; k++) {
+                        let cost_item = done.cost_list[k];
+                        if (customer_item.id == cost_item.customer_id) {
+                            etc_cost += cost_item.total_cost;
+                        }
+                    }
+                    for (let k = 0; k < done.card_list.length; k++) {
+                        let card_item = done.card_list[k];
+                        if (customer_item.id == card_item.customer_id) {
+                            etc_cost += card_item.total_cost;
+                        }
+                    }
+                }
+                if ($(`${modalType} #is_daily`).prop("checked")) {
+                    $(`${modalType} #daily_salary`).val(daily_cost);
+                    $(`${modalType} #daily_profit`).val( $(`${modalType} #daily_price`).val() -  daily_cost);
+                    $(`${modalType} #daily_salary_profit`).val(daily_salary_profit);
+                }
+
+                if ($(`${modalType} #is_general`).prop("checked")) {
+                    $(`${modalType} #general_salary`).val(general_cost);
+                    $(`${modalType} #general_profit`).val( $(`${modalType} #general_price`).val() -  general_cost);
+                    $(`${modalType} #general_salary_profit`).val(general_salary_profit);
+                }
+                $(`${modalType} #total_salary`).val(daily_cost + general_cost);
+            });
+        }
+    }
+}
+
+function calc_profit(type1, type2) {
+    if ($(`#a_${type1}_modal #is_${type2}`).prop("checked")) {
+        $(`#a_${type1}_modal #${type2}_profit`).val(del_comma($(`#a_${type1}_modal #${type2}_price`).val()) -  daily_cost);
+    } else {
+        $(`#a_${type1}_modal #${type2}_profit`).val(0);
+    }
+    let daily_price = del_comma($(`#a_${type1}_modal #daily_price`).val());
+    let general_price = del_comma($(`#a_${type1}_modal #general_price`).val());
+    let total = parseInt(daily_price ? daily_price : 0) + parseInt(general_price ? general_price : 0);
+    $(`#a_${type1}_modal #vat`).val(Math.round(total * 0.1));
+    $(`#a_${type1}_modal #total_price`).val(Math.round(total * 1.1));
+}
+
+function a_create_submit() {
+    if (is_empty($('#a_create_modal #subsidiary').val()) === true) {
+        alert("[관리 법인] 항목을 선택하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_create_modal #customer').val()) === true) {
+        alert("[센터] 항목을 입력하세요.");
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("year", nullapply($('#a_create_modal #year').val()));
+        api_data.append("month", nullapply($('#a_create_modal #month').val()));
+        api_data.append("is_daily", $('#a_create_modal #is_daily').prop('checked'));
+        api_data.append("is_general", $('#a_create_modal #is_general').prop('checked'));
+        api_data.append("general_price", nullapply(del_comma($('#a_create_modal #general_price').val())));
+        api_data.append("daily_price", nullapply(del_comma($('#a_create_modal #daily_price').val())));
+        api_data.append("total_price", nullapply(del_comma($('#a_create_modal #total_price').val())));
+        api_data.append("general_salary", nullapply(del_comma($('#a_create_modal #general_salary').val())));
+        api_data.append("daily_salary", nullapply(del_comma($('#a_create_modal #daily_salary').val())));
+        api_data.append("total_salary", nullapply(del_comma($('#a_create_modal #total_salary').val())));
+        api_data.append("daily_profit", nullapply(del_comma($('#a_create_modal #daily_profit').val())));
+        api_data.append("general_profit", nullapply(del_comma($('#a_create_modal #general_profit').val())));
+        api_data.append("subsidiary", nullapply($('#a_create_modal #subsidiary').val()));
+        api_data.append("customer", nullapply($('#a_create_modal #customer').val()));
+        api_data.append("desc1", nullapply($('#a_create_modal #desc1').val()));
+        api_data.append("desc1_price", nullapply(del_comma($('#a_create_modal #desc1_price').val())));
+        api_data.append("desc2", nullapply($('#a_create_modal #desc2').val()));
+        api_data.append("desc2_price", nullapply(del_comma($('#a_create_modal #desc2_price').val())));
+        api_data.append("desc3", nullapply($('#a_create_modal #desc3').val()));
+        api_data.append("desc3_price", nullapply(del_comma($('#a_create_modal #desc3_price').val())));
+        api_data.append("desc4", nullapply($('#a_create_modal #desc4').val()));
+        api_data.append("desc4_price", nullapply(del_comma($('#a_create_modal #desc4_price').val())));
+
+    fetch_gp('/sales_monthly_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        a_search_ready();
+        alert(txt.create_ed);
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    $("#a_update_modal #is_daily").prop('checked', a_click_is_daily === "true" || a_click_is_daily === "1");
+    $("#a_update_modal #is_general").prop('checked', a_click_is_general === "true" || a_click_is_general === "1");
+    $("#a_update_modal #daily_price").val(a_click_daily_price);
+    $("#a_update_modal #general_price").val(a_click_general_price);
+    $("#a_update_modal #vat").val(a_click_vat);
+    $("#a_update_modal #total_price").val(a_click_total_price);
+    $("#a_update_modal #daily_profit").val(a_click_daily_profit);
+    $("#a_update_modal #general_profit").val(a_click_general_profit);
+    $("#a_update_modal #desc1").val(a_click_desc1);
+    $("#a_update_modal #desc1_price").val(a_click_desc1_price);
+    $("#a_update_modal #desc2").val(a_click_desc2);
+    $("#a_update_modal #desc2_price").val(a_click_desc2_price);
+    $("#a_update_modal #desc3").val(a_click_desc3);
+    $("#a_update_modal #desc3_price").val(a_click_desc3_price);
+    $("#a_update_modal #desc4").val(a_click_desc4);
+    $("#a_update_modal #desc4_price").val(a_click_desc4_price);
+    
+    init_year_month('a_update_modal', a_click_year, a_click_month);
+    init_Select2_modal('#a_update_modal #customer', '선택', '/sel2_hanwool_customer/', {id: 'id', txt: item => `${item.text}`}, a_click_customer_id);
+    init_Select2_modal('#a_update_modal #subsidiary', '선택', '/sel2_hanwool_subsidiary/', {id: 'id', txt: item => `${item.text}`}, a_click_subsidiary_id);
+    $("#a_update_modal #subsidiary").on('change', function () {
+        console.log($(this).val());
+    });
+    $("#a_update_modal #is_daily, #a_update_modal #is_general").on('click', function () {
+        display_kpi_center_summary('#a_update_modal');
+    });
+    $("#a_update_modal #year, #a_update_modal #month, #a_update_modal #customer").on('change', function () {
+        display_kpi_center_summary('#a_update_modal');
+    });
+    display_kpi_center_summary('#a_update_modal');
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    if (is_empty($('#a_update_modal #subsidiary').val()) === true) {
+        alert("[관리 법인] 항목을 선택하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_update_modal #customer').val()) === true) {
+        alert("[센터] 항목을 입력하세요.");
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("year", nullapply($('#a_update_modal #year').val()));
+        api_data.append("month", nullapply($('#a_update_modal #month').val()));
+        api_data.append("is_daily", $('#a_update_modal #is_daily').prop('checked'));
+        api_data.append("is_general", $('#a_update_modal #is_general').prop('checked'));
+        api_data.append("general_price", nullapply(del_comma($('#a_update_modal #general_price').val())));
+        api_data.append("daily_price", nullapply(del_comma($('#a_update_modal #daily_price').val())));
+        api_data.append("total_price", nullapply(del_comma($('#a_update_modal #total_price').val())));
+        api_data.append("general_salary", nullapply(del_comma($('#a_update_modal #general_salary').val())));
+        api_data.append("daily_salary", nullapply(del_comma($('#a_update_modal #daily_salary').val())));
+        api_data.append("total_salary", nullapply(del_comma($('#a_update_modal #total_salary').val())));
+        api_data.append("daily_profit", nullapply(del_comma($('#a_update_modal #daily_profit').val())));
+        api_data.append("general_profit", nullapply(del_comma($('#a_update_modal #general_profit').val())));
+        api_data.append("subsidiary", nullapply($('#a_update_modal #subsidiary').val()));
+        api_data.append("customer", nullapply($('#a_update_modal #customer').val()));
+        api_data.append("desc1", nullapply($('#a_update_modal #desc1').val()));
+        api_data.append("desc1_price", nullapply(del_comma($('#a_update_modal #desc1_price').val())));
+        api_data.append("desc2", nullapply($('#a_update_modal #desc2').val()));
+        api_data.append("desc2_price", nullapply(del_comma($('#a_update_modal #desc2_price').val())));
+        api_data.append("desc3", nullapply($('#a_update_modal #desc3').val()));
+        api_data.append("desc3_price", nullapply(del_comma($('#a_update_modal #desc3_price').val())));
+        api_data.append("desc4", nullapply($('#a_update_modal #desc4').val()));
+        api_data.append("desc4_price", nullapply(del_comma($('#a_update_modal #desc4_price').val())));
+
+    fetch_gp('/sales_monthly_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search_ready();
+        alert(txt.update_ed);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+    
+    let confirmed = confirm(`[${a_click_year}년 ${a_click_month}월 ${a_click_customer_name}]\n\n선택하신 월청구 항목을 삭제하시겠습니까?`);
+    if (confirmed) {
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/sales_monthly_delete_fn/', 'post', true, api_data, (done) => {
+            a_nation.page = 1;
+            a_click_id = null;
+
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+
+// 청구서 출력 팝업
+function a_popup_open(monthly_sales_id) {
+    let popupUrl = `/sales/monthly/claim/${monthly_sales_id}/`;
+    window.open(popupUrl, '_blank', 'width=1000,height=1000,scrollbars=yes,resizable=yes');
+}
+
+// 단기청구액 계산 팝업
+function b_popup_open(year, month, customer_id, monthly_sales_id) {
+    let popupUrl = `/sales/monthly/daily/price/${year}/${month}/${customer_id}/${monthly_sales_id}/`;
+    const popup = window.open(
+        popupUrl, 'dailyPricePopup', `width=${screen.width},height=${screen.height},top=0,left=0,scrollbars=yes,resizable=yes`
+    );
+
+    if (popup) {
+        popup.moveTo(0, 0);
+        popup.resizeTo(screen.width, screen.height);
+        popup.focus();
+    }
+}
+
+// 장기청구액 계산 팝업
+function c_popup_open(year, month, customer_id, monthly_sales_id) {
+    let popupUrl = `/sales/monthly/general/price/${year}/${month}/${customer_id}/${monthly_sales_id}/`;
+    const popup = window.open(
+        popupUrl, 'generalPricePopup', `width=${screen.width},height=${screen.height},top=0,left=0,scrollbars=yes,resizable=yes`
+    );
+
+    if (popup) {
+        popup.moveTo(0, 0);
+        popup.resizeTo(screen.width, screen.height);
+        popup.focus();
+    }
+}
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+
+function init_year_month(modalType, year = null, month = null) {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+
+    // 연도 옵션 추가 (현재 연도 ±3년)
+    $(`#${modalType} #year`).empty().append(`<option value="">전체</option>`);
+    for (let y = currentYear - 3; y <= currentYear + 5; y++) {
+        $(`#${modalType} #year`).append(`<option value="${y}">${y}년</option>`);
+    }
+
+    // 월 옵션 추가 (1~12)
+    $(`#${modalType} #month`).empty().append(`<option value="">전체</option>`);
+    for (let m = 1; m <= 12; m++) {
+        let mm = m.toString().padStart(2, '0');
+        $(`#${modalType} #month`).append(`<option value="${mm}">${m}월</option>`);
+    }
+
+    // 기본값 설정
+    $(`#${modalType} #year`).val(year || currentYear);
+    $(`#${modalType} #month`).val(month?.toString().padStart(2, '0') || currentMonth.toString().padStart(2, '0'));
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

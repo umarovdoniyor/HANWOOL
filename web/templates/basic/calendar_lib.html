@@ -1,0 +1,445 @@
+<style>
+.fc-button {
+    background-color: #e1e4eb !important;
+    border-color: #e1e4eb !important;
+    color: #3e455e !important;
+    border-radius: 6px !important;
+    margin-left: 2px !important;
+    margin-right: 2px !important;
+}
+.fc-button:hover {
+    background-color: #3e455e !important;
+    border-color: #3e455e !important;
+    color: #e1e4eb !important;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active, .fc .fc-button-primary:not(:disabled):active {
+    background-color: #3e455e !important;
+    border-color: #3e455e !important;
+}
+.fc-toolbar-chunk .fc-today-button {
+    background-color: #dfe2e9 !important;
+    border-color: #dfe2e9 !important;
+    color: #3e455e !important;
+}
+.fc-toolbar-chunk .fc-today-button:hover {
+    background-color: #3e455e !important;
+    border-color: #3e455e !important;
+    color: white !important;
+}
+.fc-toolbar-chunk .fc-today-button:disabled {
+    background-color: white !important;
+    border-color: white !important;
+    color: #3e455e !important;
+}
+/* 메인 캘린더 이벤트 객체 커스텀 */
+.fc-event {
+    font-size: 11px !important;
+    text-align: left;
+    cursor: pointer !important;
+    margin-bottom: 2px !important;
+    border-radius: 4px !important;
+}
+.fc-event:hover {
+    filter: brightness(90%);
+    cursor: pointer;
+}
+.fc-event-time {
+    margin-right: 6px !important;
+}
+.fc-theme-standard .fc-list-day-cushion {
+    background-color: inherit;
+}
+
+/* 리스트 캘린더 커스텀 */
+.fc-theme-standard .fc-list {
+    border: none !important;
+}
+.fc-list-event {
+    display: flex !important;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 4px 0 !important;
+    border-radius: 4px !important;
+}
+.fc-list-event td {
+    width: 100% !important;
+    display: block;
+    border: none !important;
+    padding: 0 4px !important;
+}
+.fc-list-event:hover {
+    filter: brightness(90%);
+    cursor: pointer;
+}
+.fc .fc-list-event:hover td {
+    background-color: inherit !important;
+}
+.fc-list-day, .fc-list-event-graphic {
+    display: none !important;
+}
+.fc-list-empty {
+    background-color: inherit !important;
+}
+.fc-list-empty-cushion {
+    margin-top: 30px !important;
+    margin-bottom: 30px !important;
+}
+
+/* 날짜 클릭하여 일일뷰로 이동부분 커스텀 */
+.fc-daygrid-day-number {
+    cursor: pointer;
+    text-decoration: none;
+}
+.fc-daygrid-day-number:hover {
+    text-decoration: underline !important;
+}
+
+/* 태블릿뷰 */
+@media (max-width: 992px) {
+    .fc-event {
+        font-size: 10px !important;
+        padding: 4px !important;
+    }
+    .fc-event-time {
+        display: none !important;
+    }
+}
+
+/* 모바일뷰 */
+@media (max-width: 767px) {
+    .fc-toolbar {
+        display: flex;
+        justify-content: start !important;
+        flex-wrap: wrap; /* 줄바꿈 허용 */
+        flex-direction: row !important;
+        gap: 10px !important;
+        white-space: nowrap;
+    }
+    .fc-toolbar-chunk {
+        font-size: 10px !important;
+    }
+    .fc-toolbar-chunk:last-child {
+        flex-basis: 100%;
+    }
+    .fc-event {
+        font-size: 8px !important;
+        padding: 2px 1px !important;
+        border-radius: 2px !important;
+    }
+    .fc-event-time {
+        display: none !important;
+    }
+    .fc-list-event {
+        display: flex !important;
+        flex-direction: row;
+        align-items: flex-start;
+        margin: 4px 0 !important;
+        border-radius: 4px !important;
+        font-size: 10px !important;
+    }
+    .fc-list-event td {
+        font-size: 12px !important;
+        display: block;
+        border: none !important;
+        padding: 4px 8px !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let calendarEl = document.getElementById('main_calendar');
+    if (calendarEl) {
+        main_calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'ko',
+            timeZone: 'Asia/Seoul',
+            {% comment %}height: 'auto',{% endcomment %}
+            {% comment %}contentHeight: 'auto',{% endcomment %}
+            contentHeight: window.innerWidth < 768 ? 'auto' : 600,
+            nowIndicator: true,  // 현재 시점 표시
+            selectable: true,  // 드래그로 시작날짜와 종료날짜 정의 가능
+            longPressDelay: 100, // 모바일에서 빠르게 반응
+            editable: false,  // 드래그(날짜 연장/축소)
+            droppable: false, // 드래그앤드롭 (날짜 이동)
+            weekNumbers: false,  // 주차 표시
+            events: '{% url "event_read_fn" %}',
+            headerToolbar: {
+                left: 'prev,today,next',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                {% comment %}right: 'dayGridMonth,timeGridWeek,timeGridDay,list'{% endcomment %}
+            },
+            buttonText: {
+                today: '오늘',
+                month: '월간',
+                week: '주간',
+                day: '일간',
+                list: '목록'
+            },
+            eventTimeFormat: { // 시간 표시 형식 설정
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false // 24시간제 설정
+            },
+            eventContent: function(arg) {
+                let statusIcon = '';
+                const status = arg.event.extendedProps.approval_status;
+
+                if (status === '진행') {
+                    statusIcon = `<i class="fa-solid fa-hourglass ms-1"></i>`;
+                } else if (status === '완료') {
+                    statusIcon = `<i class="fa-solid fa-check ms-1"></i>`;
+                }
+
+                return {
+                    html: `<div>${arg.timeText} ${arg.event.title} ${statusIcon}</div>`
+                };
+            },
+            eventClick: function(info) {
+                // console.log('eventClick:', info);
+
+                a_click_id = info.event.id;
+                a_click_title = info.event._def.title;
+                a_click_category = info.event.extendedProps.category_id;
+                a_click_start_date = info.event.startStr;
+                a_click_end_date = info.event.endStr;
+                a_click_trip_with = info.event.extendedProps.trip_with;
+                a_click_desc = info.event.extendedProps.desc;
+                a_click_created_by = info.event.extendedProps.created_by_id;
+                a_click_apv_id = info.event.extendedProps.approval_id;
+                a_click_category_name = info.event.extendedProps.category_name;
+                
+                if (a_click_select_start_date && a_click_select_end_date) {
+                    a_click_start_date = a_click_select_start_date;
+                    a_click_end_date = a_click_select_end_date;
+                }
+                
+                if (a_click_apv_id) {
+                    let headCheckUrl = `/approval_read_fn/?apv_id=${a_click_apv_id}`;
+                    fetch(headCheckUrl, { method: 'HEAD' })
+                        .then(response => {
+                            if (response.status === 403) {
+                                $('#a_update_modal #apvBtn').addClass('d-none');
+                                $('#a_read_modal #apvBtn').addClass('d-none');
+                            }
+                        })
+                    
+                    $('#a_update_modal #apvBtn').removeClass('d-none');
+                    $('#a_read_modal #apvBtn').removeClass('d-none');
+                } else {
+                    $('#a_update_modal #apvBtn').addClass('d-none');
+                    $('#a_read_modal #apvBtn').addClass('d-none');
+                }
+
+                if ({{ request.user.id }} === a_click_created_by || {{ request.user.is_master|yesno:"true,false" }} ) {
+                    if (a_click_category_name === "휴가" || a_click_category_name === "출장") {
+                        a_read_modal_in();    
+                    } else {
+                        a_update_modal_in();
+                    }
+                } else {
+                    a_read_modal_in();
+                }
+            },
+            select: function(info) {
+                const viewType = info.view.type;
+            
+                if (viewType === 'dayGridMonth') {
+                    // 날짜 + 회사 출퇴근 시간 붙여서 저장
+                    let start_date = info.startStr + " " + company_check_in;
+            
+                    let end = new Date(info.end);
+                    end.setDate(end.getDate() - 1);
+                    let end_date = end.toISOString().slice(0, 10) + " " + company_check_out;
+            
+                    a_click_select_start_date = start_date;
+                    a_click_select_end_date = end_date;
+                } else {
+                    // 주간/일간 뷰는 시간 포함 → 그대로 사용
+                    a_click_select_start_date = info.startStr.slice(0, 16).replace('T', ' ');
+                    a_click_select_end_date = info.endStr.slice(0, 16).replace('T', ' ');
+                }
+            },
+            eventDrop: function(info) {},
+            dateClick: function(info) {
+                // console.log("dateClick: ", info);
+                clicked_date = info.dateStr;
+                if (today_event_list) {
+                    today_event_list.gotoDate(clicked_date); // today_event_list와 날짜 동기화
+
+                    // 날짜 포맷 후 표시
+                    let dateObj = new Date(clicked_date);
+                    let weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+                    let formatted_today = `${dateObj.getFullYear()}년 ${dateObj.getMonth() + 1}월 ${dateObj.getDate()}일 (${weekdays[dateObj.getDay()]})`;
+                    $('#today_date').text(formatted_today);
+                }
+            },
+            eventDidMount: function(info) {
+                const color = info.event.backgroundColor || info.event.color;
+
+                // dayGrid, timeGrid 등에서 .fc-event 스타일 적용
+                if (color) {
+                    info.el.style.backgroundColor = color;
+                    info.el.style.borderColor = color;
+                    info.el.style.color = '#fff';  // 가독성 고려
+                }
+
+                // list 뷰의 색상 점(dot)에 borderColor 적용
+                const dot = info.el.querySelector('.fc-list-event-dot');
+                if (dot && color) {
+                    dot.style.borderColor = color;
+                }
+            },
+            eventDataTransform: function(eventData) {
+                if (eventData.color) {
+                    eventData.backgroundColor = eventData.color;
+                    eventData.borderColor = eventData.color;
+                    eventData.textColor = '#fff';  // 가독성 위해 흰색 지정
+                }
+                return eventData;
+            }
+        });
+        main_calendar.render();
+        
+        // 날짜 숫자 클릭 시 timeGridDay로 이동
+        calendarEl.addEventListener('click', function(e) {
+            const dayAnchor = e.target.closest('.fc-daygrid-day-number');
+            if (dayAnchor) {
+                e.preventDefault();
+        
+                const dateCell = dayAnchor.closest('.fc-daygrid-day');
+                if (dateCell) {
+                    const dateStr = dateCell.getAttribute('data-date');
+                    if (main_calendar) {
+                        main_calendar.changeView('timeGridDay', dateStr);
+                    }
+                }
+            }
+        });
+    }
+    
+    calendarEl.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    
+        let targetElem = e.target.closest('[data-date]');
+        if (targetElem) {
+            let clickedDate = targetElem.getAttribute('data-date');
+    
+            let currentView = main_calendar.view.type;
+    
+            if (currentView === 'dayGridMonth') {
+                a_create_modal_in(clickedDate, 'month');
+            } else if (currentView === 'timeGridWeek') {
+                a_create_modal_in(clickedDate, 'week');
+            } else if (currentView === 'timeGridDay') {
+                a_create_modal_in(clickedDate, 'day');
+            } else {
+                a_create_modal_in(clickedDate); // fallback
+            }
+        }
+    });
+});
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    let event_list_El = document.getElementById('event_list');
+    if (event_list_El) {
+        today_event_list = new FullCalendar.Calendar(event_list_El, {
+            initialView: 'list',
+            locale: 'ko',
+            timeZone: 'Asia/Seoul',
+            height: 'auto',
+            headerToolbar: false,
+            events: '{% url "event_read_fn" %}',
+            noEventsContent: '등록된 일정이 없습니다',
+            eventContent: function(arg) {
+                let statusIcon = '';
+                const status = arg.event.extendedProps.approval_status;
+
+                if (status === '진행') {
+                    statusIcon = `<i class="fa-solid fa-hourglass ms-1"></i>`;
+                } else if (status === '완료') {
+                    statusIcon = `<i class="fa-solid fa-check ms-1"></i>`;
+                }
+
+                return {
+                    html: `<div>${arg.timeText} ${arg.event.title} ${statusIcon}</div>`
+                };
+            },
+            eventClick: function(info) {
+                // console.log('eventClick:', info);
+
+                a_click_id = info.event.id;
+                a_click_title = info.event.title;
+                a_click_category = info.event.extendedProps.category_id;
+                a_click_start_date = info.event.startStr;
+                a_click_end_date = info.event.endStr;
+                a_click_trip_with = info.event.extendedProps.trip_with;
+                a_click_desc = info.event.extendedProps.desc;
+                a_click_created_by = info.event.extendedProps.created_by_id;
+                a_click_apv_id = info.event.extendedProps.approval_id;
+                a_click_category_name = info.event.extendedProps.category_name;
+                
+                if (a_click_apv_id) {
+                    let headCheckUrl = `/approval_read_fn/?apv_id=${a_click_apv_id}`;
+                    fetch(headCheckUrl, { method: 'HEAD' })
+                        .then(response => {
+                            if (response.status === 403) {
+                                $('#a_update_modal #apvBtn').addClass('d-none');
+                                $('#a_read_modal #apvBtn').addClass('d-none');
+                            }
+                        })
+                    
+                    $('#a_update_modal #apvBtn').removeClass('d-none');
+                    $('#a_read_modal #apvBtn').removeClass('d-none');
+                } else {
+                    $('#a_update_modal #apvBtn').addClass('d-none');
+                    $('#a_read_modal #apvBtn').addClass('d-none');
+                }
+
+                if ({{ request.user.id }} === a_click_created_by || {{ request.user.is_master|yesno:"true,false" }} ) {
+                    if (a_click_category_name === "휴가" || a_click_category_name === "출장") {
+                        a_read_modal_in();    
+                    } else {
+                        a_update_modal_in();
+                    }
+                } else {
+                    a_read_modal_in();
+                }
+            },
+            eventDidMount: function(info) {
+                const color = info.event.backgroundColor || info.event.color;
+
+                // dayGrid, timeGrid 등에서 .fc-event 스타일 적용
+                if (color) {
+                    info.el.style.backgroundColor = color;
+                    info.el.style.borderColor = color;
+                    info.el.style.color = '#fff';  // 가독성 고려
+                }
+
+                // list 뷰의 색상 점(dot)에 borderColor 적용
+                const dot = info.el.querySelector('.fc-list-event-dot');
+                if (dot && color) {
+                    dot.style.borderColor = color;
+                }
+            },
+            eventDataTransform: function(eventData) {
+                if (eventData.color) {
+                    eventData.backgroundColor = eventData.color;
+                    eventData.borderColor = eventData.color;
+                    eventData.textColor = '#fff';  // 가독성 위해 흰색 지정
+                }
+                return eventData;
+            }
+        });
+        today_event_list.render();
+
+        let dateObj = new Date(date_today_str);
+        let weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+        let formatted_today = `${dateObj.getFullYear()}년 ${dateObj.getMonth() + 1}월 ${dateObj.getDate()}일 (${weekdays[dateObj.getDay()]})`;
+        $('#today_date').text(formatted_today);
+    }
+});
+
+</script>

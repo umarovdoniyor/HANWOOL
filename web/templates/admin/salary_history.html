@@ -1,0 +1,599 @@
+<!-- 인사관리 > 급여대장 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-user-tag me-2"></i>급여대장
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 월별 급여정산 내역을 기록하는 급여대장입니다.<br>• 급여대장의 정보를 수정할 수 없지만, 필요시 급여대장 삭제 후 [급여정산] 기능에서 다시 등록하실 수 있습니다.<br>• 급여대장에 등록된 급여정보는 직원이 급여명세서로 볼 수 있습니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <select id="year_sch" class="page_size form-select form-select-sm me-1"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="급여대장 생성 연도 검색"></select>
+                                <select id="month_sch" class="page_size form-select form-select-sm me-1"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="급여대장 생성 월 검색"></select>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-info text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                    <i class="fa-solid fa-book-open"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">열람</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 건별 게시물 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th>순번</th>
+                                            <th>급여대장</th>
+                                            <th>지급 직원수</th>
+                                            <th>지급액 합계</th>
+                                            <th>공제액 합계</th>
+                                            <th>실수령액 합계</th>
+                                            <th>안내사항1</th>
+                                            <th>안내사항2</th>
+                                            <th>비공개 메모</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal : 급여대장 열람 -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">급여대장 <i class="fa-solid fa-angle-right px-1"></i> 열람</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-12 text-center font-size-18 fw-bold mb-3">
+                        <div id="salary_history_title"></div>
+                        <div class="font-size-12 text-muted fw-normal" style="letter-spacing: -0.05em;">등록된 급여내역은 수정할 수 없지만, 안내사항 및 메모는 수정할 수 있습니다.</div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-12 mb-3">
+                        <div class="custom_table table-responsive">
+                            <table class="table table-hover">
+                                <thead class="thead-light">
+                                    <tr class="text-nowrap">
+                                        <th>순번</th>
+                                        <th>이름</th>
+
+                                        <th>월기본급</th>
+                                        <th>연장수당</th>
+                                        <th>야간수당</th>
+                                        <th>휴일수당</th>
+                                        <th>식대</th>
+                                        <th>운전수당</th>
+                                        <th>상여금</th>
+                                        <th>성과급</th>
+                                        <th>{{ request.user.company.company_info.first.etc_p1t }}</th>
+                                        <th>{{ request.user.company.company_info.first.etc_p2t }}</th>
+                                        <th>{{ request.user.company.company_info.first.etc_p3t }}</th>
+                                        <th>{{ request.user.company.company_info.first.etc_p4t }}</th>
+
+                                        <th style="border-left: 1px solid #d9dee3;">국민연금</th>
+                                        <th>건강보험</th>
+                                        <th>장기요양</th>
+                                        <th>고용보험</th>
+                                        <th>소득세</th>
+                                        <th>지소세</th>
+                                        <th>{{ request.user.company.company_info.first.etc_m1t }}</th>
+                                        <th>{{ request.user.company.company_info.first.etc_m2t }}</th>
+                                        <th>{{ request.user.company.company_info.first.etc_m3t }}</th>
+                                        <th>{{ request.user.company.company_info.first.etc_m4t }}</th>
+                                        <th>{{ request.user.company.company_info.first.etc_m5t }}</th>
+                                        <th>{{ request.user.company.company_info.first.etc_m6t }}</th>
+
+                                        <th style="border-left: 1px solid #d9dee3;">지급액 계</th>
+                                        <th>공제액 계</th>
+                                        <th>실수령액</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="b_tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="desc1" class="form-label">안내사항1
+                        <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                           title="급여명세서에 전달되는 안내사항으로 직원들에게 공개가 됩니다."></i></label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="desc2" class="form-label">안내사항2
+                        <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                           title="급여명세서에 전달되는 안내사항으로 직원들에게 공개가 됩니다."></i></label>
+                        <input type="text" class="form-control" id="desc2">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="desc3" class="form-label">비공개 메모
+                        <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                           title="관리자만 볼 수 있는 메모로 비공개입니다."></i></label>
+                        <input type="text" class="form-control" id="desc3">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_desc1;
+let a_click_desc2;
+let a_click_desc3;
+let a_click_salary_history_title;
+let salary_master_list;
+
+let year_sch;
+let month_sch;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('salary_history_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('salary_history_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    main();
+});
+
+$(document).ready(function () {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+
+    // 연도 옵션 추가 (현재 연도 ±3년)
+    $('#year_sch').append(`<option value="">전체</option>`);
+    for (let y = currentYear - 3; y <= currentYear + 3; y++) {
+        $('#year_sch').append(`<option value="${y}">${y}년</option>`);
+    }
+
+    // 월 옵션 추가 (1~12)
+    $('#month_sch').append(`<option value="">전체</option>`);
+    for (let m = 1; m <= 12; m++) {
+        let mm = m.toString().padStart(2, '0');
+        $('#month_sch').append(`<option value="${mm}">${m}월</option>`);
+    }
+
+    // 기본값 설정
+    $('#year_sch').val(currentYear);
+    $('#month_sch').val('');
+});
+
+function main() {
+    set_autocomplete('off');
+    a_search_ready();
+}
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+    year_sch = $('#year_sch').val();
+    month_sch = $('#month_sch').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (year_sch) { query += "&year_sch=" + year_sch; }
+    if (month_sch) { query += "&month_sch=" + month_sch; }
+
+    fetch_gp("/salary_master_list_fn/" + query, 'GET', true, {}, (done) => {
+        salary_master_list = done;
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let row = `
+        <tr id='${item.salary_id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td>${num + i}</td>
+            <td name='year_month'>${item.year}년 ${item.month}월 급여대장</td>
+            <td name='total_user'>${item.total_user}명</td>
+            <td name='total_payment'>${add_comma(item.total_payment)}원</td>
+            <td name='total_deduction'>${add_comma(item.total_deduction)}원</td>
+            <td name='total_real_salary'>${add_comma(item.total_real_salary)}원</td>
+            <td name='desc1' class="text-truncate" style="max-width: 200px;">${item.desc1 || ''}</td>
+            <td name='desc2' class="text-truncate" style="max-width: 200px;">${item.desc2 || ''}</td>
+            <td name='desc3' class="text-truncate" style="max-width: 200px;">${item.desc3 || ''}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_desc1 = $(this).find("[name='desc1']").text();
+        a_click_desc2 = $(this).find("[name='desc2']").text();
+        a_click_desc3 = $(this).find("[name='desc3']").text();
+        a_click_salary_history_title = $(this).find("[name='year_month']").text();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_update_modal_in();
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert("열람하려는 급여대장을 선택하세요.");
+        return;
+    }
+
+    b_draw_table(salary_master_list);
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 3000px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    $("#a_update_modal #salary_history_title").text(a_click_salary_history_title);
+    $("#a_update_modal #desc1").val(a_click_desc1);
+    $("#a_update_modal #desc2").val(a_click_desc2);
+    $("#a_update_modal #desc3").val(a_click_desc3);
+
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function b_draw_table(done) {
+    let data = done.results;
+
+    // 클릭한 급여대장을 찾기
+    let item = data.find(obj => obj.salary_id == a_click_id);
+    if (!item) return;
+
+    let userList = item.items;
+    if (!userList || userList.length === 0) {
+        $('#b_tbody').html(`<tr><td colspan="99" class="text-center">해당 급여대장에 직원이 없습니다.</td></tr>`);
+        return;
+    }
+
+    let rows = '';
+    let num = 1;
+    for (let user of userList) {
+        const {
+            name, job_level_name, employee_code, profile_image,
+            base_salary, extend_salary, night_salary, holiday_salary,
+            meal_salary, drive_salary, bonus, incentive,
+            etc_p1v, etc_p2v, etc_p3v, etc_p4v, etc_p5v,
+            pension, health, care, unemployment,
+            income_tax, local_tax,
+            etc_m1v, etc_m2v, etc_m3v, etc_m4v, etc_m5v, etc_m6v,
+            real_salary
+        } = user;
+
+        const total_payment = sum([
+            base_salary, extend_salary, night_salary, holiday_salary,
+            meal_salary, drive_salary, bonus, incentive,
+            etc_p1v, etc_p2v, etc_p3v, etc_p4v, etc_p5v
+        ]);
+        const total_deduction = sum([
+            pension, health, care, unemployment, income_tax, local_tax,
+            etc_m1v, etc_m2v, etc_m3v, etc_m4v, etc_m5v, etc_m6v
+        ]);
+
+        let profileImage = profile_image ? `<img src="${profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">` : "";
+        let userProfile = name
+            ? `${profileImage} ${name} ${job_level_name || ""}`
+            : "-";
+
+        rows += `
+        <tr class="text-nowrap align-middle">
+            <td>${num++}</td>
+            <td>${userProfile}</td>
+            <td>${add_comma(base_salary)}</td>
+            <td>${add_comma(extend_salary)}</td>
+            <td>${add_comma(night_salary)}</td>
+            <td>${add_comma(holiday_salary)}</td>
+            <td>${add_comma(meal_salary)}</td>
+            <td>${add_comma(drive_salary)}</td>
+            <td>${add_comma(bonus)}</td>
+            <td>${add_comma(incentive)}</td>
+            <td>${add_comma(etc_p1v)}</td>
+            <td>${add_comma(etc_p2v)}</td>
+            <td>${add_comma(etc_p3v)}</td>
+            <td>${add_comma(etc_p4v)}</td>
+
+            <td style="border-left: 1px solid #d9dee3;">${add_comma(pension)}</td>
+            <td>${add_comma(health)}</td>
+            <td>${add_comma(care)}</td>
+            <td>${add_comma(unemployment)}</td>
+            <td>${add_comma(income_tax)}</td>
+            <td>${add_comma(local_tax)}</td>
+            <td>${add_comma(etc_m1v)}</td>
+            <td>${add_comma(etc_m2v)}</td>
+            <td>${add_comma(etc_m3v)}</td>
+            <td>${add_comma(etc_m4v)}</td>
+            <td>${add_comma(etc_m5v)}</td>
+            <td>${add_comma(etc_m6v)}</td>
+
+            <td style="border-left: 1px solid #d9dee3;">${add_comma(total_payment)}</td>
+            <td>${add_comma(total_deduction)}</td>
+            <td>${add_comma(real_salary)}</td>
+        </tr>`;
+    }
+
+    $('#b_tbody').html(rows);
+
+    // 누적합계용 변수 초기화
+    let totals = {
+        base_salary: 0, extend_salary: 0, night_salary: 0, holiday_salary: 0,
+        meal_salary: 0, drive_salary: 0, bonus: 0, incentive: 0,
+        etc_p1v: 0, etc_p2v: 0, etc_p3v: 0, etc_p4v: 0, etc_p5v: 0,
+        pension: 0, health: 0, care: 0, unemployment: 0,
+        income_tax: 0, local_tax: 0,
+        etc_m1v: 0, etc_m2v: 0, etc_m3v: 0, etc_m4v: 0, etc_m5v: 0, etc_m6v: 0,
+        total_payment: 0, total_deduction: 0, real_salary: 0
+    };
+
+    // 누적합계 계산
+    for (let user of userList) {
+        for (let key in totals) {
+            if (key === 'total_payment') {
+                totals[key] += sum([
+                    user.base_salary, user.extend_salary, user.night_salary, user.holiday_salary,
+                    user.meal_salary, user.drive_salary, user.bonus, user.incentive,
+                    user.etc_p1v, user.etc_p2v, user.etc_p3v, user.etc_p4v, user.etc_p5v
+                ]);
+            } else if (key === 'total_deduction') {
+                totals[key] += sum([
+                    user.pension, user.health, user.care, user.unemployment,
+                    user.income_tax, user.local_tax,
+                    user.etc_m1v, user.etc_m2v, user.etc_m3v, user.etc_m4v, user.etc_m5v, user.etc_m6v
+                ]);
+            } else {
+                totals[key] += Number(user[key]) || 0;
+            }
+        }
+    }
+
+    // 합계 행 추가
+    rows += `
+        <tr class="fw-bold text-nowrap" style="background-color: #fafafa !important;">
+            <td colspan="2" class="text-center">합계</td>
+            <td>${add_comma(totals.base_salary)}</td>
+            <td>${add_comma(totals.extend_salary)}</td>
+            <td>${add_comma(totals.night_salary)}</td>
+            <td>${add_comma(totals.holiday_salary)}</td>
+            <td>${add_comma(totals.meal_salary)}</td>
+            <td>${add_comma(totals.drive_salary)}</td>
+            <td>${add_comma(totals.bonus)}</td>
+            <td>${add_comma(totals.incentive)}</td>
+            <td>${add_comma(totals.etc_p1v)}</td>
+            <td>${add_comma(totals.etc_p2v)}</td>
+            <td>${add_comma(totals.etc_p3v)}</td>
+            <td>${add_comma(totals.etc_p4v)}</td>
+            <td style="border-left: 1px solid #d9dee3;">${add_comma(totals.pension)}</td>
+            <td>${add_comma(totals.health)}</td>
+            <td>${add_comma(totals.care)}</td>
+            <td>${add_comma(totals.unemployment)}</td>
+            <td>${add_comma(totals.income_tax)}</td>
+            <td>${add_comma(totals.local_tax)}</td>
+            <td>${add_comma(totals.etc_m1v)}</td>
+            <td>${add_comma(totals.etc_m2v)}</td>
+            <td>${add_comma(totals.etc_m3v)}</td>
+            <td>${add_comma(totals.etc_m4v)}</td>
+            <td>${add_comma(totals.etc_m5v)}</td>
+            <td>${add_comma(totals.etc_m6v)}</td>
+            <td style="border-left: 1px solid #d9dee3;">${add_comma(totals.total_payment)}</td>
+            <td>${add_comma(totals.total_deduction)}</td>
+            <td>${add_comma(totals.real_salary)}</td>
+        </tr>
+    `;
+
+    $('#b_tbody').html(rows);
+}
+
+function a_update_submit() {
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("desc1", nullapply($('#a_update_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#a_update_modal #desc2').val()));
+        api_data.append("desc3", nullapply($('#a_update_modal #desc3').val()));
+
+    fetch_gp('/salary_master_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search();
+        alert(txt.update_ed);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt("선택한 급여대장을 삭제하시겠습니까? \n\n" +
+        txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/salary_master_delete_fn/', 'post', true, api_data, (done) => {
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+// 합산 함수
+function sum(arr) {
+    return arr.reduce((acc, val) => acc + (Number(val) || 0), 0);
+}
+
+function add_comma(val) {
+    const num = Number(val);
+    return isNaN(num) ? val : num.toLocaleString();
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

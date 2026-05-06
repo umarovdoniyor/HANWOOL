@@ -1,0 +1,198 @@
+<!-- 구버전 브랜드 페이지 > 기능 소개 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.nav-item {
+    font-size: 16px;
+    font-weight: 600;
+}
+.responsive_text {
+    font-size: 1.5rem;
+}
+
+@media (max-width: 992px) {
+    body {
+        padding-top: 118px !important;
+    }
+
+    .responsive_img {
+        width: 100% !important;
+    }
+
+    .responsive_text {
+      font-size: 1rem;
+    }
+}
+</style>
+
+<body class="text-dark" style="padding-top: 82px;">
+
+<!-- Top Navigation -->
+<nav class="navbar navbar-expand-lg bg-white shadow-sm py-2 fixed-top">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center py-2 px-3 m-0" href="{% url 'brand_page' %}">
+            <img src="{% static 'img/tost_office_color_1200px.png' %}" alt="Logo" height="50" class="">
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav" style="border: none;">
+            <span class=""><i class="fa-solid fa-bars text-dark" style="font-size: 30px;"></i></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-center" id="topNav">
+          <ul class="navbar-nav mb-2 mb-lg-0 mx-auto">
+                <li class="nav-item px-2"><a class="nav-link" href="{% url 'brand_fn_intro_page' %}">기능 소개</a></li>
+                <li class="nav-item px-2"><a class="nav-link" href="{% url 'blog_list_page' %}">블로그</a></li>
+                <li class="nav-item px-2" data-toggle="tooltip" data-placement="top" title="준비중 입니다."><a class="nav-link" href="#">도입 사례</a></li>
+            </ul>
+        </div>
+
+        <div class="d-none d-lg-flex align-items-center gap-2">
+            <a href="{% url 'signup_step1' %}" class="btn btn-info fw-bold">시작하기</a>
+            <a href="{% url 'login_page' %}" class="btn btn-success fw-bold">그룹웨어 로그인</a>
+        </div>
+    </div>
+    <div class="d-flex d-lg-none align-items-center gap-2 ms-auto px-3">
+        <a href="{% url 'signup_step1' %}" class="btn btn-info fw-bold">시작하기</a>
+        <a href="{% url 'login_page' %}" class="btn btn-success fw-bold">그룹웨어 로그인</a>
+    </div>
+</nav>
+
+
+<!-- Section 1 -->
+<section class="position-relative text-center text-dark py-5" style="background: url('{% static 'img/login_office.jpg' %}') no-repeat center center/cover; height: 100%;">
+    <!-- 밝은 반투명 오버레이 -->
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background-color: rgba(255, 255, 255, 0.7); z-index: 1;"></div>
+
+    <!-- 콘텐츠 -->
+    <div class="container py-5 position-relative" style="z-index: 2;">
+        <h2 class="display-5 fw-bold my-5 py-2">토스트 오피스 핵심 기능</h2>
+        <p class="fs-3 lead my-5 py-2">소소하지만 확실한 기능<br>전자결재 · 근태관리 · 휴가관리</p>
+    </div>
+</section>
+
+
+<!-- Section 전자결재 -->
+<section class="bg-white my-5 py-2 text-center">
+    <div class="container my-5 py-2">
+        <h3 class="fs-2 fw-bold mb-2">📝 전자결재</h3>
+        <p class="responsive_text lead mb-5">쉽고 편리한 직관적 디자인의 결재 프로세스</p>
+        <img src="{% static 'img/case/approval_case_1.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">결재 진행 상태 따른 필터, 보관함, 검색 기능</p>
+        <img src="{% static 'img/case/approval_case_2.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">직관적인 결재선, 참조자 목록, 소통형 전자결재 시스템</p>
+    </div>
+</section>
+
+
+<!-- Section 근태관리 -->
+<section class="bg-secondary-subtle-25 my-5 py-2 text-center">
+    <div class="container my-5 py-2">
+        <h3 class="fs-2 fw-bold mb-2">⏱ 근태관리</h3>
+        <p class="responsive_text lead mb-5">출퇴근 기록과 실시간 근무 현황 확인</p>
+        <img src="{% static 'img/case/worktime_case_1.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">멤버들의 근태현황을 실시간으로 보여주는 직관적 UI</p>
+        <img src="{% static 'img/case/worktime_case_2.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">월별 근태현황과 통계데이터 제공</p>
+    </div>
+</section>
+
+
+<!-- Section 휴가관리 -->
+<section class="bg-white my-5 py-2 text-center">
+    <div class="container my-5 py-2">
+        <h3 class="fs-2 fw-bold mb-2">🏖 휴가관리</h3>
+        <p class="responsive_text lead mb-5">연차 사용내역 관리 및 연간 통계 확인</p>
+        <img src="{% static 'img/case/leave_case_1.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">연도별/월별 멤버들의 연차 소모내역이 자동으로 통계처리</p>
+        <img src="{% static 'img/case/leave_case_2.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">관리자가 설정하는 연차부여, 연차삭감, 연차내역 수정 기능</p>
+    </div>
+</section>
+
+
+<!-- Section 조직관리 -->
+<section class="bg-secondary-subtle-25 my-5 py-2 text-center">
+    <div class="container my-5 py-2">
+        <h3 class="fs-2 fw-bold mb-2">👥 조직관리</h3>
+        <p class="responsive_text lead mb-5">깔끔한 디자인의 부서별 사용자 관리 기능</p>
+        <img src="{% static 'img/case/org_case_1.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">프로필 이미지를 포함한 멤버 구성현황 목록 </p>
+        <img src="{% static 'img/case/org_case_2.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">직원정보에 따라 자동으로 생성되는 조직도 기능</p>
+    </div>
+</section>
+
+
+<!-- Section 일정관리 -->
+<section class="bg-white my-5 py-2 text-center">
+    <div class="container my-5 py-2">
+        <h3 class="fs-2 fw-bold mb-2">📅 일정관리</h3>
+        <p class="responsive_text lead mb-5">공유 캘린더로 회사의 일정을 한눈에 확인</p>
+        <img src="{% static 'img/case/calendar_case_1.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">전재결재 신청에 따라 자동으로 연동되는 휴가, 출장 일정공유</p>
+        <img src="{% static 'img/case/calendar_case_2.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">필터기능과 함께 월간 / 주간 / 일간으로 전환되는 캘린더 </p>
+    </div>
+</section>
+
+
+<!-- Section 공지사항 -->
+<section class="bg-secondary-subtle-25 my-5 py-2 text-center">
+    <div class="container my-5 py-2">
+        <h3 class="fs-2 fw-bold mb-2">📢 공지사항</h3>
+        <p class="responsive_text lead mb-5">조직 내 전달사항을 빠르게 공지</p>
+        <img src="{% static 'img/case/notice_case_1.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">블로그뷰의 세련된 공지사항 디자인 채택</p>
+        <img src="{% static 'img/case/notice_case_2.JPG' %}" alt="img" width="1200" class="mb-2 border border-secondary rounded responsive_img">
+        <p class="responsive_text lead mb-5">심플하지만 확실하게 파일첨부, 댓글 기능까지</p>
+    </div>
+</section>
+
+
+<!-- Section Multi_devices -->
+<section class="bg-white my-5 py-2 text-center">
+    <div class="container my-5 py-2">
+        <h3 class="fs-2 fw-bold mb-2">누구나, 언제나, 어디서나, 무료로!</h3>
+        <p class="responsive_text lead mb-5">컴퓨터, 노트북, 태블릿, 아이폰, 갤럭시 상관없이</p>
+        <img src="{% static 'img/case/tost_multi_devices.png' %}" alt="img" width="1200" class="mb-2 responsive_img">
+    </div>
+</section>
+
+
+<!-- Call to Action -->
+<section class="bg-success bg-opacity-10 py-5 text-center">
+    <div class="container py-5">
+        <div class="text-success mb-3" style="font-size: 100px;"><i class="fa-solid fa-rocket fa-bounce"></i></div>
+        <h3 class="fs-2 fw-bold mb-3">지금 바로 시작해보세요</h3>
+        <p class="fs-5 text-muted mb-4">설치 NO, 유지보수 걱정 NO<br>복잡한 가입 없이, 클릭 몇 번이면 충분합니다.</p>
+        <a href="{% url 'signup_step1' %}" class="btn btn-success text-white fw-semibold btn-lg">쉽고 편한 그룹웨어 시작하기</a>
+    </div>
+</section>
+
+
+<!-- Footer -->
+<footer class="text-center py-4 text-muted w-100">
+    <div class="row text-secondary w-100 m-auto">
+        <div class="col-md-6 d-flex justify-content-center m-0 p-0">
+            <script>document.write(new Date().getFullYear())</script> © TOST Office. All rights reserved.
+        </div>
+        <div class="col-md-6 d-flex justify-content-center m-0 p-0">
+            <div><i class="fa-regular fa-envelope me-1"></i>tost.korea@gmail.com</div>
+            <div class="mx-2">|</div>
+            <a href="https://www.instagram.com/tost_office_korea/" target="_blank" rel="noopener noreferrer"
+            data-toggle="tooltip" data-placement="top" title="DM으로도 문의하실 수 있습니다."
+            style="background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent;">
+                <i class="fa-brands fa-instagram me-1"></i>Instagram
+            </a>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

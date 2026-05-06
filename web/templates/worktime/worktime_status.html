@@ -1,0 +1,768 @@
+<!-- 근태관리 > 근태현황 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+#timeline {
+    position: relative;
+    border-collapse: collapse;
+    width: max-content;
+    table-layout: fixed !important;
+}
+
+#timeline thead {
+    border-top: 1px solid #d9dee3;
+    border-bottom: 1px solid #d9dee3;
+    position: relative;
+    z-index: 20; /* bar보다 위로 */
+    font-size: 12px;
+    background-color: #fafafa;
+}
+
+#timeline th {
+    position: sticky;
+    top: 0;
+}
+
+#timeline th, #timeline td {
+    border-bottom: 1px solid #d9dee3;
+    width: 40px; /* 1시간 단위 셀 크기 */
+    height: 40px;
+    padding: 0;
+    text-align: start;
+}
+
+#timeline th.no, #timeline td.no,
+#timeline th.date, #timeline td.date,
+#timeline th.team, #timeline td.team,
+#timeline th.name, #timeline td.name {
+    text-wrap: nowrap;
+    padding-left: 4px;
+    padding-right: 4px;
+    font-size: 13px;
+    border-left: none;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+#timeline th.no, #timeline td.no {
+    width: 40px;
+    max-width: 40px;
+    text-align: center;
+}
+
+#timeline th.date, #timeline td.date {
+    width: 120px;
+    max-width: 120px;
+    text-align: left;
+}
+
+#timeline th.name, #timeline td.name,
+#timeline th.team, #timeline td.team {
+    width: 160px;
+    max-width: 160px;
+    text-align: left;
+}
+
+#timeline th.name {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #f8f8f8;
+}
+
+#timeline td.name {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: white;
+}
+
+#timeline tbody td {
+    border-left: 1px solid #d9dee3;
+}
+
+.timeline-container {
+    position: relative;
+    overflow-x: auto;
+}
+
+.bar {
+    white-space: normal;
+    line-height: 14px;
+    min-height: 30px;
+    height: auto;
+    padding-top: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.company_working_time {
+    background-color: rgb(225, 255, 245);
+}
+
+.company_noworking_time {
+    background-color: rgba(250, 250, 250, 1);
+}
+
+.half-bg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    z-index: 0;
+}
+
+.half-bg.working {
+    left: 50%;
+    background-color: rgb(225, 255, 245);
+}
+
+.half-bg.noworking {
+    left: 0;
+    background-color: rgba(250, 250, 250, 1);
+}
+
+#timeline td {
+    position: relative;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.shimmer-bar {
+  background: linear-gradient(
+    to left,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 5s linear infinite;
+}
+
+.checkout_missing {
+    width: 360px !important;
+    background: linear-gradient(to right, #6b747c 0%, #6b747c 30%, transparent 60%) !important;
+}
+
+/* select2 컨테이너 너비 지정 */
+#sch_team + .select2-container {
+    width: 180px !important;
+}
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_team + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+/* 선택된 항목 텍스트 정렬 */
+#sch_team + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+/* 화살표 위치 조정 */
+#sch_team + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+/* 클리어버튼 위치 조정 */
+#sch_team + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-user-clock me-2"></i>근태현황
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 출퇴근 등록 데이터를 그래프로 시각화한 페이지 입니다.<br>• 필터를 통해 이름, 부서명, 기간으로 검색할 수 있습니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                {% comment %}<select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>{% endcomment %}
+
+                                <div class="d-none d-md-flex input-group input-daterange position-relative w-auto me-1"
+                                     id="date_filter" data-toggle="tooltip" data-placement="top" title="근무일 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px; border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
+
+                                    <div id="date_dropdown" class="d-none position-absolute bg-light border border-secondary-subtle rounded shadow-sm p-1"
+                                         style="top: 100%; left: 0; z-index: 1000; min-width: 150px;">
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('yesterday')">어제</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('today')">오늘</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('tomorrow')">내일</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_week')">지난주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_week')">이번주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_week')">다음주</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_month')">지난달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_month')">이번달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_month')">다음달</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-none d-xl-flex w-auto me-1" data-toggle="tooltip" data-placement="top" title="부서별 검색">
+                                    <select class="page_size form-select form-select-sm me-1" id="sch_team"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1" data-toggle="tooltip" data-placement="top" title="이름, IP주소 등 텍스트 검색">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            {% comment %}<div class="d-flex p-0">
+                                <button class="btn btn-outline-warning text-nowrap ms-1 px-2.5" onclick="a_search_day()">
+                                    <i class="fa-solid fa-calendar-day"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">오늘</span>
+                                </button>
+                                <button class="btn btn-outline-success text-nowrap ms-1 px-2.5" onclick="a_search_last_week()">
+                                    <i class="fa-solid fa-calendar-week"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">지난 주</span>
+                                </button>
+                                <button class="btn btn-outline-info text-nowrap ms-1 px-2.5" onclick="a_search_this_week()">
+                                    <i class="fa-solid fa-calendar-week"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">이번 주</span>
+                                </button>
+                                <button class="btn btn-outline-primary text-nowrap ms-1 px-2.5" onclick="a_search_this_month()">
+                                    <i class="fa-solid fa-calendar-days"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">이번 달</span>
+                                </button>
+                            </div>{% endcomment %}
+                        </div>
+
+                        <!-- 건별 게시물 -->
+                        <div class="timeline-container">
+                            <table class="timeline-table" id="timeline">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let company_base_check_in = '{{ request.user.company.company_info.first.check_in | time:"H:i" }}';
+let company_base_check_out = '{{ request.user.company.company_info.first.check_out | time:"H:i" }}';
+
+let fr_date;
+let to_date;
+let all_sch;
+let sch_team;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    $('#fr_date').val(date_today_str);
+    $('#to_date').val(date_today_str);
+    init_Select2('#sch_team', '부서 선택', '/sel2_code_team/', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+}
+
+function a_search_ready() {
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    all_sch = $('#all_sch').val();
+    sch_team = $('#sch_team').val();
+
+    a_search();
+}
+
+function a_search_day() {
+    $('#fr_date').val(date_today_str);
+    $('#to_date').val(date_today_str);
+
+    a_search_ready();
+}
+
+function a_search_this_week() {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 일요일=0, 월요일=1 ...
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    $('#fr_date').val(formatDateLocal(monday));
+    $('#to_date').val(formatDateLocal(sunday));
+
+    a_search_ready();
+}
+
+function a_search_last_week() {
+    const today = new Date();
+    today.setDate(today.getDate() - 7); // 일주일 전으로 이동
+
+    const dayOfWeek = today.getDay(); // 일요일=0, 월요일=1 ...
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    $('#fr_date').val(formatDateLocal(monday));
+    $('#to_date').val(formatDateLocal(sunday));
+
+    a_search_ready();
+}
+
+function a_search_this_month() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    $('#fr_date').val(formatDateLocal(firstDay));
+    $('#to_date').val(formatDateLocal(lastDay));
+
+    a_search_ready();
+}
+
+function formatDateLocal(date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function a_search() {
+    let query = "?fr_date=" + fr_date;
+    query += "&to_date=" + to_date;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_team) { query += "&sch_team=" + sch_team; }
+
+    fetch_gp("/worktime_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    let $timelineTable = $('#timeline');
+    let $thead = $timelineTable.find('thead');
+    let $tbody = $timelineTable.find('tbody');
+
+    // 1. 헤더 생성 (최초 한 번만)
+    let headHtml = '<tr><th class="no">순번</th><th class="date">근무일</th><th class="name">이름</th><th class="team">부서</th>';
+    for (let i = 0; i < 24; i++) {
+        headHtml += `<th>${i}</th>`;
+    }
+    headHtml += '</tr>';
+    $thead.html(headHtml);
+
+    // 2. 바 겹치기 위한 기존 bar 모두 제거
+    $('.bar').remove();
+    $('.event_bar').remove();
+
+    // 3. 타임라인 본문 생성
+    let bodyHtml = '';
+    if (data.length === 0) {
+        bodyHtml = `
+        <tr>
+            <td colspan="99" style="text-align: center; border-left: none;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $tbody.html(bodyHtml);
+        return;
+    }
+
+    data.forEach((item, rowIndex) => {
+        let num = 1 + rowIndex;
+        let checkIn = item.check_in;
+        let checkOut = item.check_out;
+        let profileImage = item.created_by.profile_image
+            ? `<img src="${item.created_by.profile_image}" alt="Profile Image" class="rounded-circle me-1" width="24" height="24">`
+            : "";
+
+        bodyHtml += `
+        <tr>
+            <td class="no">${num}</td>
+            <td class="date">${formatDateWithDay(item.work_date)}</td>
+            <td class="name">${profileImage} ${item.created_by.name} ${item.created_by.job_level || ""}</td>
+            <td class="team">${item.created_by.team || ""}</td>`;
+        for (let i = 0; i < 24; i++) {
+            bodyHtml += '<td></td>';
+        }
+        bodyHtml += '</tr>';
+    });
+    $tbody.html(bodyHtml);
+
+    // 4. 회사 기준 시간에 배경 클래스 적용
+    const baseIn = parseInt(company_base_check_in.split(':')[0]);
+    const baseOut = parseInt(company_base_check_out.split(':')[0]);
+
+    // tbody 각 행(td)에 배경색 설정
+    $tbody.find('tr').each(function () {
+        const $tds = $(this).find('td');
+
+        for (let h = 0; h < 24; h++) {
+            const colIndex = h + 4;
+            const $targetTd = $tds.eq(colIndex);
+
+            const isHalfIn = (h === baseIn && company_base_check_in.includes(":30"));
+            const isHalfOut = (h === baseOut && company_base_check_out.includes(":30"));
+
+            if (isHalfIn) {
+                $targetTd.addClass('company_noworking_time');
+                $targetTd.append('<div class="half-bg working"></div>');  // 오른쪽 절반에 근무시간
+            } else if (isHalfOut) {
+                $targetTd.addClass('company_working_time');
+                $targetTd.append('<div class="half-bg noworking" style="left: 50%"></div>');  // 오른쪽 절반에 비근무시간
+            } else {
+                if (h >= baseIn && h < baseOut) {
+                    $targetTd.addClass('company_working_time');
+                } else {
+                    $targetTd.addClass('company_noworking_time');
+                }
+            }
+        }
+    });
+
+    // thead의 시간 칼럼에도 같은 방식으로 배경색 설정
+    const $headTds = $thead.find('tr').children('th');
+
+    for (let h = 0; h < 24; h++) {
+        const colIndex = h + 4;
+        const $targetTd = $headTds.eq(colIndex);
+
+        const isHalfIn = (h === baseIn && company_base_check_in.includes(":30"));
+        const isHalfOut = (h === baseOut && company_base_check_out.includes(":30"));
+
+        if (isHalfIn) {
+            $targetTd.addClass('company_noworking_time');
+            $targetTd.append('<div class="half-bg working"></div>');  // 오른쪽 절반에 근무시간
+        } else if (isHalfOut) {
+            $targetTd.addClass('company_working_time');
+            $targetTd.append('<div class="half-bg noworking" style="left: 50%"></div>');  // 오른쪽 절반에 비근무시간
+        } else {
+            if (h >= baseIn && h < baseOut) {
+                $targetTd.addClass('company_working_time');
+            } else {
+                $targetTd.addClass('company_noworking_time');
+            }
+        }
+    }
+
+    // 5. 출근-퇴근 시간 바 생성
+    data.forEach((item, rowIndex) => {
+        const now = new Date();
+        const krNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+        const now_str = krNow.toISOString().slice(11, 16);
+
+        const name = item.created_by?.name || '';
+        const checkIn = item.check_in;
+        const checkToday = (item.work_date === date_today_str);
+        const checkOut = checkToday
+            ? (item.check_out || now_str)      // 오늘이면 현재 시간(now_str) 부여
+            : (item.check_out || "퇴근 미등록");     // 과거면 퇴근 미등록 표시
+        if (!checkIn || !checkOut) return;
+
+        const [sh, sm] = checkIn.split(':').map(Number);
+        const [eh, em] = checkOut.split(':').map(Number);
+        const startMinutes = sh * 60 + sm;
+        const endMinutes = eh * 60 + em;
+
+        const cellWidth = 40;
+        const left = (startMinutes / 60) * cellWidth + cellWidth * 12;  // 기본 정보 컬럼에 따라 그래프 왼쪽 여백 조정
+        const width = ((endMinutes - startMinutes) / 60) * cellWidth;
+
+        // 출근~퇴근 시간
+        let timeRange = `${checkIn} ~ ${checkOut}`;
+        if (checkToday && !item.check_out) {
+            timeRange += ' (근무중)';
+        }
+        let workDisplay = "";
+        let totalWorkMin = 0;
+
+        if (item.work_time) {
+            const [wh, wm] = item.work_time.split(':').map(Number);
+            totalWorkMin = wh * 60 + wm;
+            workDisplay = ` (${wh}시간 ${wm}분)`;
+        }
+
+        const baseMinutes = 8 * 60;
+
+        // 조퇴 계산
+        let earlyLeaveText = "";
+        if (totalWorkMin && totalWorkMin < baseMinutes) {
+            const diff = baseMinutes - totalWorkMin;
+            const h = Math.floor(diff / 60);
+            const m = diff % 60;
+            if (h > 0 || m > 0) {
+                earlyLeaveText = `조퇴 ${h > 0 ? h + '시간 ' : ''}${m}분`.trim();
+            }
+        }
+
+        // 지각, 초과근무 → 시간 포맷 변환
+        const lateText = formatHourMinute(item.late_time);
+        const overText = formatHourMinute(item.over_time);
+        const isToday = (item.work_date === date_today_str);
+        const is_working = isToday ? item.check_out : true;
+
+        // 텍스트 조립
+        const extraInfoParts = [];
+        if (lateText) extraInfoParts.push(`지각 ${lateText}`);
+        if (earlyLeaveText) extraInfoParts.push(earlyLeaveText);
+        if (overText) extraInfoParts.push(`초과근무 ${overText}`);
+        const extraInfo = extraInfoParts.join(', ');
+
+        // 바 텍스트
+        const barText = `${timeRange}${workDisplay}` + (extraInfo ? `<br>${extraInfo}` : "");
+
+        // 클래스 지정
+        let barClass = "bar";
+        if (!is_working) barClass += " shimmer-bar";
+        if (!isToday && !item.check_out) {
+            barClass += " checkout_missing";
+        } else if (lateText) {
+            barClass += " bg-danger";
+        } else if (earlyLeaveText) {
+            barClass += " bg-warning";
+        }
+
+        const bar = $(`<div class="text-nowrap" data-bs-toggle="tooltip" data-bs-placement="top"
+               title="${barText}"></div>`)
+            .addClass(barClass)
+            .html(barText)
+            .css({
+                backgroundColor: '#4caf50',
+                position: 'absolute',
+                top: `${(rowIndex + 1) * 40 + 5}px`,
+                left: `${left}px`,
+                width: `${width}px`,
+                lineHeight: '14px',
+                Height: '32px',
+                minHeight: '32px',
+                maxHeight: '32px',
+                paddingTop: '3px',
+                paddingBottom: '1px',
+                borderRadius: '4px',
+                color: '#fff',
+                paddingLeft: '5px',
+                fontSize: '10px',
+                whiteSpace: 'normal',
+                overflow: 'hidden',
+                boxSizing: 'border-box',
+                cursor: 'default',
+                zIndex: 3,
+            });
+
+        $('.timeline-container').append(bar);
+        bar.tooltip({html: true});
+
+        draw_event_bar(item, rowIndex);
+    });
+}
+
+function draw_event_bar(item, rowIndex) {
+    if (!item.event || !item.event.start_datetime || !item.event.end_datetime) return;
+
+    const s_dt = new Date(item.event.start_datetime);
+    const e_dt = new Date(item.event.end_datetime);
+
+    const sh = s_dt.getHours(), sm = s_dt.getMinutes();
+    const eh = e_dt.getHours(), em = e_dt.getMinutes();
+    const startMinutes = sh * 60 + sm;
+    const endMinutes = eh * 60 + em;
+
+    const cellWidth = 40;
+    const left = (startMinutes / 60) * cellWidth + cellWidth * 12;  // 기본 정보 컬럼에 따라 그래프 왼쪽 여백 조정
+    const width = ((endMinutes - startMinutes) / 60) * cellWidth;
+
+    const eventText = `${item.event.change_type}<br>${item.event.start_datetime.slice(11, 16)} ~ ${item.event.end_datetime.slice(11, 16)}`;
+
+    const eventBar = $(`<div class="text-nowrap event_bar" data-bs-toggle="tooltip" data-bs-placement="top"
+        title="${eventText}"></div>`)
+        .html(eventText)
+        .css({
+            backgroundColor: '#4fa4ef',
+            position: 'absolute',
+            top: `${(rowIndex + 1) * 40 + 5}px`,
+            left: `${left}px`,
+            width: `${width}px`,
+            lineHeight: '14px',
+            Height: '32px',
+            minHeight: '32px',
+            maxHeight: '32px',
+            paddingTop: '3px',
+            paddingBottom: '1px',
+            borderRadius: '4px',
+            color: '#fff',
+            paddingLeft: '5px',
+            fontSize: '10px',
+            whiteSpace: 'normal',
+            overflow: 'hidden',
+            boxSizing: 'border-box',
+            cursor: 'default',
+        });
+
+    $('.timeline-container').append(eventBar);
+    eventBar.tooltip({html: true});
+}
+
+function formatHourMinute(str) {
+    if (!str || str === "00:00") return "";
+    const [h, m] = str.split(":").map(Number);
+    let result = "";
+    if (h > 0) result += `${h}시간 `;
+    if (m > 0) result += `${m}분`;
+    return result.trim();
+}
+
+function formatDateWithDay(dateStr) {
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const date = new Date(dateStr);
+    const dayName = days[date.getDay()];
+    return `${dateStr} (${dayName})`;
+}
+
+function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+// 데이트 필터 드랍다운 이벤트
+$('#date_filter').on('mouseenter', function () {
+    $('#date_dropdown').removeClass('d-none');
+});
+$('#date_filter').on('mouseleave', function () {
+    $('#date_dropdown').addClass('d-none');
+});
+
+function set_date_range(range) {
+    const today = new Date();
+    let start, end;
+
+    if (range === 'yesterday') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end.setDate(today.getDate() - 1);
+    } else if (range === 'today') {
+        start = end = new Date(today);
+    } else if (range === 'tomorrow') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() + 1);
+        end.setDate(today.getDate() + 1);
+    } else if (range === 'last_week') {
+        const day = today.getDay() || 7;
+        end = new Date(today);
+        end.setDate(today.getDate() - day);
+        start = new Date(end);
+        start.setDate(end.getDate() - 6);
+    } else if (range === 'this_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 1);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'next_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 8);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (range === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (range === 'next_month') {
+        start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    }
+
+    $('#fr_date').val(formatDate(start));
+    $('#to_date').val(formatDate(end));
+    a_search_ready();
+}
+</script>

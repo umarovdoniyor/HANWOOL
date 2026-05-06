@@ -1,0 +1,501 @@
+<!-- 투입현황 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.table-fixed {
+    table-layout: fixed;   /* 셀 너비 고정 */
+    width: auto !important;  /* 부모 사이즈와 상관없이 내용대로 */
+    max-width: none !important;
+}
+
+.table-fixed td, 
+.table-fixed th {
+    border: 1px solid #73778c !important;
+}
+
+/* 기본적으로 tr 안의 border는 제거 */
+.table-fixed tr {
+    border: none !important;
+}
+
+/* 값이 있는 셀만 border 유지 */
+.table-fixed td:has(input[value]:not([value=""])) {
+    border: 1px solid #73778c !important;
+}
+
+td.customer-cell {
+    width: 100px !important;
+    min-width: 100px !important;
+    text-align: center;
+    padding: 4px;
+    font-size: 12px;
+}
+
+td.center-head {
+    width: 120px !important;
+    text-align: center;
+    padding: 4px;
+    font-size: 12px;
+    border-right: 2px solid #73778c;
+}
+
+td.center-cell-text {
+    width: 45px !important;
+    min-width: 45px !important;
+    text-align: center;
+    padding: 0;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+td.center-cell {
+    width: 25px !important;
+    min-width: 25px !important;
+    text-align: center;
+    padding: 0;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.table-input {
+    border: none;
+    outline: none;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    font-size: 10px;
+    background: transparent;  /* 셀 색상 유지 */
+}
+
+td.total_header {
+    background-color: #e1e2e6;
+    width: 100px !important;
+    text-align: center;
+    padding: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+td.total_body {
+    width: 100px !important;
+    text-align: center;
+    padding: 4px;
+    font-size: 12px;
+}
+.vertical-text {
+    writing-mode: vertical-rl; /* 세로 쓰기 설정 */
+    text-orientation: upright;  /* 영문/숫자 바로 세우기 */
+}
+.break-text {
+  padding-left: 20px;
+  padding-right: 20px;
+  overflow-wrap: break-word; /* 긴 단어가 박스를 벗어나지 않게 함 */
+  word-break: break-all;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-12">
+                <div class="d-flex justify-content-between">
+                    <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                        <i class="fa-solid fa-table me-2"></i>투입현황
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <div class="d-none d-md-inline btn btn-primary text-nowrap me-1 px-2.5" onclick="set_pre_date()"
+                                     data-toggle="tooltip" data-placement="top" title="전날 보기">
+                                    <i class="fa-solid fa-arrow-left"></i>
+                                </div>
+
+                                <div class="input-group input-daterange position-relative w-auto me-1"
+                                     id="date_filter" data-toggle="tooltip" data-placement="top" title="기준일 검색">
+                                    <input id="fr_date" type="text" placeholder="기준일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 150px;">
+                                </div>
+
+                                <div class="d-none d-md-inline btn btn-primary text-nowrap me-1 px-2.5" onclick="set_next_date()"
+                                     data-toggle="tooltip" data-placement="top" title="다음날 보기">
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-info text-nowrap ms-1 px-2.5" onclick="update_status()">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">현황 업데이트</span>
+                                </button>
+                                {% comment %}<button class="btn btn-info text-nowrap ms-1 px-2.5" onclick="b_update_status()">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">내일 현황 업데이트</span>
+                                </button>{% endcomment %}
+                                {% comment %}<button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="exportToExcel()">
+                                    <i class="fa-solid fa-file-excel"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">엑셀 다운로드</span>
+                                </button>{% endcomment %}
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="row">
+                            <div class="col-12 col-md-6">
+                                <!-- 테이블 영역 -->
+                                <div class="fw-bold my-2" style="font-size: 16px;">
+                                    ■ <span id="today_date_div"></span>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table border border-2 border-secondary table-fixed">
+                                        <tr>
+                                            <td class="total_header">총 요청인원</td>
+                                            <td class="total_header">총 투입인원</td>
+                                            <td class="total_header">총 신규인원</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="total_body"><span id="today_request"></span></td>
+                                            <td class="total_body"><span id="today_real"></span></td>
+                                            <td class="total_body text-info"><span id="today_new"></span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table" id="logistics-table-today"></table>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <!-- 테이블 영역 -->
+                                <div class="fw-bold my-2" style="font-size: 16px;">
+                                    ■ <span id="tomorrow_date_div"></span>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table border border-2 border-secondary table-fixed">
+                                        <tr>
+                                            <td class="total_header">총 요청인원</td>
+                                            <td class="total_header">총 투입인원</td>
+                                            <td class="total_header">총 신규인원</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="total_body"><span id="tomorrow_request"></span></td>
+                                            <td class="total_body"><span id="tomorrow_real"></span></td>
+                                            <td class="total_body text-info"><span id="tomorrow_new"></span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table" id="logistics-table-tomorrow"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let fr_date;
+let tomorrow;
+let version_today = 1;
+let version_tomorrow = 1;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    let baseUrl = window.location.origin + window.location.pathname;
+    window.location.href = baseUrl;
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    $('#fr_date').val(date_today_str);
+
+    a_search_ready();
+}
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+
+    fr_date = $('#fr_date').val();
+
+    // 오늘 날짜 객체
+    let fr_date_base = new Date(fr_date);
+
+    // 내일 날짜 객체
+    let tomorrow_base = new Date(fr_date_base);
+    tomorrow_base.setDate(fr_date_base.getDate() + 1);
+
+    // 오늘 날짜 포맷
+    let formatted_fr_date = fr_date_base.toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "long"
+    });
+
+    // 내일 날짜 포맷
+    let formatted_tomorrow = tomorrow_base.toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "long"
+    });
+
+    // 전역 변수에 저장
+    tomorrow = tomorrow_base.toISOString().slice(0, 10);  // "YYYY-MM-DD" 형태
+
+    $('#today_date_div').text(formatted_fr_date);
+    $('#tomorrow_date_div').text(formatted_tomorrow);
+
+    a_search();
+    b_search();
+}
+
+// 선택대상 유지 : 주로 update 후 호출
+function a_search() {
+    let query = "?";
+    if (fr_date) { query += "&fr_date=" + fr_date; }
+
+    fetch_gp("/daily_report_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function b_search() {
+    let query = "?";
+    if (fr_date) { query += "&fr_date=" + tomorrow; }
+
+    fetch_gp("/daily_report_list_fn/" + query, 'GET', true, {}, (done) => {
+        b_draw_table(done);
+    });
+}
+
+let originalDataToday = {};
+let originalDataTomorrow = {};
+
+// ======================= 오늘 데이터 ===========================
+function a_draw_table(data) {
+    originalDataToday = JSON.parse(JSON.stringify(data));
+    drawCommonTable(data, "#logistics-table-today", "today");
+}
+
+function a_update_status() {
+    const { deltaCenters, deltaManagers } = collectDeltaDataToday();
+
+    if (Object.keys(deltaCenters).length === 0 && Object.keys(deltaManagers).length === 0) {
+        alert("오늘 데이터는 변경된 내용이 없습니다.");
+        return;
+    }
+
+    let api_data = new FormData();
+    api_data.append('status_data', JSON.stringify(deltaCenters));
+    api_data.append('managers', JSON.stringify(deltaManagers));
+    api_data.append('fr_date', $('#fr_date').val());  // 기준일만 전달
+
+    fetch_gp('/daily_report_update_fn/', 'post', true, api_data, (done) => {
+        if (done.error) {
+            alert(done.message);
+        } else if (done.success) {
+            alert(done.message || "오늘 데이터 저장 완료");
+            a_search();  // 저장 후 갱신
+        } else {
+            alert("서버 응답이 올바르지 않습니다.");
+        }
+    });
+}
+
+
+// ======================= 내일 데이터 ===========================
+function b_draw_table(data) {
+    originalDataTomorrow = JSON.parse(JSON.stringify(data));
+    drawCommonTable(data, "#logistics-table-tomorrow", "tomorrow");
+}
+
+function b_update_status() {
+    const { deltaCenters, deltaManagers } = collectDeltaDataTomorrow();
+
+    if (Object.keys(deltaCenters).length === 0 && Object.keys(deltaManagers).length === 0) {
+        alert("내일 데이터는 변경된 내용이 없습니다.");
+        return;
+    }
+
+    let api_data = new FormData();
+    api_data.append('status_data', JSON.stringify(deltaCenters));
+    api_data.append('managers', JSON.stringify(deltaManagers));
+    api_data.append('fr_date', tomorrow);  // 내일 날짜 전달
+
+    fetch_gp('/daily_report_update_fn/', 'post', true, api_data, (done) => {
+        if (done.error) {
+            alert(done.message);
+        } else if (done.success) {
+            alert(done.message || "내일 데이터 저장 완료");
+            b_search();
+        } else {
+            alert("서버 응답이 올바르지 않습니다.");
+        }
+    });
+}
+
+
+// ======================= 공통 그리기 함수 ===========================
+function drawCommonTable(data, selector, mode) {
+    display_daily_report(data, selector, mode);
+}
+
+// ======================= 변경 감지 공통 함수 ===========================
+function collectDeltaDataToday() {
+    return collectDeltaDataCommon(originalDataToday, "#logistics-table-today");
+}
+
+function collectDeltaDataTomorrow() {
+    return collectDeltaDataCommon(originalDataTomorrow, "#logistics-table-tomorrow");
+}
+
+function collectDeltaDataCommon(originalData, selector) {
+    let deltaCenters = {};
+
+    document.querySelectorAll(`${selector} input.table-input[data-center-id]`).forEach(input => {
+        let centerId = input.dataset.centerId;
+        if (!centerId) return;
+
+        // 원본 center 데이터 찾기
+        let originalCenter = originalData.groups
+            ?.flatMap(g => Object.entries(g.centers))
+            .find(([id]) => id === centerId)?.[1];
+
+        if (!originalCenter) return;
+
+        // 현재 입력 상태 읽기
+        let currentRows = getCurrentCenterRows(centerId, selector);
+        let originalRows = normalizeRows(originalCenter.worktypes || []);
+        currentRows = normalizeRows(currentRows);
+
+        // 비교
+        if (JSON.stringify(currentRows) !== JSON.stringify(originalRows)) {
+            deltaCenters[centerId] = currentRows;
+        }
+    });
+
+    // 매니저 비교
+    let deltaManagers = {};
+    document.querySelectorAll(`${selector} input[data-field='manager_msg']`).forEach(input => {
+        let managerId = input.dataset.managerId;
+        let val = input.value.trim();
+        let originalVal = (originalData.managers?.[managerId]?.msg || "").trim();
+        if (val !== originalVal) deltaManagers[managerId] = val;
+    });
+
+    return { deltaCenters, deltaManagers };
+}
+
+// === 정규화 함수 ===
+// 숫자/문자/공백/빈행 통일용
+function normalizeRows(rows) {
+    return rows
+        .filter(r => Array.isArray(r) && (r[0] || r[1] || r[2] || r[3]))  // 완전 빈 행 제거
+        .map(r => [
+            (r[0] || "").trim(),                       // work_type 문자열
+            parseInt(r[1] || 0),                       // 요청
+            parseInt(r[2] || 0),                       // 투입
+            parseInt(r[3] || 0),                       // 신규
+        ]);
+}
+
+function getCurrentCenterRows(centerId, selector) {
+    let rows = [];
+    let inputs = document.querySelectorAll(`${selector} input[data-center-id='${centerId}']`);
+    let currentRow = [];
+    inputs.forEach(input => {
+        let field = input.dataset.field;
+        let val = input.value.trim();
+        if (field === "work_type") {
+            if (currentRow.length) rows.push(currentRow);
+            currentRow = [val, 0, 0, 0];
+        } else if (field === "value1") currentRow[1] = parseInt(val || 0);
+        else if (field === "value2") currentRow[2] = parseInt(val || 0);
+        else if (field === "value3") currentRow[3] = parseInt(val || 0);
+    });
+    if (currentRow.length) rows.push(currentRow);
+    return rows;
+}
+
+
+function update_status() {
+    a_update_status();
+    b_update_status();
+}
+
+
+// 기준일 하루 전으로 이동
+function set_pre_date() {
+    let fr_date = $('#fr_date').val();
+    if (!fr_date) return;
+
+    let base = new Date(fr_date);
+    base.setDate(base.getDate() - 1);
+
+    let formatted = base.toISOString().slice(0, 10); // "YYYY-MM-DD"
+    $('#fr_date').val(formatted);
+
+    a_search_ready();
+}
+
+// 기준일 하루 후로 이동
+function set_next_date() {
+    let fr_date = $('#fr_date').val();
+    if (!fr_date) return;
+
+    let base = new Date(fr_date);
+    base.setDate(base.getDate() + 1);
+
+    let formatted = base.toISOString().slice(0, 10); // "YYYY-MM-DD"
+    $('#fr_date').val(formatted);
+
+    a_search_ready();
+}
+
+
+</script>

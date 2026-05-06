@@ -1,0 +1,1147 @@
+<!-- 거래처/현장관리 > 정규파견관리 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+<style>
+/* select2 컨테이너 너비 지정 */
+#sch_manager + .select2-container {
+    width: 160px !important;
+}
+
+#sch_subsidiary + .select2-container {
+    width: 180px !important;
+}
+
+#sch_customer + .select2-container {
+    width: 220px !important;
+}
+
+@media (max-width: 1100px) {
+    #sch_subsidiary + .select2-container {
+        width: 100px !important;
+    }
+    #sch_customer + .select2-container {
+        width: 180px !important;
+    }
+    .user_card_text {
+        font-size: 11px !important;
+    }
+    #all_user_search {
+        width: 100% !important;
+    }
+    #selected_user_search {
+        width: 100% !important;
+    }
+}
+
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-user me-2"></i>정규파견정산관리
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 정규직 근무파견을 위한 근로계약 및 급여정산을 관리하는 페이지입니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="담당 관리자 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_manager"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="d-none d-lg-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="관리법인 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_subsidiary"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="거래처 소분류 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1 sch_sel2" id="sch_customer"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1" data-toggle="tooltip" data-placement="top"
+                                         title="기타 텍스트 검색">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                </button>
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive">
+                                <table class="table table-hover">
+                                    <colgroup>
+                                        <col style="width: 2%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 15%"/>
+                                        <col style="width: 15%"/>
+                                    </colgroup>
+
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th>순번</th>
+                                            <th>관리법인</th>
+                                            <th>파견현장</th>
+                                            <th>파견인원</th>
+                                            <th>파견상태</th>
+                                            <th>비고</th>
+                                            <th>업무기능</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xxl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">정규파견관리 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between">
+                    <div class="col-md-4">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="subsidiary" class="form-label fw-bold">관리 법인
+                                    <button class="btn btn-sm px-1 py-0"
+                                            onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                        <i class="fa-solid fa-up-right-from-square"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control div_required" id="subsidiary"></select>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="customer" class="form-label fw-bold">근무 현장
+                                    <button class="btn btn-sm px-1 py-0"
+                                            onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                        <i class="fa-solid fa-up-right-from-square"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control div_required" id="customer"></select>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="desc1" class="form-label">비고</label>
+                                <input type="text" class="form-control" id="desc1">
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="status_select" class="form-label">진행 상태</label>
+                                <select class="text-left form-select" id="status_select">
+                                    <option value="진행">진행</option>
+                                    <option value="종료">종료</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="manager" class="form-label">담당 관리자
+                                    <button class="btn btn-sm px-1 py-0"
+                                            onclick="window.open('{% url 'admin_employee_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                        <i class="fa-solid fa-up-right-from-square"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control" id="manager"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8 ps-0 ps-md-4">
+                        <div class="d-flex justify-content-between">
+                            <div class="col-6 pe-2 mb-3">
+                                <div class="d-inline d-md-flex justify-content-between align-items-center">
+                                    <label for="all_user" class="form-label text-nowrap mb-1">전체 정규직
+                                        <button class="btn btn-sm px-1 py-0"
+                                                onclick="window.open('{% url 'admin_employee_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                            <i class="fa-solid fa-up-right-from-square"></i>
+                                        </button>
+                                    </label>
+                                    <input type="text" class="form-control-sm ms-0 ms-md-4 mb-1" id="all_user_search" placeholder="이름 또는 전화번호 검색">
+                                </div>
+
+                                <div class="card border border-secondary mb-2">
+                                    <div class="card-body p-2">
+                                        <div id="all_user" style="height: 500px; max-height: 500px; overflow-y: auto;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-6 ps-2 mb-3">
+                                <div class="d-inline d-md-flex justify-content-between align-items-center">
+                                    <label for="selected_user" class="form-label fw-bold text-nowrap mb-1">파견 명단
+                                        <span id="selected_user_count" class="text-muted"></span>
+                                    </label>
+                                    <input type="text" class="form-control-sm ms-0 ms-md-4 mb-1" id="selected_user_search" placeholder="이름 또는 전화번호 검색">
+                                </div>
+
+                                <div class="card border border-light div_required mb-2">
+                                    <div class="card-body p-2">
+                                        <div id="selected_user" style="height: 500px; max-height: 500px; overflow-y: auto;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" id="btn_init" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" id="btn_save" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xxl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">정규파견관리 <i class="fa-solid fa-angle-right px-1"></i> 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between">
+                    <div class="col-md-4">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="subsidiary" class="form-label fw-bold">관리 법인
+                                    <button class="btn btn-sm px-1 py-0"
+                                            onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                        <i class="fa-solid fa-up-right-from-square"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control div_required" id="subsidiary"></select>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="customer" class="form-label fw-bold">근무 현장
+                                    <button class="btn btn-sm px-1 py-0"
+                                            onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                        <i class="fa-solid fa-up-right-from-square"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control div_required" id="customer"></select>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="desc1" class="form-label">비고</label>
+                                <input type="text" class="form-control" id="desc1">
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="status_select" class="form-label">진행 상태</label>
+                                <select class="text-left form-select" id="status_select">
+                                    <option value="진행">진행</option>
+                                    <option value="종료">종료</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="manager" class="form-label">담당 관리자
+                                    <button class="btn btn-sm px-1 py-0"
+                                            onclick="window.open('{% url 'admin_employee_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                        <i class="fa-solid fa-up-right-from-square"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control" id="manager"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8 ps-0 ps-md-4">
+                        <div class="d-flex justify-content-between">
+                            <div class="col-6 pe-2 mb-3">
+                                <div class="d-inline d-md-flex justify-content-between align-items-center">
+                                    <label for="all_user" class="form-label text-nowrap mb-1">전체 정규직
+                                        <button class="btn btn-sm px-1 py-0"
+                                                onclick="window.open('{% url 'admin_employee_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                            <i class="fa-solid fa-up-right-from-square"></i>
+                                        </button>
+                                    </label>
+                                    <input type="text" class="form-control-sm ms-0 ms-md-4 mb-1" id="all_user_search" placeholder="이름 또는 전화번호 검색">
+                                </div>
+
+                                <div class="card border border-secondary mb-2">
+                                    <div class="card-body p-2">
+                                        <div id="all_user" style="height: 500px; max-height: 500px; overflow-y: auto;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-6 ps-2 mb-3">
+                                <div class="d-inline d-md-flex justify-content-between align-items-center">
+                                    <label for="selected_user" class="form-label fw-bold text-nowrap mb-1">파견 명단
+                                        <span id="selected_user_count" class="text-muted"></span>
+                                    </label>
+                                    <input type="text" class="form-control-sm ms-0 ms-md-4 mb-1" id="selected_user_search" placeholder="이름 또는 전화번호 검색">
+                                </div>
+
+                                <div class="card border border-light div_required mb-2">
+                                    <div class="card-body p-2">
+                                        <div id="selected_user" style="height: 500px; max-height: 500px; overflow-y: auto;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" id="btn_init" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" id="btn_save" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_customer_id;
+let a_click_customer_name;
+let a_click_subsidiary_id;
+let a_click_subsidiary_name;
+let a_click_manager_id;
+let a_click_status_select;
+let a_click_desc1;
+
+let a_click_created_at;
+let a_click_created_by_id;
+let a_click_created_by_name;
+let a_click_updated_at;
+let a_click_updated_by_id;
+let a_click_updated_by_name;
+
+let all_sch;
+let sch_subsidiary;
+let sch_customer;
+let sch_manager;
+
+let display_all_user = false;
+let display_selected_user = false;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('general_work_order_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('general_work_order_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_subsidiary', '관리법인 검색', '/sel2_hanwool_subsidiary/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_customer', '거래처 소분류 검색', '/sel2_hanwool_customer/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_manager', '담당관리자 검색', '/sel2_user_manager/?me=true', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+}
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    all_sch = $('#all_sch').val();
+    sch_subsidiary = $('#sch_subsidiary').val();
+    sch_customer = $('#sch_customer').val();
+    sch_manager = $('#sch_manager').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_subsidiary) { query += "&sch_subsidiary=" + sch_subsidiary; }
+    if (sch_customer) { query += "&sch_customer=" + sch_customer; }
+    if (sch_manager) { query += "&sch_manager=" + sch_manager; }
+    query += "&sch_contract_completed=Y";
+
+    fetch_gp("/general_work_order_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor: pointer;'>
+            <td>${num + i}</td>
+            <td name='subsidiary_name'>${item.subsidiary_name || ""}</td>
+            <td name='customer_name'>${item.customer_name || ""}</td>
+            <td>
+                <i class="fa-solid fa-users me-1"></i> ${item.selected_user}명 &nbsp;/&nbsp;
+                <i class="fa-solid fa-file-signature me-1"></i>${item.signed_user}명&nbsp;
+                (${item.selected_user > 0 ? Math.round(item.signed_user / item.selected_user * 100) : 0}%)
+            </td>
+            <td name='status_badge'>
+                <span class="badge ${item.status === "종료" ? 'bg-secondary' : 'bg-primary'} font-size-12 px-2 py-1" style="width: 50px;">
+                    ${item.status === "종료" ? '종료' : '진행'}
+                </span>
+            </td>
+            <td name='desc1' class="text-truncate" style="max-width: 200px;">${item.desc1 || ""}</td>
+            <td class="py-0">
+                <button class="btn btn-info text-nowrap ms-1 px-2.5" onclick="b_popup_open(${item.id})">
+                    <i class="fa-solid fa-file-invoice"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">급여정산</span>
+                </button>
+            </td>
+
+            <td name='manager_id' class='d-none'>${item.manager.id || ""}</td>
+            <td name='customer_id' class='d-none'>${item.customer_id || ""}</td>
+            <td name='subsidiary_id' class="d-none">${item.subsidiary_id || ""}</td>
+            <td name='status' class='d-none'>${item.status || ""}</td>
+
+            <td name='created_at' class='d-none'>${item.created_at}</td>
+            <td name='created_by_id' class='d-none'>${item.created_by.id}</td>
+            <td name='created_by_name' class='d-none'>${item.created_by.name}</td>
+            <td name='updated_at' class='d-none'>${item.updated_at}</td>
+            <td name='updated_by_id' class='d-none'>${item.updated_by.id}</td>
+            <td name='updated_by_name' class='d-none'>${item.updated_by.name}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_manager_id = $(this).find("[name='manager_id']").text();
+        a_click_customer_id = $(this).find("[name='customer_id']").text();
+        a_click_customer_name = $(this).find("[name='customer_name']").text();
+        a_click_subsidiary_id = $(this).find("[name='subsidiary_id']").text();
+        a_click_subsidiary_name = $(this).find("[name='subsidiary_name']").text();
+        a_click_status_select = $(this).find("[name='status']").text();
+        a_click_desc1 = $(this).find("[name='desc1']").text();
+
+        a_click_desc2 = $(this).find("[name='desc2']").text();
+        a_click_desc3 = $(this).find("[name='desc3']").text();
+        a_click_updated_by_name = $(this).find("[name='updated_by_name']").text();
+        a_click_updated_at = $(this).find("[name='updated_at']").text();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_update_modal_in();
+    });
+}
+
+function a_create_modal_in() {
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    display_all_user = false;
+    display_selected_user = true;
+    $("#a_create_modal #desc1").val('');
+    $("#a_create_modal #status_select").val('진행');
+    $("#a_create_modal #all_user_search").val('');
+    $("#a_create_modal #selected_user_search").val('');
+
+    $('#a_create_modal #selected_user').html(`<div class="d-flex justify-content-center align-items-center h-100 selected_user_default">파견 인원을 등록하세요.</div>`);
+
+    init_date_flatpickr();
+    init_all_user('a_create_modal');
+    init_Select2_modal('#a_create_modal #customer', '선택', '/sel2_hanwool_customer/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #subsidiary', '선택', '/sel2_hanwool_subsidiary/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #manager', '선택', '/sel2_user_manager/?me=true', {id: 'id', txt: item => `${item.text}`});
+    $("#a_create_modal #subsidiary").on('change', function () {
+        display_all_user = false;
+        reset_element_style('a_create_modal');
+        init_all_user('a_create_modal', $(this).val());
+        $('#a_create_modal #selected_user').html(`<div class="d-flex justify-content-center align-items-center h-100 selected_user_default">파견 인원을 등록하세요.</div>`);
+    });
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_submit() {
+    if (is_empty($('#a_create_modal #subsidiary').val()) === true) {
+        alert("[관리 법인] 항목을 선택하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_create_modal #customer').val()) === true) {
+        alert("[근무 현장] 항목을 입력하세요.");
+        return;
+    }
+
+    // selected_user에 등록된 user_id 수집 → JSON 배열로 직렬화
+    const selectedUsers = [];
+    $('#a_create_modal #selected_user .user-card').each(function () {
+        const userId = $(this).data('user-id');
+        if (userId) selectedUsers.push(userId);
+    });
+    if (selectedUsers.length == 0) {
+        alert("파견 인원을 등록해주세요.");
+        return;
+    }
+    const selectedUsersJson = JSON.stringify(selectedUsers);
+
+    let api_data = new FormData();
+        api_data.append("manager", nullapply($('#a_create_modal #manager').val()));
+        api_data.append("subsidiary", nullapply($('#a_create_modal #subsidiary').val()));
+        api_data.append("customer", nullapply($('#a_create_modal #customer').val()));
+        api_data.append("desc1", nullapply($('#a_create_modal #desc1').val()));
+        api_data.append("status", nullapply($('#a_create_modal #status_select').val()));
+        api_data.append("selected_user", selectedUsersJson);
+
+    fetch_gp('/general_work_order_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        a_search_ready();
+        alert(txt.create_ed);
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+let a_update_item_changed = false;
+
+function a_update_modal_reset(popup_off) {
+    $("#a_update_modal #desc1").val(a_click_desc1);
+    $("#a_update_modal #status_select").val(a_click_status_select);
+    $("#a_update_modal #all_user_search").val('');
+    $("#a_update_modal #selected_user_search").val('');
+
+    $('#a_update_modal #selected_user').html(`<div class="d-flex justify-content-center align-items-center h-100 selected_user_default">파견 인원을 등록하세요.</div>`);
+    init_all_user('a_update_modal');
+
+    init_date_flatpickr();
+    init_Select2_modal('#a_update_modal #customer', '선택', '/sel2_hanwool_customer/', {id: 'id', txt: item => `${item.text}`}, a_click_customer_id);
+    init_Select2_modal('#a_update_modal #subsidiary', '선택', '/sel2_hanwool_subsidiary/', {id: 'id', txt: item => `${item.text}`}, a_click_subsidiary_id);
+    init_Select2_modal('#a_update_modal #manager', '선택', '/sel2_user_manager/?me=true', {id: 'id', txt: item => `${item.text}`}, a_click_manager_id);
+
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    if (is_empty($('#a_update_modal #subsidiary').val()) === true) {
+        alert("[관리 법인] 항목을 선택하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_update_modal #customer').val()) === true) {
+        alert("[근무 현장] 항목을 입력하세요.");
+        return;
+    }
+
+    // selected_user에 등록된 user_id 수집 → JSON 배열로 직렬화
+    const selectedUsers = [];
+    $('#a_update_modal #selected_user .user-card').each(function () {
+        const userId = $(this).data('user-id');
+        if (userId) selectedUsers.push(userId);
+    });
+    const selectedUsersJson = JSON.stringify(selectedUsers);
+
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("manager", nullapply($('#a_update_modal #manager').val()));
+        api_data.append("subsidiary", nullapply($('#a_update_modal #subsidiary').val()));
+        api_data.append("customer", nullapply($('#a_update_modal #customer').val()));
+        api_data.append("desc1", nullapply($('#a_update_modal #desc1').val()));
+        api_data.append("status", nullapply($('#a_update_modal #status_select').val()));
+        api_data.append("selected_user", selectedUsersJson);
+
+    fetch_gp('/general_work_order_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search();
+        alert(txt.update_ed);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt(txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/general_work_order_delete_fn/', 'post', true, api_data, (done) => {
+            a_nation.page = 1;
+            a_click_id = null;
+
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+
+// 모달 진입시 모든 단기직 불러오기
+function init_all_user(modalType, subsidiary_id) {
+    display_all_user = false;
+    reset_element_style(modalType);
+    let query = "?page=1&page_size=99999&sch_work_type=정규직";
+    if (subsidiary_id) {
+        query += "&subsidiary_id=" + subsidiary_id;
+    }
+    fetch_gp("/admin_employee_list_fn/" + query, 'GET', true, {}, (done) => {
+        draw_all_user(done, modalType);
+        display_all_user = true;
+        reset_element_style(modalType);
+    });
+}
+
+function reset_element_style(modalType) {
+    let disabled = (!display_all_user || !display_selected_user);
+    $(`#${modalType} #btn_init`).prop("disabled", disabled);
+    $(`#${modalType} #btn_save`).prop("disabled", disabled);
+    $(`#${modalType} #subsidiary`).prop("disabled", modalType == "a_create_modal" ? !display_all_user : true);
+    $(`#${modalType} #subsidiary`).trigger("change.select2");
+}
+
+function draw_all_user(done, modalType) {
+    let targetModal = `#${modalType}`;
+    let data = (done.results || []).filter(item => !item.customer_id || (modalType === 'a_update_modal' && Number(item.customer_id) === Number(a_click_customer_id)));
+    if (!data || data.length === 0) {
+        let emptyRow = `
+            <div class="d-flex justify-content-center align-items-center h-100 selected_user_default">등록된 데이터가 없습니다.</div>
+        `;
+        $(targetModal +' #all_user').html(emptyRow);
+        return;
+    }
+
+    let html = "";
+    data.forEach((item, idx) => {
+        let profileImage = item.profile_image ? `<img src="${item.profile_image}" alt="Profile Image" class="rounded-circle d-none d-md-inline me-2" width="24" height="24">` : "";
+
+        html += `
+            <div class="card border border-light mb-1 user-card" data-index="${idx}" data-user-id="${item.id}" style="cursor: pointer;">
+                <div class="card-body d-flex p-2">
+                    <div class="d-flex justify-content-start align-items-center">
+                        ${profileImage}
+                        <div class="fw-bold text-nowrap user_card_text">${item.name || ''} (${item.phone || ''})</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    $(targetModal +' #all_user').html(html);
+
+    // 선택된 인원 수 갱신
+    update_selected_user_count(targetModal);
+
+    if (modalType === 'a_update_modal') {
+        draw_selected_user('a_update_modal', a_click_id);
+
+    }
+
+    // 좌클릭: 근무파견 이동
+    $(targetModal + ' .user-card').on('click', function (e) {
+        if (display_all_user && display_selected_user) {
+            const $card = $(this);
+            const userId = $card.data('user-id');
+
+            // 이미 등록된 경우 중복 방지
+            if ($(targetModal + ' #selected_user .user-card[data-user-id="' + userId + '"]').length > 0) {
+                alert('이미 등록된 사용자입니다.');
+                return;
+            }
+
+            // 안내 문구 제거
+            $(targetModal + ' #selected_user .selected_user_default').remove();
+
+            // 복제해서 파견 영역으로 이동
+            const $clone = $card.clone();
+            $clone.removeClass('bg-primary-subtle');  // 선택 효과 제거
+            $(targetModal + ' #selected_user').append($clone);
+
+            // 원래 목록에서는 비활성화 또는 제거
+            $card.addClass('d-none');
+
+            // 선택된 인원 수 갱신
+            update_selected_user_count(targetModal);
+        }
+    });
+}
+
+function update_selected_user_count(modalId) {
+    const modalSelector = modalId.startsWith('#') ? modalId : `#${modalId}`;
+    const count = $(`${modalSelector} #selected_user .user-card`).length;
+    $(`${modalSelector} #selected_user_count`).text(`(${count}명)`);
+}
+
+// selected_user의 사용자 카드를 클릭하여 all_user로 돌려보내는 기능
+$(document).on('click', '.modal .selected_user .user-card, .modal #selected_user .user-card', function () {
+    if (display_all_user && display_selected_user) {
+        const $card = $(this);
+        const $modal = $card.closest('.modal');
+        const targetModal = '#' + $modal.attr('id');
+        const userId = $card.data('user-id');
+
+        // 해당 유저의 원래 카드 되살리기 (d-none 해제)
+        const $originalCard = $(`${targetModal} #all_user .user-card[data-user-id="${userId}"]`);
+        $originalCard.removeClass('d-none');
+
+        // 현재 선택된 카드 제거
+        $card.remove();
+
+        // 모두 제거되면 안내 문구 복원
+        if ($(`${targetModal} #selected_user .user-card`).length === 0) {
+            $(`${targetModal} #selected_user`).html(`<div class="d-flex justify-content-center align-items-center h-100 selected_user_default">파견 인원을 등록하세요.</div>`);
+        }
+
+        // 선택된 인원 수 갱신
+        update_selected_user_count(targetModal);
+    }
+});
+
+// all_user 항목 검색 기능
+$(document).on('input', '#all_user_search', function () {
+    const keyword = $(this).val().toLowerCase().trim();
+    const $modal = $(this).closest('.modal');  // 모달 기준
+    const modalId = '#' + $modal.attr('id');
+
+    $(`${modalId} #all_user .user-card`).each(function () {
+        const text = $(this).text().toLowerCase();
+        if (text.includes(keyword)) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+});
+
+// selected_user 항목 검색 기능
+$(document).on('input', '#selected_user_search', function () {
+    const keyword = $(this).val().toLowerCase().trim();
+    const $modal = $(this).closest('.modal');
+    const modalId = '#' + $modal.attr('id');
+
+    $(`${modalId} #selected_user .user-card`).each(function () {
+        const text = $(this).text().toLowerCase();
+        if (text.includes(keyword)) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+});
+
+function draw_selected_user(modalId, workOrderId) {
+    if (!workOrderId) return;
+
+    display_selected_user = false;
+    reset_element_style(modalId);
+    fetch_gp(`/general_worker_list_fn/?DOID=${workOrderId}`, 'GET', true, {}, (done) => {
+        const userList = done.results.map(item => item.user);  // user만 추출
+
+        let html = '';
+        if (!userList || userList.length === 0) {
+            html = `<div class="d-flex justify-content-center align-items-center h-100 selected_user_default">파견 인원을 등록하세요.</div>`;
+        } else {
+            userList.forEach(user => {
+                const profileImage = user.profile_image
+                    ? `<img src="${user.profile_image}" alt="Profile Image" class="rounded-circle d-none d-md-inline me-2" width="24" height="24">`
+                    : '';
+                html += `
+                    <div class="card border border-light mb-1 user-card" data-user-id="${user.id}" style="cursor: pointer;">
+                        <div class="card-body d-flex p-2">
+                            <div class="d-flex justify-content-start align-items-center">
+                                ${profileImage}
+                                <div class="fw-bold text-nowrap user_card_text">${user.name || ''} (${user.phone || ''})</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        $(`#${modalId} #selected_user`).html(html);
+        update_selected_user_count(`${modalId}`);  // 인원 수 갱신
+        remove_duplicate_user(`${modalId}`);
+        display_selected_user = true;
+        reset_element_style(`${modalId}`);
+    });
+}
+
+function remove_duplicate_user(modalId) {
+    const $modal = $(`#${modalId}`);
+
+    // selected_user에 있는 user-id 목록 추출
+    const selectedIds = [];
+    $modal.find(`#selected_user .user-card`).each(function () {
+        selectedIds.push($(this).data('user-id'));
+    });
+
+    // all_user에서 중복되는 카드에 d-none 추가
+    $modal.find(`#all_user .user-card`).each(function () {
+        const $card = $(this);
+        const userId = $card.data('user-id');
+
+        if (selectedIds.includes(userId)) {
+            $card.addClass('d-none');
+        } else {
+            $card.removeClass('d-none');  // 불필요한 숨김 복구도 포함 (재호출 시 대비)
+        }
+    });
+}
+
+
+// 근로계약 팝업
+function a_popup_open(work_order_id) {
+    let popupUrl = `/general/worker_list/${work_order_id}`;
+
+    const popup = window.open(
+        popupUrl,
+        'workerListPopup',
+        `width=${screen.width},height=${screen.height},top=0,left=0,scrollbars=yes,resizable=yes`
+    );
+
+    if (popup) {
+        popup.moveTo(0, 0);
+        popup.resizeTo(screen.width, screen.height);
+        popup.focus();
+    }
+}
+
+// 비용청구 팝업
+function b_popup_open(work_order_id) {
+    let popupUrl = `/general/work_invoice/${work_order_id}`;
+    
+    const popup = window.open(
+        popupUrl,
+        'inquiryCostPopup',
+        `width=${screen.width},height=${screen.height},top=0,left=0,scrollbars=yes,resizable=yes`
+    );
+
+    if (popup) {
+        popup.moveTo(0, 0);
+        popup.resizeTo(screen.width, screen.height);
+        popup.focus();
+    }
+}
+
+
+function get_result_amount(obj, cnt, modalType) {
+    let targetModal = `#${modalType}`;
+    let totalRaw = $(targetModal + ' #total_amount').val().replace(/,/g, '');
+    let faultyRaw = $(targetModal + ' #faulty_amount').val().replace(/,/g, '');
+
+    let total = parseFloat(totalRaw || 0);
+    let faulty = parseFloat(faultyRaw || 0);
+    let result = total - faulty;
+
+    let resultStr = (totalRaw.includes('.') || faultyRaw.includes('.'))
+        ? result.toFixed(cnt)
+        : String(result);  // 정수는 소수점 제거
+
+    $(targetModal + ' #result_amount').val(formatNumber(resultStr, cnt));
+    checkNumber(obj, cnt);
+}
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+// 데이트 필터 드랍다운 이벤트
+$('#date_filter').on('mouseenter', function () {
+    $('#date_dropdown').removeClass('d-none');
+});
+$('#date_filter').on('mouseleave', function () {
+    $('#date_dropdown').addClass('d-none');
+});
+
+function set_date_range(range) {
+    const today = new Date();
+    let start, end;
+
+    if (range === 'yesterday') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end.setDate(today.getDate() - 1);
+    } else if (range === 'today') {
+        start = end = new Date(today);
+    } else if (range === 'tomorrow') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() + 1);
+        end.setDate(today.getDate() + 1);
+    } else if (range === 'last_week') {
+        const day = today.getDay() || 7;
+        end = new Date(today);
+        end.setDate(today.getDate() - day);
+        start = new Date(end);
+        start.setDate(end.getDate() - 6);
+    } else if (range === 'this_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 1);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'next_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 8);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (range === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (range === 'next_month') {
+        start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    }
+
+    else if (range === 'last_year') {
+        start = new Date(today.getFullYear() - 1, 0, 1);
+        end = new Date(today.getFullYear() - 1, 11, 31); }
+
+    else if (range === 'this_year') {
+        start = new Date(today.getFullYear(), 0, 1);
+        end = new Date(today.getFullYear(), 11, 31); }
+
+    else if (range === 'next_year') {
+        start = new Date(today.getFullYear() + 1, 0, 1);
+        end = new Date(today.getFullYear() + 1, 11, 31); }
+
+
+    $('#fr_date').val(formatDate(start));
+    $('#to_date').val(formatDate(end));
+    a_search_ready();
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

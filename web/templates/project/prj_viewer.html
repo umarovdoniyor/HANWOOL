@@ -1,0 +1,1807 @@
+<!-- 프로젝트 > 프로젝트 뷰어 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+/* 전체 컨테이너 */
+#gantt-container {
+    overflow-x: auto;
+}
+#month-header, #timeline, #gantt-table {
+    width: fit-content;
+}
+
+/* 행 레이아웃 기본 */
+.month-row, .date-row, .project-row {
+    display: flex;
+    min-width: max-content;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* 월/일 공통 셀 스타일 */
+.month-cell, .day-cell {
+    width: 30px;
+    min-width: 30px;
+    height: 32px;
+    line-height: 32px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: center;
+    border-right: 1px solid #dee2e6;
+    box-sizing: border-box;
+    background-color: white;
+    transition: background-color 0.2s ease;
+}
+
+/* 프로젝트셀 공용 */
+.project-cell {
+    border-right: 1px solid #dee2e6;
+    background-color: white;
+    box-sizing: border-box;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    align-items: center;
+    padding: 6px 8px;
+}
+
+.project-no {
+    width: 45px;
+    min-width: 45px;
+    display: flex;
+}
+
+.project-title {
+    width: 250px;
+    min-width: 250px;
+    position: sticky;
+    left: 0;
+    z-index: 7;
+}
+
+.project-info {
+    width: 100px;
+    min-width: 100px;
+}
+
+.project-title.info-header, .project-info.info-header, .project-no.info-header {
+    font-weight: 600;
+    background-color: #f8f9fa;
+    text-align: center;
+}
+
+/* 사용자 필드 스크롤시 고정 */
+.user_top_fixed {
+    position: sticky;
+    left: 250px;
+    z-index: 7;
+    width: 150px;
+}
+
+/* day-row : 주말 cell 표시 */
+.day-cell.weekend {
+    background-color: rgba(255, 182, 193, 0.2);
+}
+
+/* day-row : 공휴일 cell 표시 */
+.day-cell.holiday {
+    background-color: rgba(240, 128, 128, 0.2);
+}
+
+/* day-row : 오늘 cell 표시 */
+.day-cell.today {
+    border-left: 2px solid #ffc107 !important;
+    border-right: 2px solid #ffc107 !important;
+    z-index: 2;
+}
+
+.day-header.day-cell.today {
+    background-color: #ffc107 !important;
+    z-index: 2;
+}
+
+/* day-row : 프로젝트 cell 표시 */
+.day-cell.project-active {
+    background-color: rgba(135, 206, 250, 0.2) !important;
+}
+
+/* day-row : 프로젝트 + 주말(공휴일) cell 표시 */
+.day-cell.weekend.project-active, .day-cell.holiday.project-active {
+    background-color: rgba(135, 206, 250, 0.4) !important;
+}
+
+/* 프로젝트 행 내 셀 */
+.project-row .day-cell {
+    border-right: 1px solid #dee2e6;
+    height: 32px;
+}
+
+.project-row {
+    position: relative;
+    cursor: pointer;
+}
+
+.project-row.clicked .project-no, .project-row.clicked .project-title, .project-row.clicked .project-info {
+    background-color: rgb(245,245,245) !important;
+}
+
+/* 실제일정바 */
+.real-bar {
+    margin-top: 0.5rem;
+    height: 16px;
+    background-color: rgba(52, 193, 142, 0.7);
+    position: absolute;
+    top: 0;
+    z-index: 5;
+}
+.real-container {
+    position: relative;
+    width: fit-content;
+    height: 0;
+}
+
+/* context-menu 스타일 */
+#custom-context-menu {
+    min-width: 150px;
+    padding: 5px 0;
+}
+#custom-context-menu .dropdown-item {
+    padding: 8px 16px;
+    cursor: pointer;
+}
+#custom-context-menu .dropdown-item:hover {
+    background-color: rgba(135, 206, 250, 0.5);
+}
+
+/* 드래그 스타일 */
+.day-cell.drag-selected {
+    background-color: rgba(0, 123, 255, 0.3) !important;
+    border: 2px solid #007bff !important;
+}
+
+/* 신규등록 row 확인 이벤트 */
+.project-row.updated_row .project-no, .project-row.updated_row .project-title, .project-row.updated_row .project-info {
+    animation: fadeOutHighlight 10s ease-out forwards;
+}
+
+/* 부드럽게 밝은 파란색에서 흰색으로 흐려지며 사라짐 */
+@keyframes fadeOutHighlight {
+    0% {
+        background-color: #d0f0ff; /* 연한 하늘색 */
+    }
+    20% {
+        background-color: #85e2ff;
+    }
+    40% {
+        background-color: #b3ecff;
+    }
+    60% {
+        background-color: #e0f7ff;
+    }
+    80% {
+        background-color: #f5fcff;
+    }
+    100% {
+        background-color: #ffffff; /* 흰색으로 자연스럽게 사라짐 */
+    }
+}
+
+/* select2 컨테이너 너비 지정 */
+.input_sel2 + .select2-container {
+    width: 180px !important;
+}
+
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+.input_sel2 + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+
+/* 선택된 항목 텍스트 정렬 */
+.input_sel2 + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+
+/* 화살표 위치 조정 */
+.input_sel2 + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+
+/* 클리어버튼 위치 조정 */
+.input_sel2 + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-list-check me-2"></i>프로젝트 뷰어 <i class="fa-solid fa-angle-right px-1"></i> {{ project.title }}
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange position-relative w-auto me-1"
+                                     id="date_filter" data-toggle="tooltip" data-placement="top" title="태스크 계획일로 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px; border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
+                                    
+                                    <div id="date_dropdown" class="d-none position-absolute bg-light border border-secondary-subtle rounded shadow-sm p-1"
+                                         style="top: 100%; left: 0; z-index: 1000; min-width: 150px;">
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('yesterday')">어제</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('today')">오늘</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('tomorrow')">내일</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_week')">지난주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_week')">이번주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_week')">다음주</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_month')">지난달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_month')">이번달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_month')">다음달</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-none d-xl-flex w-auto me-1" data-toggle="tooltip" data-placement="top" title="담당자 팀으로 검색">
+                                    <select class="page_size form-select form-select-sm me-1 input_sel2" id="sch_team"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+                                
+                                <div class="d-none d-xl-flex w-auto me-1" data-toggle="tooltip" data-placement="top" title="담당자로 검색">
+                                    <select class="page_size form-select form-select-sm me-1 input_sel2" id="sch_tasker"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+                                
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_status"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="진행 상태로 검색">
+                                    <option value="" selected>모두</option>
+                                    <option value="대기">대기</option>
+                                    <option value="진행">진행</option>
+                                    <option value="완료">완료</option>
+                                    <option value="중단">중단</option>
+                                </select>
+
+                                <div class="search-box d-flex me-1" data-toggle="tooltip" data-placement="top" title="태스크 제목 등 텍스트 검색">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                                
+                                 <div class="position-relative d-inline-block">
+                                    <button class="btn btn-secondary dropdown-toggle text-nowrap me-1 px-2.5" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-filter"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">필터</span>
+                                    </button>
+                                    <ul class="dropdown-menu" style="top: 100%; left: 0;">
+                                        <li>
+                                            <div class="form-check form-check-secondary d-flex align-items-center my-2 mx-3">
+                                                <input class="form-check-input me-2" type="checkbox" id="sort_tasker" name="sort_tasker">
+                                                <label class="form-check-label text-nowrap" for="sort_tasker">직원별 묶어보기</label>
+                                            </div>
+                                        </li>
+                                        <li>
+                                            <div class="form-check form-check-secondary d-flex align-items-center my-2 mx-3">
+                                                <input class="form-check-input me-2" type="checkbox" id="sch_mytask" name="sch_mytask">
+                                                <label class="form-check-label text-nowrap" for="sch_mytask">내 태스크만 보기</label>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <button class="btn btn-dark text-nowrap ms-3 px-2.5" onclick="window.close()">
+                                    <i class="fa-solid fa-xmark"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">프로젝트 뷰어 닫기</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                </button>
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 간트 차트 -->
+                        <div class="col-12 d-flex align-items-start mb-3">
+                            <div class="table-responsive border rounded shadow-sm w-100" id="gantt-container">
+                                <div id="gantt-table" class="w-100">
+                                    <!-- 여기에 JS로 표 구조 삽입 -->
+                                </div>
+                            </div>
+                        </div>
+        
+                        <div class="div_center" id="a_nation_id"></div>
+                        <hr class="border-light m-2">
+                
+                        <div class="col-12 d-flex justify-content-between align-items-start my-3">
+                            <div class="row w-100">
+                                <div class="col-12 col-lg-6 pe-2">
+                                    <div class="card w-100">
+                                        <div class="card-body">
+                                            <ul class="list-group list-group-flush">
+                                                <li class="list-group-item">
+                                                    <div class="row">
+                                                        <div class="col-12 col-lg-6">
+                                                            <span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">코 드</span>{{ project.code }}
+                                                        </div>
+                                                        <div class="col-12 col-lg-6">
+                                                            <span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">프로젝트</span>{{ project.title }}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                
+                                                {% if project.plan_start %}
+                                                <li class="list-group-item">
+                                                    <div class="row">
+                                                        <div class="col-12 col-lg-6">
+                                                            <span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">일 정</span>
+                                                            {{ project.plan_start|date:"Y-m-d" }} ~ {{ project.plan_end|date:"Y-m-d" }} (총 {{ project.total_days }}일)
+                                                        </div>
+                                                        <div class="col-12 col-lg-6">
+                                                            <span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">현 황</span>
+                                                            {{ project.progress }}% {{ project.status }}
+                                                            {% if project.status != "완료" %}
+                                                                (
+                                                                {% if project.remaining_days < 0 %}
+                                                                    <span style="color:red;">{{ project.remaining_days|stringformat:"s"|slice:"1:" }}일 초과</span>
+                                                                {% else %}
+                                                                    {{ project.remaining_days }}일 남음
+                                                                {% endif %}
+                                                                )
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                {% endif %}
+                
+                                                {% if project.manager %}
+                                                <li class="list-group-item">
+                                                    <div class="row">
+                                                        <div class="col-12 col-lg-6">
+                                                            <span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">매니저</span>
+                                                            <img src="/data/{{ project.manager.profile_image }}" alt="프로필" class="d-none d-md-inline-block" style="width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; display: inline-block;">
+                                                            <span style="margin-left: 2px; display: inline-block; vertical-align: middle;">{{ project.manager.name }} {{ project.manager.job_level.name }}</span>
+                                                        </div>
+                                                        <div class="col-12 col-lg-6">
+                                                            {% if project.customer %}
+                                                           <span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">고객사</span>{{ project.customer }}
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                {% endif %}
+                
+                                                {% if project.cat1 %}
+                                                <li class="list-group-item"><span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">분 류</span>
+                                                    {{ project.cat1.name|default:"-" }} / {{ project.cat2.name|default:"-" }} / {{ project.cat3.name|default:"-" }}</li>
+                                                {% endif %}
+                
+                                                {% if project.detail %}
+                                                <li class="list-group-item" style="overflow-y: auto; max-height: 300px;">
+                                                    <div class="d-flex">
+                                                        <span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">세부내용</span>
+                                                        <div style="white-space: pre-wrap;">{{ project.detail }}</div>
+                                                    </div>
+                                                </li>
+                                                {% endif %}
+                
+                                                {% if project.desc1 %}
+                                                <li class="list-group-item"><span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">추가정보1</span>{{ project.desc1 }}</li>
+                                                {% endif %}
+                                                {% if project.desc2 %}
+                                                <li class="list-group-item"><span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">추가정보2</span>{{ project.desc2 }}</li>
+                                                {% endif %}
+                                                {% if project.desc3 %}
+                                                <li class="list-group-item"><span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">추가정보3</span>{{ project.desc3 }}</li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                
+                                <div class="col-12 col-lg-6 ps-2">
+                                    <div class="card w-100">
+                                        <div class="card-body">
+                                            <ul class="fs-6 list-group list-group-flush" style="color: #333;">
+                                                <li class="list-group-item">
+                                                    <span class="badge bg-secondary me-3 py-2" style="min-width: 80px;">프로젝트 댓글</span> {{ comment_count }} 건
+                                                </li>
+                
+                                                <li class="list-group-item">
+                                                    <!-- 코멘트 -->
+                                                    <div class="row mt-4 px-3">
+                                                        <div class="p-3 border border-secondary-subtle rounded">
+                                                            <div class="mb-3" id="comment_list" style="overflow-y: auto; max-height: 330px;"></div>
+                                                            <div class="d-flex align-items-center p-2 bg-white border rounded">
+                                                                <img class="avatar-sm p-1 me-2" src="{{ request.user.profile_image.url }}" alt="프로필 사진"
+                                                                     style="border-radius: 8px; width: 40px; height: 40px; object-fit: cover;">
+                            
+                                                                <textarea id="comment_input" class="form-control border-0 flex-grow-1"
+                                                                          placeholder="댓글을 입력하세요." rows="2" style="resize: none;"></textarea>
+                            
+                                                                <button class="btn btn-dark text-nowrap mx-2 px-3" onclick="comment_create_submit('project', prj_id)">등록</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">태스크 간트 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-4 mb-3 d-none">
+                        <label for="code" class="form-label">태스크 코드</label>
+                        <input type="text" class="form-control" id="code" placeholder="자동 생성" disabled>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="project" class="form-label fw-bold">프로젝트</label>
+                        <select class="form-control div_required" id="project"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="title" class="form-label fw-bold">태스크 제목</label>
+                        <input type="text" class="form-control div_required" id="title">
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="tasker" class="form-label">담당자</label>
+                        <select class="form-control" id="tasker"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4 mb-3">
+                        <label for="cat1" class="form-label">대분류</label>
+                        <select class="form-control" id="cat1"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="cat2" class="form-label">중분류</label>
+                        <select class="form-control" id="cat2"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="cat3" class="form-label">소분류</label>
+                        <select class="form-control" id="cat3"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-3 mb-3">
+                        <label for="plan_start" class="form-label">계획 시작일</label>
+                        <input type="text" class="form-control date_flatpickr" id="plan_start">
+                    </div>
+                    <div class="col-3 mb-3">
+                        <label for="plan_end" class="form-label">계획 목표일</label>
+                        <input type="text" class="form-control date_flatpickr" id="plan_end">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="plan_time" class="form-label">예상 업무시간</label>
+                        <input type="number" class="form-control" id="plan_time" value="0" min="0">
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="planner" class="form-label">매니저</label>
+                        <select class="form-control" id="planner"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-3 mb-3">
+                        <label for="real_start" class="form-label">실제 시작일</label>
+                        <input type="text" class="form-control date_flatpickr" id="real_start">
+                    </div>
+                    <div class="col-3 mb-3">
+                        <label for="real_end" class="form-label">실제 종료일</label>
+                        <input type="text" class="form-control date_flatpickr" id="real_end">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="real_time" class="form-label">실제 업무시간</label>
+                        <input type="number" class="form-control" id="real_time" value="0" min="0">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="progress" class="form-label">진행률</label>
+                        <input type="number" class="form-control" id="progress" value="0" min="0" max="100">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="select_status" class="form-label">진행상태</label>
+                        <select class="form-select" id="select_status">
+                            <option value="대기">대기</option>
+                            <option value="진행">진행</option>
+                            <option value="완료">완료</option>
+                            <option value="중단">중단</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="detail" class="form-label">세부내용</label>
+                        <textarea class="form-control" id="detail" rows="4"></textarea>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label for="tasker_comment" class="form-label">담당자 코멘트</label>
+                        <input type="text" class="form-control" id="tasker_comment">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="planner_comment" class="form-label">매니저 코멘트</label>
+                        <input type="text" class="form-control" id="planner_comment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">태스크 간트 <i class="fa-solid fa-angle-right px-1"></i> 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-4 mb-3 d-none">
+                        <label for="code" class="form-label">태스크 코드</label>
+                        <input type="text" class="form-control" id="code" placeholder="자동 생성" disabled>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="project" class="form-label fw-bold">프로젝트</label>
+                        <select class="form-control div_required" id="project"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="title" class="form-label fw-bold">태스크 제목</label>
+                        <input type="text" class="form-control div_required" id="title">
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="tasker" class="form-label">담당자</label>
+                        <select class="form-control" id="tasker"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4 mb-3">
+                        <label for="cat1" class="form-label">대분류</label>
+                        <select class="form-control" id="cat1"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="cat2" class="form-label">중분류</label>
+                        <select class="form-control" id="cat2"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="cat3" class="form-label">소분류</label>
+                        <select class="form-control" id="cat3"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-3 mb-3">
+                        <label for="plan_start" class="form-label">계획 시작일</label>
+                        <input type="text" class="form-control date_flatpickr" id="plan_start">
+                    </div>
+                    <div class="col-3 mb-3">
+                        <label for="plan_end" class="form-label">계획 목표일</label>
+                        <input type="text" class="form-control date_flatpickr" id="plan_end">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="plan_time" class="form-label">예상 업무시간</label>
+                        <input type="number" class="form-control" id="plan_time" value="0" min="0">
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="planner" class="form-label">매니저</label>
+                        <select class="form-control" id="planner"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-3 mb-3">
+                        <label for="real_start" class="form-label">실제 시작일</label>
+                        <input type="text" class="form-control date_flatpickr" id="real_start">
+                    </div>
+                    <div class="col-3 mb-3">
+                        <label for="real_end" class="form-label">실제 종료일</label>
+                        <input type="text" class="form-control date_flatpickr" id="real_end">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="real_time" class="form-label">실제 업무시간</label>
+                        <input type="number" class="form-control" id="real_time" value="0" min="0">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="progress" class="form-label">진행률</label>
+                        <input type="number" class="form-control" id="progress" value="0" min="0" max="100">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="select_status" class="form-label">진행상태</label>
+                        <select class="form-select" id="select_status">
+                            <option value="대기">대기</option>
+                            <option value="진행">진행</option>
+                            <option value="완료">완료</option>
+                            <option value="중단">중단</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="detail" class="form-label">세부내용</label>
+                        <textarea class="form-control" id="detail" rows="4"></textarea>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label for="tasker_comment" class="form-label">담당자 코멘트</label>
+                        <input type="text" class="form-control" id="tasker_comment">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="planner_comment" class="form-label">매니저 코멘트</label>
+                        <input type="text" class="form-control" id="planner_comment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="custom-context-menu" class="position-absolute bg-white border shadow" style="display:none; z-index: 9999;">
+    <div class="date_row_only">
+        <div class="dropdown-item" onclick="a_plan_drag_update()">드래그 날짜로 계획일정 변경</div>
+        <div class="dropdown-item" onclick="a_real_drag_update()">드래그 날짜로 실제일정 변경</div>
+        <hr class="my-1">
+    </div>
+    <div class="dropdown-item" onclick="a_update_modal_in()">선택 태스크 수정</div>
+    <div class="dropdown-item" onclick="a_delete_submit()">선택 태스크 삭제</div>
+    <hr class="my-1">
+    <div class="dropdown-item" onclick="a_create_modal_in()">신규 태스크 등록</div>
+</div>
+
+
+<script>
+let prj_id = '{{ project.id }}';
+let a_click_id;
+let a_click_code;
+let a_click_title;
+let a_click_tasker_id;
+let a_click_tasker_name;
+let a_click_planner_id;
+let a_click_planner_name;
+let a_click_cat1_id;
+let a_click_cat1_name;
+let a_click_cat2_id;
+let a_click_cat2_name;
+let a_click_cat3_id;
+let a_click_cat3_name;
+let a_click_plan_start;
+let a_click_plan_end;
+let a_click_progress;
+let a_click_status;
+let a_click_detail;
+let a_click_tasker_comment;
+let a_click_planner_comment;
+let a_click_project_id;
+let a_click_project_title;
+let a_click_real_start;
+let a_click_real_end;
+let a_click_plan_time;
+let a_click_real_time;
+
+let customWeekends;
+
+let fr_date;
+let to_date;
+let all_sch;
+let sch_prj;
+let sch_team;
+let sch_tasker;
+let sch_status;
+let sort_tasker;
+let sch_mytask;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('prj_viewer_page_size', $(this).val());
+});
+
+$('#sch_status').on('change', function () {
+    localStorage.setItem('prj_viewer_sch_status', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+$(document).ready(function () {
+    $("#sort_tasker").change(function () {
+        if ($(this).is(":checked")) {
+            $(this).val("true");  // 체크됨(true) → 직원별로 묶어보기
+            a_search_ready();
+        } else {
+            $(this).val("false"); // 체크해제(false) → 기본 정렬순서로보기
+            a_search_ready();
+        }
+    });
+    $("#sch_mytask").change(function () {
+        if ($(this).is(":checked")) {
+            $(this).val("true");  // 체크됨(true) → 내 태스크만 보기
+            a_search_ready();
+        } else {
+            $(this).val("false"); // 체크해제(false) → 기본 보기
+            a_search_ready();
+        }
+    });
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('prj_viewer_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    let savedStatus = localStorage.getItem('prj_viewer_sch_status');
+    if (savedStatus) { $('#sch_status').val(savedStatus);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_team', '담당자팀 선택', '/sel2_code_team/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_tasker', '담당자 선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`});
+    comment_draw_table('project', prj_id);
+        
+    a_search_ready();
+}
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    all_sch = $('#all_sch').val();
+    sch_team = $('#sch_team').val();
+    sch_tasker = $('#sch_tasker').val();
+    sch_status = $('#sch_status').val();
+    sort_tasker = $('#sort_tasker').val();
+    sch_mytask = $('#sch_mytask').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&prj_id=" + prj_id;
+    if (fr_date) { query += "&fr_date=" + fr_date; }
+    if (to_date) { query += "&to_date=" + to_date; }
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_team) { query += "&sch_team=" + sch_team; }
+    if (sch_status) { query += "&sch_status=" + sch_status; }
+    if (sch_tasker) { query += "&sch_tasker=" + sch_tasker; }
+    if (sort_tasker) { query += "&sort_tasker=" + sort_tasker; }
+    if (sch_mytask) { query += "&sch_mytask=" + sch_mytask; }
+    
+    // 공휴일 정보를 찾고 간트차트를 불러와야 오류 방지 (비동기 문제)
+    fetch_gp("/company_offday_read_fn/" + query, 'GET', true, {}, (done) => {
+        // console.log("company_offday_read_fn: ", done);
+        customWeekends = done;
+
+        fetch_gp("/task_read_fn/" + query, 'GET', true, {}, (done) => {
+            // console.log("project_read_fn: ", done);
+            draw_gantt_chart(done.results);
+            a_nation.nation_display(done);
+            $('[data-bs-toggle="tooltip"]').tooltip({html: true, placement: 'top'});
+        });
+    });
+}
+
+function a_create_modal_in() {
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    init_Select2_modal('#a_create_modal #project', '선택', '/sel2_project/', {id: 'id', txt: item => `${item.text}`}, prj_id);
+    init_Select2_modal('#a_create_modal #tasker', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #planner', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #cat1', '선택', '/sel2_code_prj_cat1/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #cat2', '선택', '/sel2_code_prj_cat2/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #cat3', '선택', '/sel2_code_prj_cat3/', {id: 'id', txt: item => `${item.text}`});
+    
+    $('#a_create_modal #code').val('');
+    $('#a_create_modal #project').val('');
+    $('#a_create_modal #title').val('');
+    $('#a_create_modal #plan_start').val('');
+    $('#a_create_modal #plan_end').val('');
+    $('#a_create_modal #real_start').val('');
+    $('#a_create_modal #real_end').val('');
+    $('#a_create_modal #plan_time').val('0');
+    $('#a_create_modal #real_time').val('0');
+    $('#a_create_modal #progress').val('0');
+    $('#a_create_modal #select_status').val('대기');
+    $('#a_create_modal #detail').val('');
+    $('#a_create_modal #tasker_comment').val('');
+    $('#a_create_modal #planner_comment').val('');
+
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_submit() {
+    if (!$('#a_create_modal #project').val()) {
+        alert("[프로젝트]를 선택해주세요");
+        return;
+    }
+
+    if (!$('#a_create_modal #title').val().trim()) {
+        alert("[태스크 제목]을 입력해주세요");
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("prj_id", nullapply($('#a_create_modal #project').val()));
+        api_data.append("code", nullapply($('#a_create_modal #code').val()));
+        api_data.append("title", nullapply($('#a_create_modal #title').val()));
+        api_data.append("tasker", nullapply($('#a_create_modal #tasker').val()));
+        api_data.append("planner", nullapply($('#a_create_modal #planner').val()));
+        api_data.append("cat1", nullapply($('#a_create_modal #cat1').val()));
+        api_data.append("cat2", nullapply($('#a_create_modal #cat2').val()));
+        api_data.append("cat3", nullapply($('#a_create_modal #cat3').val()));
+        api_data.append("plan_start", nullapply($('#a_create_modal #plan_start').val()));
+        api_data.append("plan_end", nullapply($('#a_create_modal #plan_end').val()));
+        api_data.append("real_start", nullapply($('#a_create_modal #real_start').val()));
+        api_data.append("real_end", nullapply($('#a_create_modal #real_end').val()));
+        api_data.append("plan_time", nullapply($('#a_create_modal #plan_time').val()));
+        api_data.append("real_time", nullapply($('#a_create_modal #real_time').val()));
+        api_data.append("progress", nullapply($('#a_create_modal #progress').val()));
+        api_data.append("status", nullapply($('#a_create_modal #select_status').val()));
+        api_data.append("detail", nullapply($('#a_create_modal #detail').val()));
+        api_data.append("tasker_comment", nullapply($('#a_create_modal #tasker_comment').val()));
+        api_data.append("planner_comment", nullapply($('#a_create_modal #planner_comment').val()));
+
+    fetch_gp('/task_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        a_search_ready();
+        alert(txt.create_ed);
+        show_updated_row(done.id);
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    init_Select2_modal('#a_update_modal #project', '선택', '/sel2_project/', {id: 'id', txt: item => `${item.text}`}, a_click_project_id);
+    init_Select2_modal('#a_update_modal #tasker', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`}, a_click_tasker_id);
+    init_Select2_modal('#a_update_modal #planner', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`}, a_click_planner_id);
+    init_Select2_modal('#a_update_modal #cat1', '선택', '/sel2_code_prj_cat1/', {id: 'id', txt: item => `${item.text}`}, a_click_cat1_id);
+    init_Select2_modal('#a_update_modal #cat2', '선택', '/sel2_code_prj_cat2/', {id: 'id', txt: item => `${item.text}`}, a_click_cat2_id);
+    init_Select2_modal('#a_update_modal #cat3', '선택', '/sel2_code_prj_cat3/', {id: 'id', txt: item => `${item.text}`}, a_click_cat3_id);
+    
+    $('#a_update_modal #code').val(a_click_code);
+    $('#a_update_modal #title').val(a_click_title);
+    $('#a_update_modal #plan_start').val(a_click_plan_start);
+    $('#a_update_modal #plan_end').val(a_click_plan_end);
+    $('#a_update_modal #real_start').val(a_click_real_start);
+    $('#a_update_modal #real_end').val(a_click_real_end);
+    $('#a_update_modal #plan_time').val(Number(a_click_plan_time) || 0);
+    $('#a_update_modal #real_time').val(Number(a_click_real_time) || 0);
+    $('#a_update_modal #progress').val(Number(a_click_progress) || 0);
+    $('#a_update_modal #select_status').val(a_click_status).change();
+    $('#a_update_modal #detail').val(a_click_detail);
+    $('#a_update_modal #tasker_comment').val(a_click_tasker_comment);
+    $('#a_update_modal #planner_comment').val(a_click_planner_comment);
+
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    if (!$('#a_update_modal #project').val()) {
+        alert("[프로젝트]를 선택해주세요");
+        return;
+    }
+
+    if (!$('#a_update_modal #title').val().trim()) {
+        alert("[태스크 제목]을 입력해주세요");
+        return;
+    }
+    
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("prj_id", nullapply($('#a_update_modal #project').val()));
+        api_data.append("code", nullapply($('#a_update_modal #code').val()));
+        api_data.append("title", nullapply($('#a_update_modal #title').val()));
+        api_data.append("tasker", nullapply($('#a_update_modal #tasker').val()));
+        api_data.append("planner", nullapply($('#a_update_modal #planner').val()));
+        api_data.append("cat1", nullapply($('#a_update_modal #cat1').val()));
+        api_data.append("cat2", nullapply($('#a_update_modal #cat2').val()));
+        api_data.append("cat3", nullapply($('#a_update_modal #cat3').val()));
+        api_data.append("plan_start", nullapply($('#a_update_modal #plan_start').val()));
+        api_data.append("plan_end", nullapply($('#a_update_modal #plan_end').val()));
+        api_data.append("real_start", nullapply($('#a_update_modal #real_start').val()));
+        api_data.append("real_end", nullapply($('#a_update_modal #real_end').val()));
+        api_data.append("plan_time", nullapply($('#a_update_modal #plan_time').val()));
+        api_data.append("real_time", nullapply($('#a_update_modal #real_time').val()));
+        api_data.append("progress", nullapply($('#a_update_modal #progress').val()));
+        api_data.append("status", nullapply($('#a_update_modal #select_status').val()));
+        api_data.append("detail", nullapply($('#a_update_modal #detail').val()));
+        api_data.append("tasker_comment", nullapply($('#a_update_modal #tasker_comment').val()));
+        api_data.append("planner_comment", nullapply($('#a_update_modal #planner_comment').val()));
+    
+    fetch_gp('/task_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search();
+        alert(txt.update_ed);
+        show_updated_row(done.id);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+    
+    let confirmed = confirm("태스크를 삭제하시겠습니까?\n");
+    if (confirmed) {
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        
+        fetch_gp('/task_delete_fn/', 'post', true, api_data, (done) => {
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+let start_date_padding = 4; // day-cell 앞쪽 여유일
+let end_date_padding = 10; // day-cell 뒤쪽 여유일
+
+function draw_gantt_chart(items) {
+    const $gantt = $('#gantt-table');
+    $gantt.empty();
+
+    if (!items || items.length === 0) {
+        $gantt.append(`
+            <div class="text-center text-muted py-5" style="font-size: 26px; margin: 100px 0;">
+                <i class="fa-solid fa-exclamation-triangle fa-2x mb-3" style="font-size: 100px;"></i><br>
+                검색 조건을 만족하는 태스크가 없습니다.<br>검색 조건을 다시 확인해주세요.
+            </div>
+        `);
+        return;
+    }
+
+    const dates = getMinMaxDates(items);
+    const startDate = new Date(dates.startDate);
+    const endDate = new Date(dates.endDate);
+    startDate.setDate(startDate.getDate() - start_date_padding);
+    endDate.setDate(endDate.getDate() + end_date_padding);
+    globalStartDate = new Date(startDate);
+
+    const dayCount = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    $gantt.append(renderMonthHeader(startDate, dayCount));
+    $gantt.append(renderDateHeader(startDate, dayCount, today));
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    items.forEach((item) => {
+        $gantt.append(renderProjectRow(item, startDate, dayCount, today, num));
+        num++;
+    });
+
+    // 마지막에 인스턴트 빈 줄 추가 ----------------------------------------------------------------------------------------
+    const emptyItem = {
+        title: `<input type="text" class="form-control px-2" id="instant_title" placeholder="태스크 제목" style="border: 2px solid; max-height: 33px;">`,
+        cat1: `<select class="form-select" id="instant_cat1"></select>`,
+        cat2: `<select class="form-select" id="instant_cat2"></select>`,
+        cat3: `<select class="form-select" id="instant_cat3"></select>`,
+        plan_start: `<input type="text" class="form-control date_flatpickr px-2" id="instant_plan_start" placeholder="계획 시작일" style="max-height: 33px; font-size: 12px;">`,
+        plan_end: `<input type="text" class="form-control date_flatpickr px-2" id="instant_plan_end" placeholder="계획 종료일" style="max-height: 33px;  font-size: 12px;">`,
+        total_days: null,
+        remaining_days: null,
+        progress: '<input type="number" class="form-control px-2" id="instant_progress" value="" min="0" max="100" placeholder="진행률" style="max-height: 33px;">',
+        status: `<select class="form-select px-2" id="instant_status" style="max-height: 33px;">
+                    <option value="대기">대기</option>
+                    <option value="진행" selected>진행</option>
+                    <option value="완료">완료</option>
+                    <option value="중단">중단</option></select>`,
+        tasker: `<select class="form-select" id="instant_tasker"></select>`,
+        real_start: null,
+        real_end: null,
+        code: ''
+    };
+    const row = renderProjectRow(emptyItem, startDate, dayCount, today, items.length + 1);
+    $gantt.append(row);
+
+    init_Select2('#instant_cat1', '선택', '/sel2_code_prj_cat1/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#instant_cat2', '선택', '/sel2_code_prj_cat2/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#instant_cat3', '선택', '/sel2_code_prj_cat3/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#instant_tasker', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`});
+    init_date_flatpickr();
+
+    // 이벤트는 append 이후에 적용
+    row.find('#instant_title').on('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            instant_task_create();
+        }
+    });
+    // 마지막에 인스턴트 빈 줄 여기까지--------------------------------------------------------------------------------------
+}
+
+function instant_task_create() {
+    const titleVal = $('#instant_title').val().trim();
+    if (!titleVal) {
+        alert('태스크 제목을 입력해주세요.');
+        return;
+    }
+    if (!confirm('해당 태스크를 등록하시겠습니까?')) return;
+
+    let api_data = new FormData();
+    api_data.append("prj_id", prj_id);
+    api_data.append("title", nullapply(titleVal));
+    api_data.append("cat1", nullapply($('#instant_cat1').val()));
+    api_data.append("cat2", nullapply($('#instant_cat2').val()));
+    api_data.append("cat3", nullapply($('#instant_cat3').val()));
+    api_data.append("plan_start", nullapply($('#instant_plan_start').val()));
+    api_data.append("plan_end", nullapply($('#instant_plan_end').val()));
+    api_data.append("progress", nullapply($('#instant_progress').val()));
+    api_data.append("status", nullapply($('#instant_status').val()));
+    api_data.append("tasker", nullapply($('#instant_tasker').val()));
+    api_data.append("planner", '{{ request.user.id }}');
+
+    fetch_gp('/task_create_fn/', 'post', true, api_data, (done) => {
+        a_search_ready();
+        alert('태스크가 등록되었습니다.');
+        show_updated_row(done.id);
+    });
+}
+
+function show_updated_row(updated_row_id) {
+    setTimeout(() => {
+        $('.project-row').each(function () {
+            if ($(this).data('id') === updated_row_id) {
+                $(this).addClass('updated_row');
+                setTimeout(() => {
+                    $(this).removeClass('updated_row');
+                }, 9000);  // 9초 후 제거
+            }
+        });
+    }, 500);  // 0.5초 후에 처리 시작
+}
+
+function getMinMaxDates(items) {
+    const dates = items.flatMap(i => {
+        const starts = [i.plan_start, i.real_start].filter(Boolean).map(d => new Date(d));
+        const ends = [i.plan_end, i.real_end].filter(Boolean).map(d => new Date(d));
+        return [...starts, ...ends];
+    });
+    return {
+        startDate: new Date(Math.min(...dates)),
+        endDate: new Date(Math.max(...dates))
+    };
+}
+
+function renderMonthHeader(startDate, dayCount) {
+    let html = `<div class="month-row">
+                <div class="project-cell project-no info-header" style="border-right: none !important;"></div>
+                <div class="project-cell project-title info-header" style="border-right: none !important;"></div>
+                <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+                <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+                <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+                <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+                <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+                <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+                <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+                <div class="project-cell project-info info-header user_top_fixed" style="border-right: none !important;"></div>`;
+    let span = 0;
+    let currentDate = new Date(startDate);
+    let prevMonth = currentDate.getMonth();
+    let labelDate = new Date(currentDate);
+
+    for (let i = 0; i <= dayCount; i++) {
+        const loopMonth = currentDate.getMonth();
+        if (loopMonth !== prevMonth || i === dayCount) {
+            const label = `${labelDate.getFullYear()}년 ${String(prevMonth + 1).padStart(2)}월`;
+            html += `<div class="month-cell" style="width:${span * 30}px;">${label}</div>`;
+            span = 0;
+            prevMonth = loopMonth;
+            labelDate = new Date(currentDate);
+        }
+        span++;
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    html += `</div>`;
+    return html;
+}
+
+function renderDateHeader(startDate, dayCount, today) {
+    let html = `<div class="date-row">
+                <div class="project-cell project-no info-header">순번</div>
+                <div class="project-cell project-title info-header">태스크 제목</div>
+                <div class="project-cell project-info info-header">대분류</div>
+                <div class="project-cell project-info info-header">중분류</div>
+                <div class="project-cell project-info info-header">소분류</div>
+                <div class="project-cell project-info info-header">계획시작일</div>
+                <div class="project-cell project-info info-header">계획목표일</div>
+                <div class="project-cell project-info info-header">잔여일 / 계획일</div>
+                <div class="project-cell project-info info-header">진행률</div>
+                <div class="project-cell project-info info-header user_top_fixed">담당자</div>`;
+
+    for (let i = 0; i < dayCount; i++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const isToday = isSameDate(d, today);
+        const holiday = getHoliday(d);
+
+        let classes = "day-cell";
+        if (isWeekend) classes += " weekend";
+        if (holiday) classes += " holiday";
+        if (isToday) classes += " today";
+
+        const tooltip = holiday ?
+            `data-bs-toggle="${holiday.toggle}" data-bs-placement="${holiday.placement}" title="${d.toISOString().split("T")[0]} ${holiday.name}"` :
+            "";
+
+        html += `<div class="day-header ${classes}" ${tooltip}>${d.getDate()}</div>`;
+    }
+    html += `</div>`;
+    return html;
+}
+
+function renderProjectRow(item, startDate, dayCount, today, row_no) {
+    const rowHTML = $('<div class="project-row"></div>');
+    const progress = parseInt(item.progress) || 0;
+    const status = item.status ?? '';
+    let progressText = '';
+
+    if (status === '대기') {
+        progressText = `대기`;
+    } else if (status === '완료') {
+        progressText = `완료`;
+    } else if (status === '중단') {
+        progressText = `중단 (${progress}%)`;
+    } else {
+        progressText = `진행 (${progress}%)`;
+    }
+
+    const progressBarColor =
+        status === '완료' ? 'rgba(52, 193, 142, 0.8)' :    // 초록
+        status === '중단' ? 'rgba(255, 99, 132, 0.5)' :     // 빨강
+        status === '대기' ? 'rgba(108, 117, 125, 0.5)' :    // 회색
+        'rgba(0,157,255,0.7)';                           // 파랑 (진행)
+    
+    let remainingLeft = '-';
+    let remainingRight = '-';
+    let remainingDisplay = '-';
+    
+    // 완료 상태는 total_days만 단독 표시
+    if (status === '완료' && typeof item.total_days === 'number' && !isNaN(item.total_days)) {
+        remainingDisplay = `${item.total_days}일`;
+    } else {
+        // 남은 일수 (왼쪽)
+        if (typeof item.remaining_days === 'number' && !isNaN(item.remaining_days)) {
+            if (item.remaining_days >= 0) {
+                remainingLeft = `${item.remaining_days}일`;
+            } else {
+                remainingLeft = `<span style="color: red;">+${Math.abs(item.remaining_days)}일</span>`;
+            }
+        }
+    
+        // 전체 일수 (오른쪽)
+        if (typeof item.total_days === 'number' && !isNaN(item.total_days)) {
+            remainingRight = `${item.total_days}일`;
+        }
+    
+        remainingDisplay = `${remainingLeft} / ${remainingRight}`;
+    }
+
+    let manager_html = '-';
+    if (item.tasker && item.tasker.name) {
+        manager_html = `
+            <img src="${item.tasker.profile_image}" alt="프로필" class="d-none d-md-inline-block"
+                 style="width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; display: inline-block;">
+            <span style="margin-left: 2px; display: inline-block; vertical-align: middle;">
+                ${item.tasker.name} ${item.tasker.job_level || ''}</span>
+            </span>
+        `;
+    }
+
+    const isEmptyRow = item.code === '' && item.title.includes('input');
+    const rowNumber = isEmptyRow ? '-' : row_no;
+
+    if (isEmptyRow) {
+        rowHTML.append(`
+            <div class="project-cell project-no d-flex justify-content-center align-items-center p-0">
+                <button class="btn btn-sm btn-success" onclick="instant_task_create()">등록</button></div>
+            <div class="project-cell project-title d-flex align-items-center p-0" style="padding: 0;">${item.title}</div>
+            <div class="project-cell project-info d-flex align-items-center p-0">${item.cat1 || ''}</div>
+            <div class="project-cell project-info d-flex align-items-center p-0">${item.cat2 || ''}</div>
+            <div class="project-cell project-info d-flex align-items-center p-0">${item.cat3 || ''}</div>
+            <div class="project-cell project-info d-flex align-items-center p-0">${item.plan_start || ''}</div>
+            <div class="project-cell project-info d-flex align-items-center p-0">${item.plan_end || ''}</div>
+            <div class="project-cell project-info d-flex align-items-center p-0">${item.status || ''}</div>
+            <div class="project-cell project-info d-flex align-items-center p-0">${item.progress || ''}</div>
+            <div class="project-cell project-info d-flex align-items-center p-0 user_top_fixed">${item.tasker || ''}</div>
+        `);
+    } else {
+        const projectInfo = `
+            <div class="project-cell project-no">${rowNumber}</div>
+            <div class="project-cell project-title">${item.title}</div>
+            <div class="project-cell project-info">${item.cat1_name || '-'}</div>
+            <div class="project-cell project-info">${item.cat2_name || '-'}</div>
+            <div class="project-cell project-info">${item.cat3_name || '-'}</div>
+            <div class="project-cell project-info">${item.plan_start || '-'}</div>
+            <div class="project-cell project-info">${item.plan_end || '-'}</div>
+            <div class="project-cell project-info">${remainingDisplay}</div>
+            <div class="project-cell project-info d-flex align-items-center">
+                <div class="progress-container" style="position: relative; background-color: rgba(135,206,250,0.2); border-radius: 4px; height: 16px; width: 100%;">
+                    <div class="progress-bar" style="width: ${status === '완료' ? '100%' : progress + '%'}; background-color: ${progressBarColor}; height: 14px; border-radius: 4px; box-shadow: 0 2px 4px 0 ${progressBarColor}; transition: width 0.8s ease;"></div>
+                    <span class="progress-text" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 0.65rem; color: #222; z-index: 2;">${progressText}</span>
+                </div>
+            </div>
+            <div class="project-cell project-info user_top_fixed">${manager_html}</div>
+        `;
+        rowHTML.append(projectInfo);
+    }
+
+    rowHTML.attr({
+        'data-id': item.id,
+        'data-project_id': item.project?.id ?? '',
+        'data-project_title': item.project?.title ?? '',
+        'data-code': item.code,
+        'data-title': item.title,
+        'data-tasker_id': item.tasker?.id ?? '',
+        'data-tasker_name': item.tasker?.name ?? '',
+        'data-planner_id': item.planner?.id ?? '',
+        'data-planner_name': item.planner?.name ?? '',
+        'data-cat1_id': item.cat1_id ?? '',
+        'data-cat1_name': item.cat1_name ?? '',
+        'data-cat2_id': item.cat2_id ?? '',
+        'data-cat2_name': item.cat2_name ?? '',
+        'data-cat3_id': item.cat3_id ?? '',
+        'data-cat3_name': item.cat3_name ?? '',
+        'data-plan_start': item.plan_start ?? '',
+        'data-plan_end': item.plan_end ?? '',
+        'data-real_start': item.real_start ?? '',
+        'data-real_end': item.real_end ?? '',
+        'data-plan_time': item.plan_time ?? '',
+        'data-real_time': item.real_time ?? '',
+        'data-progress': item.progress ?? 0,
+        'data-status': item.status ?? '',
+        'data-detail': item.detail ?? '',
+        'data-tasker_comment': item.tasker_comment ?? '',
+        'data-planner_comment': item.planner_comment ?? '',
+    });
+    
+    const planStart = item.plan_start ? new Date(item.plan_start) : null;
+    const planEnd = item.plan_end ? new Date(item.plan_end) : null;
+    const realStart = item.real_start ? new Date(item.real_start) : null;
+    const realEnd = item.real_end ? new Date(item.real_end) : null;
+
+    const realContainer = $('<div class="real-container"></div>');
+    if (realStart && realEnd) {
+        const offset = (realStart - startDate) / (1000 * 60 * 60 * 24);
+        const length = (realEnd - realStart) / (1000 * 60 * 60 * 24) + 1;
+        const realBar = $('<div class="real-bar"></div>');
+        realBar.css('width', `${length * 30}px`);
+        realBar.css('left', `${offset * 30}px`);
+        realBar.css('background-color', progressBarColor);
+        realBar.attr({
+            'title': `
+                <div class="text-start">
+                    [${item.code}]<br>
+                    · 프로젝트: ${item.project.title}<br>
+                    · 태스크 제목: ${item.title}<br>
+                    · 계획 일정: ${item.plan_start} ~ ${item.plan_end} ${item.plan_time ? `(${item.plan_time}시간)` : ''}<br>
+                    · 실제 일정: ${item.real_start} ~ ${item.real_end} ${item.real_time ? `(${item.real_time}시간)` : ''}<br>
+                    · 상태: ${item.status} ${item.progress ? `(${item.progress}%)` : ''}<br>
+                    · 담당자: ${item.tasker ? item.tasker.name : '없음'} ${item.tasker ? item.tasker.job_level : ''}
+                </div>
+            `,
+            'data-bs-toggle': 'tooltip'
+        });
+        realContainer.append(realBar);
+    }
+    rowHTML.append(realContainer);
+
+    for (let i = 0; i < dayCount; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+
+        const holiday = getHoliday(currentDate);
+        const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
+        const isToday = isSameDate(currentDate, today);
+        const isInPlan = planStart && planEnd && currentDate >= planStart && currentDate <= planEnd;
+
+        const cell = $('<div class="day-cell"></div>');
+        if (isWeekend) cell.addClass('weekend');
+        if (holiday) cell.addClass('holiday');
+        if (isToday) cell.addClass('today');
+        if (isInPlan) cell.addClass('project-active');
+
+        rowHTML.append(cell);
+    }
+
+    // 프로젝트행 좌클릭 clicked 정의
+    rowHTML.on('click', function () {
+        $('.project-row').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).data("id");
+        a_click_code = $(this).data("code");
+        a_click_project_id = $(this).data("project_id");
+        a_click_project_title = $(this).data("project_title");
+        a_click_title = $(this).data("title");
+        a_click_tasker_id = $(this).data("tasker_id");
+        a_click_tasker_name = $(this).data("tasker_name");
+        a_click_planner_id = $(this).data("planner_id");
+        a_click_planner_name = $(this).data("planner_name");
+        a_click_cat1_id = $(this).data("cat1_id");
+        a_click_cat1_name = $(this).data("cat1_name");
+        a_click_cat2_id = $(this).data("cat2_id");
+        a_click_cat2_name = $(this).data("cat2_name");
+        a_click_cat3_id = $(this).data("cat3_id");
+        a_click_cat3_name = $(this).data("cat3_name");
+        a_click_plan_start = $(this).data("plan_start");
+        a_click_plan_end = $(this).data("plan_end");
+        a_click_real_start = $(this).data("real_start");
+        a_click_real_end = $(this).data("real_end");
+        a_click_plan_time = $(this).data("plan_time");
+        a_click_real_time = $(this).data("real_time");
+        a_click_progress = $(this).data("progress");
+        a_click_status = $(this).data("status");
+        a_click_detail = $(this).data("detail");
+        a_click_tasker_comment = $(this).data("tasker_comment");
+        a_click_planner_comment = $(this).data("planner_comment");
+    });
+
+    // 프로젝트행 더블클릭 팝업 오픈
+    rowHTML.on('dblclick', function () {
+        let isEmptyRow = $(this).data("id") === undefined || $(this).data("id") === "";
+
+        if (isEmptyRow) return;
+
+        $('.project-row').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).data("id");
+        a_update_modal_in();
+    });
+
+    // 프로젝트행 우클릭 메뉴 오픈
+    rowHTML.on('contextmenu', function (e) {
+        e.preventDefault();
+
+        // day-cell에서만 보여주는 항목 설정
+        const isDayCell = $(e.target).hasClass('day-cell');
+        $('.date_row_only').toggle(isDayCell);
+
+        // 기본 보여주기 항목 설정
+        $('.project-row').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        $('#custom-context-menu').css({
+            display: 'block',
+            left: e.pageX,
+            top: e.pageY
+        });
+
+        a_click_id = $(this).data("id");
+        a_click_code = $(this).data("code");
+        a_click_project_id = $(this).data("project_id");
+        a_click_project_title = $(this).data("project_title");
+        a_click_title = $(this).data("title");
+        a_click_tasker_id = $(this).data("tasker_id");
+        a_click_tasker_name = $(this).data("tasker_name");
+        a_click_planner_id = $(this).data("planner_id");
+        a_click_planner_name = $(this).data("planner_name");
+        a_click_cat1_id = $(this).data("cat1_id");
+        a_click_cat1_name = $(this).data("cat1_name");
+        a_click_cat2_id = $(this).data("cat2_id");
+        a_click_cat2_name = $(this).data("cat2_name");
+        a_click_cat3_id = $(this).data("cat3_id");
+        a_click_cat3_name = $(this).data("cat3_name");
+        a_click_plan_start = $(this).data("plan_start");
+        a_click_plan_end = $(this).data("plan_end");
+        a_click_real_start = $(this).data("real_start");
+        a_click_real_end = $(this).data("real_end");
+        a_click_plan_time = $(this).data("plan_time");
+        a_click_real_time = $(this).data("real_time");
+        a_click_progress = $(this).data("progress");
+        a_click_status = $(this).data("status");
+        a_click_detail = $(this).data("detail");
+        a_click_tasker_comment = $(this).data("tasker_comment");
+        a_click_planner_comment = $(this).data("planner_comment");
+
+        return false;
+    });
+
+    // 다른 곳 클릭 시 메뉴 숨기기
+    $(document).on('click', function () {
+        $('#custom-context-menu').hide();
+    });
+
+    return rowHTML;
+}
+
+// 주말 반영 함수
+function getHoliday(date) {
+    const ymd = date.toISOString().split("T")[0];
+    const h = customWeekends.find(h => {
+        const start = new Date(h.start_date).toISOString().split("T")[0];
+        const end = new Date(h.end_date).toISOString().split("T")[0];
+        return start <= ymd && ymd <= end;
+    });
+
+    if (h) {
+        return {
+            ...h,
+            toggle: "tooltip",
+            placement: "top"
+        };
+    }
+    return null;
+}
+
+// 오늘 반영 함수
+function isSameDate(d1, d2) {
+    return (
+        d1.getFullYear() === d2.getFullYear() &&
+        d1.getMonth() === d2.getMonth() &&
+        d1.getDate() === d2.getDate()
+    );
+}
+
+
+// 드래그 데이트 이벤트
+let a_click_start_drag;
+let a_click_end_drag;
+let instant_plan_start_drag;
+let instant_plan_end_drag;
+let globalStartDate = null;
+let isDraggingPlan = false;
+let dragStartIndex = null;
+let dragEndIndex = null;
+let dayCells = [];
+
+$(document).on('mousedown', '.project-row .day-cell', function (e) {
+    if (e.which !== 1) return;  // 좌클릭만 허용 (오른쪽: 3 또는 2, 왼쪽: 1)
+
+    clearDragHighlight();  // 기존 드래그 셀 초기화
+
+    isDraggingPlan = true;
+    dayCells = $(this).closest('.project-row').find('.day-cell');
+    dragStartIndex = dayCells.index(this);
+    dragEndIndex = dragStartIndex;
+    highlightDragRange();
+});
+
+$(document).on('mouseover', '.project-row .day-cell', function (e) {
+    if (!isDraggingPlan) return;
+    const currentIndex = dayCells.index(this);
+    dragEndIndex = currentIndex;
+    highlightDragRange();
+});
+
+$(document).on('mouseup', '.project-row .day-cell', function (e) {
+    if (!isDraggingPlan) return;
+    isDraggingPlan = false;
+
+    const row = $(this).closest('.project-row');
+    const isEmptyRow = !row.data('id');
+    const start = Math.min(dragStartIndex, dragEndIndex);
+    const end = Math.max(dragStartIndex, dragEndIndex);
+
+    const startBase = globalStartDate || new Date();
+    const startDate = new Date(startBase);
+    const endDate = new Date(startBase);
+    startDate.setDate(startBase.getDate() + start);
+    endDate.setDate(startBase.getDate() + end);
+
+    const formattedStart = formatDate(startDate);
+    const formattedEnd = formatDate(endDate);
+
+    if (isEmptyRow) {
+        // 빈줄 드래그 시
+        instant_plan_start_drag = formattedStart;
+        instant_plan_end_drag = formattedEnd;
+        $('#instant_plan_start').val(formattedStart);
+        $('#instant_plan_end').val(formattedEnd);
+    } else {
+        // 일반 태스크 드래그 시
+        a_click_start_drag = formattedStart;
+        a_click_end_drag = formattedEnd;
+    }
+});
+
+function highlightDragRange() {
+    dayCells.removeClass('drag-selected');
+    const start = Math.min(dragStartIndex, dragEndIndex);
+    const end = Math.max(dragStartIndex, dragEndIndex);
+    for (let i = start; i <= end; i++) {
+        dayCells.eq(i).addClass('drag-selected');
+    }
+}
+
+function clearDragHighlight() {
+    $('.day-cell').removeClass('drag-selected');
+}
+
+function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+function a_plan_drag_update() {
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("plan_start", a_click_start_drag);
+        api_data.append("plan_end", a_click_end_drag);
+        api_data.append("change_type", "plan_date");
+    
+    fetch_gp('/task_date_update_fn/', 'post', true, api_data, (done) => {
+        a_search();
+        alert(txt.update_ed);
+        show_updated_row(done.id);
+    });
+}
+
+function a_real_drag_update() {
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("real_start", a_click_start_drag);
+        api_data.append("real_end", a_click_end_drag);
+        api_data.append("change_type", "real_date");
+    
+    fetch_gp('/task_date_update_fn/', 'post', true, api_data, (done) => {
+        a_search();
+        alert(txt.update_ed);
+        show_updated_row(done.id);
+    });
+}
+
+// 데이트 필터 드랍다운 이벤트
+$('#date_filter').on('mouseenter', function () {
+    $('#date_dropdown').removeClass('d-none');
+});
+$('#date_filter').on('mouseleave', function () {
+    $('#date_dropdown').addClass('d-none');
+});
+
+function set_date_range(range) {
+    const today = new Date();
+    let start, end;
+    
+    if (range === 'yesterday') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end.setDate(today.getDate() - 1);
+    } else if (range === 'today') {
+        start = end = new Date(today);
+    } else if (range === 'tomorrow') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() + 1);
+        end.setDate(today.getDate() + 1);
+    } else if (range === 'last_week') {
+        const day = today.getDay() || 7;
+        end = new Date(today);
+        end.setDate(today.getDate() - day);
+        start = new Date(end);
+        start.setDate(end.getDate() - 6);
+    } else if (range === 'this_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 1);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'next_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 8);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (range === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (range === 'next_month') {
+        start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    }
+    
+    $('#fr_date').val(formatDate(start));
+    $('#to_date').val(formatDate(end));
+    a_search_ready();
+}
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+</script>

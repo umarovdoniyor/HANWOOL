@@ -1,0 +1,530 @@
+<!-- 전자결재 > 출장신청서 작성 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 영역 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="window.location.href = '{% url 'approval_list_page' %}'">
+                    <i class="fa-solid fa-envelope-circle-check me-2"></i>전자결재
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body bg-white p-3">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <input class="form-control fw-bold px-0" id="doc_title" style="font-size: 20px; border: none;">
+                            </div>
+                        </div>
+                        
+                        <div class="row d-none d-md-block">
+                            <!-- 기본 정보 -->
+                            <div class="col-12">
+                                <div class="d-flex align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <i class="fa-regular fa-file me-2"></i>기본 정보
+                                </div>
+                                <div class="card border border-secondary-subtle p-3">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="apv_no" class="form-label">문서번호</label>
+                                            <input type="text" class="form-control" id="apv_no" placeholder="자동으로 생성됩니다" disabled>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="create_date" class="form-label">작성일</label>
+                                            <input type="text" class="form-control" id="create_date" disabled>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="username_team" class="form-label">작성자</label>
+                                            <input type="text" class="form-control" id="username_team" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- 결재선 정보 -->
+                            <div class="col-md-7 d-flex flex-column">
+                                <div class="d-flex align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <i class="fa-solid fa-user-check me-2"></i>결재선 정보
+                                </div>
+                                <div class="card border border-secondary-subtle p-3">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="approver1" class="form-label fw-bold">결재자 1</label>
+                                            <select class="form-control div_required" id="approver1"></select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="approver2" class="form-label">결재자 2</label>
+                                            <select class="form-control" id="approver2"></select>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="approver3" class="form-label">결재자 3</label>
+                                            <select class="form-control" id="approver3" disabled></select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="approver4" class="form-label">결재자 4</label>
+                                            <select class="form-control" id="approver4" disabled></select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 참조자 정보 -->
+                            <div class="col-md-5 d-flex flex-column">
+                                <div class="d-flex align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <i class="fa-solid fa-user-plus me-2"></i>참조자 정보
+                                </div>
+                                <div class="card border border-secondary-subtle p-3 h-100">
+                                    <div class="col-12 mb-3">
+                                        <label for="cc_list" class="form-label">참조 목록
+                                        <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="Ctrl 키를 누르면 목록창이 유지됩니다."></i></label>
+                                        <select class="form-control flex-wrap" id="cc_list"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- 세부 정보 -->
+                            <div class="col-md-12">
+                                <div class="d-flex align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <i class="fa-regular fa-file-lines me-2"></i>세부 정보
+                                </div>
+                                <div class="card border border-secondary-subtle p-3">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="purpose" class="form-label fw-bold">출장 목적
+                                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                            data-toggle="tooltip" data-placement="top" title="제목에 자동 반영되니 출장의 목적을 짧고 간결하게 입력하세요."></i></label>
+                                            <input type="text" class="form-control div_required" id="purpose" onchange="update_doc_title(this.value)">
+                                        </div>
+                                        <div class="col-md-8 mb-3">
+                                            <label for="trip_with" class="form-label">출장 동행
+                                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                               data-toggle="tooltip" data-placement="top" title="Ctrl 키를 누르면 목록창이 유지됩니다."></i></label>
+                                            <select class="form-control flex-wrap" id="trip_with"></select>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-5 col-xl-4 mb-3">
+                                            <label for="start_date" class="form-label fw-bold">출장 시작일</label>
+                                            <div class="d-flex align-items-center m-0 p-0">
+                                                <input type="text" class="form-control datetime_flatpickr div_required"
+                                                       data-default-time="{{ request.user.company.company_info.first.check_in | time:"H:i" }}"
+                                                       id="start_date">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5 col-xl-4 mb-3">
+                                            <label for="end_date" class="form-label fw-bold">출장 종료일</label>
+                                            <div class="d-flex align-items-center m-0 p-0">
+                                                <input type="text" class="form-control datetime_flatpickr div_required"
+                                                       data-default-time="{{ request.user.company.company_info.first.check_out | time:"H:i" }}"
+                                                       id="end_date">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <label for="detail" class="form-label">상세 설명</label>
+                                            <textarea type="text" class="form-control" id="detail" rows="5"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="attached_file" class="form-label">관련 첨부
+                                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                            data-toggle="tooltip" data-placement="top" title="드래그앤드롭 혹은 파일선택으로 첨부 가능 (최대 5MB)"></i></label>
+                                            <input type="file" class="form-control" id="attached_file" onchange="updateFileAttachment('file_list', this)">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="file_list" class="form-label">첨부된 파일</label>
+                                            <div class="form-control bg-light-subtle" id="file_list"></div>
+                                        </div>
+                                        <div id="drop_overlay">
+                                            <div class="mb-5"><i class="fa-solid fa-file-circle-plus fa-xl fa-bounce"></i></div>
+                                            <div>여기에 파일을 놓아 업로드하세요</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- 참고 사항 -->
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <div>
+                                        <i class="fa-solid fa-list-check me-2"></i>참고사항
+                                    </div>
+                                    {% if request.user.is_master %}
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-secondary text-nowrap" id="memoEditBtn">
+                                            <i class="fa-solid fa-gear me-1"></i>설정
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success d-none" id="memoSaveBtn">
+                                            <i class="fa-solid fa-save me-1"></i>저장
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger d-none" id="memoCancelBtn">
+                                            <i class="fa-solid fa-times me-1"></i>취소
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card border border-secondary-subtle p-3" id="apv_memo" contenteditable="false">
+                                    {% if apv_memo_2 %}
+                                        {{ apv_memo_2|safe }}
+                                    {% else %}
+                                        <ul class="ps-3">
+                                            <li>상세 설명에 <strong>출장 장소, 참석자, 내용</strong> 등을 입력하세요.</li>
+                                            <li>기타 필요한 내용은 '상세 설명'란에 기입</li>
+                                        </ul>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 전자결재 본문 버튼영역 -->
+            <div class="col-md-7 col-lg-6 col-xl-5 ms-auto">
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    <button type="button" class="btn btn-primary text-nowrap w-100 px-3" onclick="a_tempsave_submit()">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>임시저장
+                    </button>
+                    <button type="button" class="btn btn-success text-nowrap w-100 px-3" onclick="a_progress_submit()">
+                        <i class="fa-solid fa-paper-plane me-2"></i>결재전송
+                    </button>
+                    <button type="button" class="btn btn-danger text-nowrap w-100 px-3 d-none" id="deleteBtn" onclick="a_delete_submit()">
+                        <i class="fa-solid fa-trash-can me-2"></i>삭제
+                    </button>
+                    <button type="button" class="btn btn-warning text-nowrap w-100 px-3" onclick="window.location.href = '{% url 'approval_list_page' %}'">
+                        <i class="fa-solid fa-bars me-2"></i>목록
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentUserId = '{{ request.user.id }}';
+let userName = '{{ request.user.name }}';
+let userTeam = '{{ request.user.team.name }}';
+let userJobLevel = '{{ request.user.job_level.name }}';
+let categoryId = {% if category_id %} {{ category_id }} {% else %} null {% endif %};
+let apvId = {% if apv_id %} {{ apv_id }} {% else %} null {% endif %};
+let send_url;
+if (apvId) { send_url = '/approval_update_fn/' } else { send_url = '/approval_create_fn/' }
+
+let company_check_in = '{{ request.user.company.company_info.first.check_in | time:"H:i" }}';  // 회사기본 출근시간
+let company_check_out = '{{ request.user.company.company_info.first.check_out | time:"H:i" }}';  // 회사기본 퇴근시간
+let [inHour, inMinute] = company_check_in.split(":").map(Number);
+let checkInDate = new Date();
+checkInDate.setHours(inHour, inMinute, 0);
+let checkinHalfDate = new Date(checkInDate.getTime() + 5 * 60 * 60 * 1000);
+let checkoutHalfDate = new Date(checkInDate.getTime() + 4 * 60 * 60 * 1000);
+let company_check_in_half = checkinHalfDate.toTimeString().slice(0, 5);  // 회사기본 오전반차 종료시간
+let company_check_out_half = checkoutHalfDate.toTimeString().slice(0, 5);  // 회사기본 오후반차 시작시간
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_datetime_flatpickr();
+    apv_memo_update()
+
+    init_Select2('#approver1', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#approver2', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#approver3', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#approver4', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_multiple('#cc_list', '  선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_multiple('#trip_with', '  선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+        
+    if(apvId) {
+        // apvId가 있다면 임시문서 수정모드로
+        a_update_page_in();
+        $('#deleteBtn').removeClass('d-none');
+    } else {
+        // apvId가 없다면 신규생성 모드로
+        a_create_page_in();
+    }
+}
+
+$(document).ready(function () {
+    init_drop_overlay();
+    $("#approver1, #approver2").on("change", toggleApprovers);
+});
+
+function a_create_page_in() {
+    let createDateInput = $('#create_date');
+    let days = ['일', '월', '화', '수', '목', '금', '토'];
+    let now = new Date();
+    let year = now.getFullYear();
+    let month = ('0' + (now.getMonth() + 1)).slice(-2);
+    let day = ('0' + now.getDate()).slice(-2);
+    let weekDay = days[now.getDay()];
+    let formattedDate = `${year}-${month}-${day} (${weekDay})`;
+    let simpleDate = year.toString().slice(-2) + month + day;
+    createDateInput.val(formattedDate);
+    
+    $('#username_team').val(`${userTeam}  |  ${userName} ${userJobLevel}`);
+    $('#doc_title').val(`[출장신청서] ${userTeam} ${userName} ${simpleDate}`);
+    $('#file_list').text("첨부된 파일이 없습니다.");
+}
+
+function a_update_page_in() {
+    let query = "?apv_id=" + apvId;
+    fetch_gp("/approval_read_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+    
+    let data = done.results[0];
+    let createDay = new Date(data.updated_at); // 문자열을 Date 객체로 변환
+    let days = ['일', '월', '화', '수', '목', '금', '토'];
+    let weekDay = days[createDay.getDay()]; // 날짜 객체에서 요일 가져오기
+    let formattedDate = `${data.updated_at} (${weekDay})`;
+    
+    $('#doc_title').val(data.title);
+    $('#apv_no').val(data.apv_no);
+    $('#create_date').val(formattedDate);
+    $('#username_team').val(`${data.created_by.team}  |  ${data.created_by.name} ${data.created_by.job_level}`);
+    $('#purpose').val(data.purpose);
+    $('#start_date').val(data.start_datetime);
+    $('#end_date').val(data.end_datetime);
+    $('#detail').val(data.detail);
+    
+    // 파일첨부 렌더링(첨부파일 div_id, api로 불러온 첨부파일 url)
+    renderFileAttachment('file_list', data.apv_attach, data.apv_attach_size);
+    
+    init_Select2('#approver1', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver1_id);
+    init_Select2('#approver2', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver2_id);
+    init_Select2('#approver3', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver3_id);
+    init_Select2('#approver4', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver4_id);
+    let ccUserIds = (data.apv_cc || []).map(cc => cc.user_id); // 숫자를 문자열로 변환
+    init_Select2_multiple('#cc_list', '  선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, ccUserIds);
+    let trip_with = data.trip_with.split(',').map(Number); // 숫자를 문자열로 변환
+    init_Select2_multiple('#trip_with', '  선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, trip_with);
+}
+
+// 임시저장 (필수필드없음)
+function a_tempsave_submit() {
+    let attachedFile = $('#attached_file')[0].files[0]
+    
+    let api_data = new FormData();
+        api_data.append("apv_id", nullapply(apvId));
+        api_data.append("status", '임시');
+        api_data.append("category", categoryId);
+        api_data.append("apv_no", nullapply($('#apv_no').val()));
+        api_data.append("title", nullapply($('#doc_title').val()));
+        api_data.append("purpose", nullapply($('#purpose').val()));
+        api_data.append("start_datetime", nullapply($('#start_date').val()));
+        api_data.append("end_datetime", nullapply($('#end_date').val()));
+        api_data.append("detail", nullapply($('#detail').val()));
+        api_data.append("approver1", nullapply($('#approver1').val()));
+        api_data.append("approver2", nullapply($('#approver2').val()));
+        api_data.append("approver3", nullapply($('#approver3').val()));
+        api_data.append("approver4", nullapply($('#approver4').val()));
+        let ccList = $('#cc_list').val();
+        if (ccList) {
+            ccList.forEach(cc => {
+                api_data.append("apv_cc[]", cc);
+            });
+        }
+        api_data.append("trip_with", nullapply($('#trip_with').val()));
+        if (attachedFile) api_data.append("apv_attach", attachedFile);
+
+    fetch_gp(send_url, 'post', true, api_data, (done) => {
+        window.location.href = '{% url 'approval_list_page' %}';
+        alert("임시저장이 완료되었습니다.");
+    });
+}
+
+// 결재전송 (필수필드누락경고)
+function a_progress_submit() {
+    if (confirm('승인 요청을 전송하시겠습니까?')) {
+        let attachedFile = $('#attached_file')[0].files[0]
+
+        let api_data = new FormData();
+        api_data.append("apv_id", nullapply(apvId));
+        api_data.append("status", '진행');
+        api_data.append("category", categoryId);
+        api_data.append("apv_no", nullapply($('#apv_no').val()));
+        api_data.append("title", nullapply($('#doc_title').val()));
+        api_data.append("purpose", nullapply($('#purpose').val()));
+        api_data.append("start_datetime", nullapply($('#start_date').val()));
+        api_data.append("end_datetime", nullapply($('#end_date').val()));
+        api_data.append("detail", nullapply($('#detail').val()));
+        api_data.append("approver1", nullapply($('#approver1').val()));
+        api_data.append("approver2", nullapply($('#approver2').val()));
+        api_data.append("approver3", nullapply($('#approver3').val()));
+        api_data.append("approver4", nullapply($('#approver4').val()));
+        let ccList = $('#cc_list').val();
+        if (ccList) {
+            ccList.forEach(cc => {
+                api_data.append("apv_cc[]", cc);
+            });
+        }
+        api_data.append("trip_with", nullapply($('#trip_with').val()));
+        if (attachedFile) api_data.append("apv_attach", attachedFile);
+
+        function sendApiRequest() {
+            fetch_gp(send_url, 'post', true, api_data, (done) => {
+                window.location.href = '{% url 'approval_list_page' %}';
+                alert("결재 전송이 완료되었습니다.");
+            });
+        }
+
+        function validateApiData(data, requiredFields) {
+            for (let { key, message } of requiredFields) {
+                if (!data.get(key)) {
+                    alert(message);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function checkForDuplicateApprovers(ccList, approvers) {
+            // 승인자 배열에서 중복 확인
+            let approverSet = new Set();
+            for (let approver of approvers) {
+                if (approver) {
+                    if (approverSet.has(approver)) {
+                        alert('승인자 목록에 중복된 ID가 있습니다.');
+                        return true;
+                    }
+                    approverSet.add(approver);
+                }
+            }
+        
+            // ccList 배열을 정확하게 가져오기
+            let cc_users = api_data.getAll('apv_cc[]');
+        
+            // 승인자가 ccList에 포함되어 있는지 확인
+            for (let approver of approvers) {
+                if (approver && cc_users.includes(String(approver))) {
+                    alert('승인자는 참조목록에 포함될 수 없습니다.');
+                    return true;
+                }
+            }
+        
+            return false;
+        }
+
+        let requiredFields = [
+            { key: 'title', message: '문서제목이 입력되지 않았습니다.' },
+            { key: 'purpose', message: '출장 목적이 입력되지 않았습니다.' },
+            { key: 'approver1', message: '최소 한명의 승인자가 필요합니다.' },
+            { key: 'start_datetime', message: '시작기간이 선택되지 않았습니다.' },
+            { key: 'end_datetime', message: '종료기간이 선택되지 않았습니다.' },
+        ];
+
+        if (!validateApiData(api_data, requiredFields)) {
+            return;
+        }
+
+        let approvers = [
+            api_data.get('approver1'),
+            api_data.get('approver2'),
+            api_data.get('approver3'),
+            api_data.get('approver4')
+        ];
+        let cc_users = api_data.get('apv_cc') ? api_data.get('apv_cc').split(',') : [];
+
+        if (checkForDuplicateApprovers(cc_users, approvers)) {
+            return;
+        }
+
+        sendApiRequest();
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function a_delete_submit() {
+    if (confirm('임시저장된 문서를 삭제하시겠습니까?')) {
+        let api_data = new FormData();
+        api_data.append("apv_id", nullapply(apvId));
+            
+        fetch_gp("/approval_delete_fn/", 'post', true, api_data, (done) => {
+            window.location.href = '{% url 'approval_list_page' %}';
+            alert("삭제가 완료되었습니다.");
+        });
+
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function toggleApprovers() {
+    if ($("#approver1").val() && $("#approver2").val()) {
+        $("#approver3, #approver4").prop("disabled", false);
+    } else {
+        $("#approver3, #approver4").prop("disabled", true);
+    }
+}
+
+function update_doc_title(purpose) {
+    let createDateInput = document.getElementById('create_date');
+    let days = ['일', '월', '화', '수', '목', '금', '토'];
+    let now = new Date();
+    let year = now.getFullYear();
+    let month = ('0' + (now.getMonth() + 1)).slice(-2);
+    let day = ('0' + now.getDate()).slice(-2);
+    let weekDay = days[now.getDay()];
+    let formattedDate = year + '-' + month + '-' + day + ' (' + weekDay + ')';
+    let simepleDate = year.toString().slice(-2) + month + day
+    createDateInput.value = formattedDate;
+    
+    document.getElementById('doc_title').value = `[출장신청서] ${userTeam} ${userName} ${simepleDate} (${purpose})`;
+}
+
+function a_apv_memo_submit($memoApv) {
+    let api_data = new FormData();
+        api_data.append("category", categoryId);
+        api_data.append("apv_memo", $memoApv.html());
+
+    fetch_gp('/approval_memo_update_fn/', 'post', true, api_data, (done) => {
+        alert("참고사항을 변경하였습니다.");
+    });
+}
+
+</script>

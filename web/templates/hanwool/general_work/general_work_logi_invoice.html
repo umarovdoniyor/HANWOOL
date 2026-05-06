@@ -1,0 +1,1064 @@
+<!-- 거래처/현장관리 > 정규파견관리(물류직) > 급여정산 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% load humanize %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+:root {
+    --w: 38px
+}
+
+body {
+    font-family: system-ui, Arial;
+    padding: 12px
+}
+
+table {
+    border-collapse: collapse;
+    width: max-content;
+    max-width: 100%
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 2px 4px;
+    text-align: center;
+    white-space: nowrap
+}
+
+thead {
+    position: sticky;
+    top: 0;
+    background: #f7f7f7;
+    z-index: 1
+}
+
+.day {
+    width: var(--w)
+}
+
+.row-label {
+    background: #eee;
+    font-weight: 600;
+    min-width: 70px;
+    position: sticky;
+    left: 0;
+    z-index: 2
+}
+
+.weekend {
+    background: #ffe8e8
+}
+
+.weekend input.cell { background-color:#ffe8e8; }
+
+.holiday {
+    background: #ffe3b3
+}
+
+.total-col {
+    background: #fffff4;
+    position: sticky;
+    right: 0
+}
+
+.total-wrap {
+    display: grid;
+    grid-template-columns:80px 80px 110px;
+    position: sticky;
+    right: 0
+}
+
+input.cell {
+    width: calc(var(--w) - 8px);
+    border: 0;
+    text-align: right;
+    padding: 3px;
+}
+
+input.cell:focus {
+    outline: 2px solid #98c6ff;
+    background: #f0f7ff
+}
+
+.sum {
+    min-width: 70px;
+    text-align: right;
+    padding-right: 6px
+}
+
+.money {
+    text-align: right;
+    font-variant-numeric: tabular-nums
+}
+
+.muted {
+    color: #888
+}
+
+.total-row {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    border-bottom: 2px solid #ccc;
+}
+
+thead {
+    border-bottom: 2px solid #ccc;
+}
+
+.user-side { position: sticky; right: 0; background:#fff; z-index: 2; padding:0; height: 100%; }
+.side-table {
+    border-collapse: collapse;
+    width: 100%;
+    height: 100%;
+    border: none;                 /* 바깥선 제거 */
+    display: flex;                /* ← 추가 */
+    flex-direction: column;       /* ← 추가 */
+}
+.side-table td {
+    border: 1px solid #ddd; /* 안쪽 셀 경계선 유지 */
+    padding: 2px 6px;
+    white-space: nowrap;
+}
+
+/* 외곽선 제거 룰 그대로 유지 */
+.side-table tr:first-child td { border-top: none; }
+.side-table tr:last-child  td { border-bottom: none; }
+.side-table td:first-child  { border-left: none; }
+.side-table td:last-child   { border-right: none; }
+
+.side-table tr {
+    height: 30px;
+}
+
+.side-table tr:last-child td {
+    height: 41px !important;
+    vertical-align: center;
+    font-weight: bold;
+    color: white;
+    background: rgb(52,193,142);
+}
+
+.side-label {
+    font-size: 11px;
+}
+
+.annual-row td {
+    font-size: 11px !important;
+}
+
+</style>
+
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-users me-2"></i>정규파견관리 <i class="fa-solid fa-angle-right px-1"></i> 물류직 급여정산
+                    <i class="fa-solid fa-angle-right px-1"></i> [{{ work_order.subsidiary.name }}] {{ work_order.date }} {{ work_order.customer.name }}
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <div class="d-flex align-items-center me-1">
+                                    <input type="number" class="form-control rounded border-secondary me-1" id="year" style="width: 90px" onchange="a_search_ready()">
+                                    <span class="me-1" style="font-size: 16px;">년</span>
+                                    <input type="number" class="form-control rounded border-secondary me-1" id="month" min="1" max="12" style="width: 70px" onchange="a_search_ready()">
+                                    <span class="me-1" style="font-size: 16px;">월</span>
+                                </div>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1" data-toggle="tooltip" data-placement="top" title="이름 텍스트 검색">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="save_salary()">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">급여정산 저장</span>
+                                </button>
+                                <button class="btn btn-secondary text-nowrap ms-1 px-2.5" onclick="window.close()">
+                                    <i class="fa-solid fa-xmark"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">창닫기</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-xxl-12">
+                            <div id="sheet"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let work_order_id = {% if work_order %} {{ work_order.id }} {% else %} null {% endif %};
+let customer_id = {% if customer_id %} {{ customer_id }} {% else %} null {% endif %};
+let all_sch;
+let sch_year;
+let sch_month;
+
+let USERS;
+let ROWS;
+
+const DEFAULT_DATE_STR = new Date().toISOString().slice(0, 10);
+const today = DEFAULT_DATE_STR ? new Date(DEFAULT_DATE_STR) : new Date();
+const COMPANY_HOURLY_RATE = {{ work_order.company.company_info.first.hourly_rate|default_if_none:0 }};
+
+const RATE_MULTIPLIER = {
+  work: 1.0, ot: 1.5, night: 0.5, sat: 1.5, sat_ot: 2.0, weekly: 1.0, etc: 1.0, annual: 1.0
+};
+
+const KEY_MAP = [
+    { field:'work_data',   key:'work',   name:'근무일수' },
+    { field:'ot_data',     key:'ot',     name:'연장' },
+    { field:'night_data',  key:'night',  name:'심야' },
+    { field:'sat_data',    key:'sat',    name:'특근' },
+    { field:'sat_ot_data', key:'sat_ot', name:'특근잔업' },
+    { field:'weekly_data', key:'weekly', name:'주차' },
+    { field:'etc_data', key:'etc', name:'기타수당' },
+    { field:'annual_data', key:'annual', name:'연월차' },
+];
+
+const pad = n => String(n).padStart(2,'0');
+const fmtMoney = n => n.toLocaleString('ko-KR');
+const isWeekend = d => [0,6].includes(d.getDay());
+const dateKey = (y,m,d)=>`${y}-${pad(m)}-${pad(d)}`;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    $('#year').val(today.getFullYear());
+    $('#month').val(today.getMonth() + 1);
+
+    a_search_ready();
+}
+
+function a_search_ready() {
+    all_sch = $('#all_sch').val();
+    sch_year = $('#year').val();
+    sch_month = $('#month').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?sch_year=" + sch_year;
+    query += "&sch_month=" + sch_month;
+    if (work_order_id) { query += "&work_order=" + work_order_id; }
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+
+    fetch_gp("/general_worker_salary_read_fn/" + query, 'GET', true, {}, (done) => {
+        window.item = Array.isArray(done?.results) ? done.results : [];
+
+        // 데이터 없을 경우 메시지 표시 후 종료
+        if (!window.item.length) {
+            $('#sheet').html(`
+                <table style="width:100%; border-collapse: collapse;">
+                    <tbody>
+                        <tr>
+                            <td colspan="99" style="text-align: center; padding: 20px; color: #888;" class="text-dark no_data">
+                                등록된 파견인원이 없습니다.<br>[정규파견관리]에서 파견인원을 편성해주세요.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            `);
+            return;
+        }
+        
+        // 응답 기반으로 USERS/ROWS 초기화
+        USERS = Array.from(
+          new Map(window.item.map(r => [r.user.id, { id: r.user.id, name: r.user.name, work_date: r.date }]))
+          .values()
+        );
+        ROWS = KEY_MAP.map(({ key, name }) => ({ key, name }));
+        
+        // 데이터 로드 후 렌더 실행
+        loadSheet(Number(sch_year), Number(sch_month));
+    });
+}
+
+function loadSheet(y, m) {
+    const days = new Date(y, m, 0).getDate();
+    const monthKey = `${y}-${String(m).padStart(2, '0')}`;
+
+    // 1) 현재 페이지의 연월과 일치하는 데이터만 사용
+    const monthItems = (window.item || []).filter(rec => String(rec.date).slice(0, 7) === monthKey);
+
+    // 사용자별 etc_price 매핑
+    window.userEtc = {};
+    monthItems.forEach(rec => {
+        const uid = rec.user.id;
+        // 배열 값 그대로 반영, 없으면 0
+        window.userEtc[uid] = rec.etc_price != null ? Number(rec.etc_price) : 0;
+    });
+    
+    // 사용자별 보험요율 매핑
+    window.userInsurance = {};
+    monthItems.forEach(rec => {
+        const uid = rec.user.id;
+        window.userInsurance[uid] = rec.insurance_data || [];
+    });
+
+    // 2) USERS/ROWS 재동기화 (월 기준 고유 사용자)
+    USERS = Array.from(
+        new Map(monthItems.map(r => [r.user.id, {id: r.user.id, name: r.user.name, work_date: r.date}]))
+            .values()
+    );
+
+    ROWS = KEY_MAP.map(({key, name}) => ({key, name}));
+
+    // 사용자별 시급 맵 (없거나 0이면 채우지 않음)
+    window.userRates = {};
+    monthItems.forEach(rec => {
+        const uid = rec.user.id;
+        const hr = Number(rec.hourly_rate || 0);
+        if (hr > 0) {
+            // 최초값을 고정하고 싶으면 if (!window.userRates[uid]) 만 유지,
+            // 최신값으로 덮고 싶으면 그냥 대입.
+            if (!window.userRates[uid]) window.userRates[uid] = hr;
+        }
+    });
+    
+    // 사용자별 extra_price 매핑
+    window.userExtra = {};
+    monthItems.forEach(rec => {
+        const uid = rec.user.id;
+        window.userExtra[uid] = rec.extra_price != null ? Number(rec.extra_price) : 0;
+    });
+
+    // 3) 길이 보정 헬퍼
+    const fitDays = (arr, days) => {
+        const src = Array.isArray(arr) ? arr : [];
+        const clipped = src.slice(0, days).map(v => (v == null ? '' : v));
+        return clipped.length < days
+            ? [...clipped, ...Array(days - clipped.length).fill('')]
+            : clipped;
+    };
+
+    // 4) data[user_id][row_key] 구성
+    const data = {};
+    USERS.forEach(u => {
+        data[u.id] = {};
+    });
+    monthItems.forEach(rec => {
+        KEY_MAP.forEach(({field, key}) => {
+            data[rec.user.id][key] = fitDays(rec[field], days);
+        });
+    });
+
+    renderSheet(y, m, data);
+}
+
+function renderSheet(y, m, data = {}) {
+    const days = new Date(y, m, 0).getDate(); // m: 1-12
+
+    const headRow1 = `
+    <tr>
+        <th class="row-label" rowspan="2" style="text-align:center;vertical-align:middle;">이름</th>
+        <th style="width: 100px;">일자</th>
+        ${Array.from({length: days}, (_, i) => `
+        <th class="day">${String(i + 1).padStart(2, '0')}</th>
+        `).join('')}
+        <th class="total-col sum" rowspan="2" style="text-align: center; vertical-align: middle;">시간</th>
+        <th class="total-col sum" rowspan="2" style="text-align: center; vertical-align: middle;">단가<br>(원)</th>
+        <th class="total-col sum" rowspan="2" style="text-align: center; vertical-align: middle;">소계<br>(소계)</th>
+        <th class="total-col" rowspan="2"
+            style="text-align: center; vertical-align: middle; background-color: rgb(52,193,142); color: #fff;">직접/간접인건비,관리비
+        </th>
+    </tr>
+    `;
+
+    const headRow2 = `
+    <tr>
+        <th>요일</th>
+        ${Array.from({length: days}, (_, i) => {
+                const d = i + 1;
+                const date = new Date(y, m - 1, d);
+                const w = '일월화수목금토'[date.getDay()];
+                const cls = ['day', [0, 6].includes(date.getDay()) ? 'weekend' : ''].filter(Boolean).join(' ');
+                return `
+        <th class="${cls}">${w}</th>
+        `;
+            }).join('')}
+    </tr>
+    `;
+
+    let bodyHTML = '';
+    USERS.forEach(({id: userId, name: userName}) => {
+        const daysSum = Array.from({length: days}, () => 0);
+        let totalTime = 0;
+        let totalMoney = 0;
+
+        ROWS.forEach((baseRow, idx) => {
+            const rowKey = `${userId}:${baseRow.key}`;
+            const nameTd = idx === 0 ? `<td class="row-label" rowspan="${ROWS.length + 1}">${userName}</td>` : '';
+
+            const sideTd = idx === 0
+                ? `
+                    <td class="total-col user-side" rowspan="${ROWS.length + 1}" style="vertical-align: top;">
+                        <table class="side-table" data-user-id="${userId}">
+                            <tr>
+                                <td class="side-label w-50" colspan="2">직접비</td>
+                                <td class="money" data-k="direct"></td>
+                            </tr>
+                            <tr>
+                                <td class="side-label">관리비</td>
+                                <td class="side-label">
+                                    <input type="text" class="form-control border-0 text-center font-size-11 p-0 ins-rate"
+                                           value="${getInsuranceRate(userId, 'mgmt', '6%')}" data-k="mgmt">
+                                </td>
+                                <td class="money" data-k="mgmt"></td>
+                            </tr>
+                            <tr>
+                                <td class="side-label">국민연금</td>
+                                <td class="side-label">
+                                    <input type="text" class="form-control border-0 text-center font-size-11 p-0 ins-rate"
+                                           value="${getInsuranceRate(userId, 'pension', '4.5%')}" data-k="pension">
+                                </td>
+                                <td class="money" data-k="pension"></td>
+                            </tr>
+                            <tr class="health-row">
+                                <td class="side-label">건강보험</td>
+                                <td class="side-label">
+                                    <input type="text" class="form-control border-0 text-center font-size-11 p-0 ins-rate"
+                                           value="${getInsuranceRate(userId, 'health', '3.545%')}" data-k="health">
+                                </td>
+                                <td class="money" data-k="health"></td>
+                            </tr>
+                            <tr>
+                                <td class="side-label">고용보험</td>
+                                <td class="side-label">
+                                    <input type="text" class="form-control border-0 text-center font-size-11 p-0 ins-rate"
+                                           value="${getInsuranceRate(userId, 'emp', '1.55%')}" data-k="emp">
+                                </td>
+                                <td class="money" data-k="emp"></td>
+                            </tr>
+                            <tr>
+                                <td class="side-label">산재보험</td>
+                                <td class="side-label">
+                                    <input type="text" class="form-control border-0 text-center font-size-11 p-0 ins-rate"
+                                           value="${getInsuranceRate(userId, 'acc', '2.05%')}" data-k="acc">
+                                </td>
+                                <td class="money" data-k="acc"></td>
+                            </tr>
+                            <tr>
+                                <td class="side-label">장기요양</td>
+                                <td class="side-label">
+                                    <input type="text" class="form-control border-0 text-center font-size-11 p-0 ins-rate"
+                                           value="${getInsuranceRate(userId, 'ltc', '12.95%')}" data-k="ltc">
+                                </td>
+                                <td class="money" data-k="ltc"></td>
+                            </tr>
+                            <tr class="workwear-row">
+                                <td class="side-label fw-bold" colspan="2">기타 금액*</td>
+                                <td class="money">
+                                    <input class="workwear-input"
+                                           style="width:100%;border:0;text-align:right"
+                                           placeholder="0"
+                                           value="${formatNumber(getInitialEtc(userId), 0)}">
+                                </td>
+                            </tr>
+                            <tr class="total-price-row">
+                                <td class="side-label" colspan="2">총 청구액</td>
+                                <td class="money" data-k="user_total_price"></td>
+                            </tr>
+                        </table>
+                    </td>`
+                : '';
+
+            const dayTds = Array.from({length: days}, (_, i) => {
+                const d = i + 1;
+                const date = new Date(y, m - 1, d);
+                const isWknd = [0, 6].includes(date.getDay());
+                const cls = isWknd ? 'weekend' : '';
+                const arr = (data[userId]?.[baseRow.key]) || null;
+                const val = arr ? (arr[i] ?? '') : '';
+
+                if (!isNaN(val) && val !== '') {
+                    const n = Number(val);
+                    daysSum[i] += n;
+                    totalTime += n;
+                }
+
+                return `
+                    <td class="${cls}">
+                        <input
+                                type="text"
+                                class="cell"
+                                data-row="${rowKey}"
+                                data-date="${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}"
+                                value="${val}"
+                        />
+                    </td>`;
+            }).join('');
+
+            if (baseRow.key === 'annual') {
+                const extraVal = window.userExtra && window.userExtra[userId] ? window.userExtra[userId] : 0;
+                bodyHTML += `
+                <tr data-user-id="${userId}" data-row-key="${rowKey}" data-kind="annual" class="annual-row">
+                    ${nameTd}
+                    <td>${baseRow.name}</td>
+                    ${dayTds}
+                    <td class="sum total-col" data-sum-cell="${rowKey}">-</td>
+                    <td class="sum money total-col fw-bold" data-rate-cell>기타 금액*</td>
+                    <td class="sum money total-col">
+                        <input type="text" class="annual-input form-control form-control-sm text-end px-0"
+                               style="font-size: 13px; border:0; background:transparent;" placeholder="0"
+                               data-subtotal-cell="${rowKey}"
+                               value="${formatNumber(extraVal, 0)}">
+                    </td>
+                    ${sideTd}
+                </tr>`;
+            } else {
+                // 기존 로직
+                bodyHTML += `
+                <tr data-user-id="${userId}" data-row-key="${rowKey}" data-kind="${baseRow.key}">
+                    ${nameTd}
+                    <td>${baseRow.name}</td>
+                    ${dayTds}
+                    <td class="sum total-col" data-sum-cell="${rowKey}"></td>
+                    <td class="sum money total-col" data-rate-cell></td>
+                    <td class="sum money total-col" data-subtotal-cell="${rowKey}"></td>
+                    ${sideTd}
+                </tr>`;
+            }
+        });
+
+        const sumTds = daysSum.map((sum, i) => {
+            const date = new Date(y, m - 1, i + 1);
+            const cls = [0, 6].includes(date.getDay()) ? 'weekend' : '';
+            return `<td class="${cls}">${sum !== 0 && sum !== '' ? sum.toFixed(2) : ''}</td>`;
+        }).join('');
+
+        bodyHTML += `
+        <tr class="total-row" data-user-id="${userId}">
+            <td>합계</td>
+            ${sumTds}
+            <td class="total-col" data-total-time>${Number.isInteger(totalTime) ? totalTime : totalTime.toFixed(2)}</td>
+            <td class="money">
+                <input class="company_hourly_rate" style="width: 100%; border: 0; text-align: right" placeholder="0"
+                       onkeyup="checkNumber(this, 2)" value="${formatNumber(getInitialRate(userId), 0)}">
+            </td>
+            <td class="total-col" data-total-money>${fmtMoney(totalMoney)}</td>
+        </tr>`;
+    });
+
+    const $container = $('#sheet');
+    $container.html(`
+    <table>
+        <thead>${headRow1}${headRow2}</thead>
+        <tbody>${bodyHTML}</tbody>
+    </table>
+    `);
+
+    if (!$container.data('bindInputHandler')) {
+        const onCellInput = debounce(function (el) {
+            const $tr = $(el).closest('tr');
+            if ($tr.hasClass('total-row')) return;
+            recalcRow($tr[0]);
+            updateUserTotalRow($tr);
+        }, 50);
+        $container.on('input', '.cell', function () {
+            onCellInput(this);
+        });
+        $container.data('bindInputHandler', true);
+    }
+
+    $container.find('tbody tr').each(function () {
+        if ($(this).hasClass('total-row')) return;
+        recalcRow(this);
+    });
+
+    $container.find('tbody tr.total-row').each(function () {
+        const userId = $(this).data('user-id');
+        const $first = $container.find(`tbody tr[data-user-id="${userId}"][data-kind]`).first();
+        if ($first.length) updateUserTotalRow($first);
+    });
+
+    $container
+        .off('input.workwear')
+        .on('input.workwear', '.workwear-input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            const $tbl = $(this).closest('.side-table');
+            const userId = $tbl.data('user-id');
+            const base = Number($tbl.data('base') || 0);
+            updateSideTable(userId, base);
+        })
+        .off('blur.workwear')
+        .on('blur.workwear', '.workwear-input', function () {
+            this.value = formatNumber(this.value, 0);
+        });
+
+    $container.off('input.hr blur.hr')
+        .on('input.hr blur.hr', '.company_hourly_rate', function () {
+            const $total = $(this).closest('tr.total-row');
+            const userId = $total.data('user-id');
+            if (!userId) return;
+
+            const $rows = $total.closest('tbody').find(`tr[data-user-id="${userId}"][data-kind]`);
+            $rows.each(function () {
+                recalcRow(this);
+            });
+            if ($rows.length) updateUserTotalRow($rows.first());
+        });
+    
+    $container.off('input.annual blur.annual')
+        .on('input.annual', '.annual-input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            const $tr = $(this).closest('tr');
+            updateUserTotalRow($tr); // 합계 갱신
+        })
+        .on('blur.annual', '.annual-input', function () {
+            this.value = formatNumber(this.value, 0);
+        });
+    
+    $container.off('input.insRate blur.insRate')
+        .on('input.insRate', '.ins-rate', function () {
+            this.value = this.value.replace(/[^0-9.]/g, '') + '%';
+            const $tbl = $(this).closest('.side-table');
+            const userId = $tbl.data('user-id');
+            const base = Number($tbl.data('base') || 0);
+            updateSideTable(userId, base);
+        });
+}
+
+function getHourlyRateForRow(tr) {
+    const $tr = $(tr);
+    const userId = getUserId($tr);
+    if (!userId) return 0;
+    const $totalRow = $tr.closest('tbody').find(`tr.total-row[data-user-id="${userId}"]`);
+    const val = ($totalRow.find('.company_hourly_rate').val() || '0');
+    return parseFloat(del_comma(val)) || 0;
+}
+
+function updateSideTable(userId, base) {
+    const $tbl = $(`#sheet table .side-table[data-user-id="${userId}"]`);
+    if (!$tbl.length) return;
+    
+    $tbl.data('base', base);
+    
+    const r = (p) => Math.round(base * p);
+    const fmt = (n) => fmtMoney(isNaN(n) ? 0 : n);
+    
+    const direct  = Math.round(base);
+    
+    let mgmt = 0, pension = 0, health = 0, emp = 0, acc = 0, ltc = 0;
+    $tbl.find("input.ins-rate").each(function () {
+        let rateStr = $(this).val().replace('%', '').trim();
+        let rate = parseFloat(rateStr) / 100 || 0;
+        const k = $(this).data("k");
+
+        if (k === "mgmt") mgmt = Math.round(base * rate);
+        if (k === "pension") pension = Math.round(base * rate);
+        if (k === "health") health = Math.round(base * rate);
+        if (k === "emp") emp = Math.round(base * rate);
+        if (k === "acc") acc = Math.round(base * rate);
+        if (k === "ltc") ltc = Math.round(health * rate);
+    });
+    
+    const workwear = parseInt(String($tbl.find('.workwear-input').val() || '0').replace(/,/g, ''), 10) || 0;
+    
+    const total = direct + mgmt + pension + health + emp + acc + ltc + workwear;
+    
+    $tbl.find('[data-k="direct"]').text(fmt(direct));
+    $tbl.find('[data-k="mgmt"]').text(fmt(mgmt));
+    $tbl.find('[data-k="pension"]').text(fmt(pension));
+    $tbl.find('[data-k="health"]').text(fmt(health));
+    $tbl.find('[data-k="emp"]').text(fmt(emp));
+    $tbl.find('[data-k="acc"]').text(fmt(acc));
+    $tbl.find('[data-k="ltc"]').text(fmt(ltc));
+    $tbl.find('[data-k="user_total_price"]').text(fmt(total));
+}
+
+function recalcRow(tr) {
+    const inputs = tr.querySelectorAll('input.cell');
+    let sum = 0;
+    const kind = tr.getAttribute('data-kind') || '';
+
+    inputs.forEach(i => {
+        const v = parseFloat(i.value);
+        if (!isNaN(v)) sum += v;
+    });
+
+    const sumCell  = tr.querySelector('[data-sum-cell]');
+    const rateCell = tr.querySelector('[data-rate-cell]');
+    const subCell  = tr.querySelector('[data-subtotal-cell]');
+    if (!sumCell || !rateCell || !subCell) return;
+
+    // 월 총 일수
+    const y = Number($('#year').val());
+    const m = Number($('#month').val());
+    const daysInMonth = new Date(y, m, 0).getDate();
+
+    // 기준 시급
+    const base = getHourlyRateForRow(tr);
+
+    if (kind === 'work') {
+        // 근무일수 → 하루치 일당 계산
+        const dailyWage = base ? Math.round(base * 209 / daysInMonth) : 0;
+        sumCell.textContent = sum;  // 근무일수
+        rateCell.textContent = dailyWage ? fmtMoney(dailyWage) : '-';
+        subCell.textContent = dailyWage ? fmtMoney(sum * dailyWage) : '-';
+    } else if (kind === 'annual') {
+        sumCell.textContent = '-';
+        rateCell.textContent = '기타 금액*';
+        subCell.textContent = '-';
+    } else {
+        const mult = RATE_MULTIPLIER[kind] ?? 1;
+        const effRate = base ? Math.round(base * mult) : 0;
+        sumCell.textContent = (sum % 1 === 0 ? Math.round(sum) : sum.toFixed(2));
+        rateCell.textContent = effRate ? fmtMoney(effRate) : '-';
+        const subtotal = effRate ? Math.round(sum * effRate) : 0;
+        subCell.textContent = effRate ? fmtMoney(subtotal) : '-';
+    }
+}
+
+function updateUserTotalRow($tr) {
+    const userId = getUserId($tr);
+    if (!userId) return;
+
+    const $rows = $tr.closest('tbody').find(`tr[data-user-id="${userId}"][data-kind]`);
+    const days = $rows.first().find('.cell').length;
+    const daysSum = Array.from({length: days}, () => 0);
+    let totalTime = 0;
+    let totalMoney = 0;
+
+    // 1) 날짜별 합계 / 총 근무시간
+    $rows.each(function () {
+        const kind = $(this).attr('data-kind');
+        if (kind === 'annual') return;  // 제외
+        
+        $(this).find('.cell').each(function (i) {
+            const val = Number($(this).val() || 0);
+            if (val) {
+                daysSum[i] += val;
+                totalTime += val;
+            }
+        });
+    });
+
+    // row별 소계 합산
+    $rows.each(function () {
+        if ($(this).attr('data-kind') === 'annual') {
+            const valStr = $(this).find('.annual-input').val().replace(/,/g, '');
+            const val = Number(valStr) || 0;
+            totalMoney += val;
+        } else {
+            const subText = $(this).find('[data-subtotal-cell]').text().replace(/,/g, '');
+            const sub = Number(subText) || 0;
+            totalMoney += sub;
+        }
+    });
+
+    const $totalRow = $tr.closest('tbody').find(`tr.total-row[data-user-id="${userId}"]`);
+    if ($totalRow.length) {
+        // 일/시간 합계 셀 업데이트
+        $totalRow.find('td').each(function (i) {
+            if (i === 0) return; // "합계"
+            if (i <= days) {
+                const val = daysSum[i - 1];
+                $(this).text(
+                    val != null && val !== ''
+                        ? (Number(val) % 1 === 0 ? Number(val) : Number(val).toFixed(2))
+                        : ''
+                );
+            }
+        });
+        // 합계 행 시간/일수
+        $totalRow.find('[data-total-time]').text(Number.isInteger(totalTime) ? totalTime : totalTime.toFixed(2));
+        // 합계 행 소계 (모든 row subtotal 합산)
+        $totalRow.find('[data-total-money]').text(fmtMoney(Math.round(totalMoney)));
+
+        // 사이드테이블도 업데이트
+        updateSideTable(userId, totalMoney);
+    }
+}
+
+function getInsuranceRate(userId, k, defaultVal) {
+    const arr = window.userInsurance[userId] || [];
+    const found = arr.find(r => r.k === k);
+    return found ? (found.rate * 100).toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + "%" : defaultVal;
+}
+
+function collectSalaryData() {
+    const updates = [];
+
+    // 0) 현재 화면의 연/월(YYYY-MM) 키
+    const y = Number($('#year').val());
+    const m = Number($('#month').val());
+    const monthKey = `${y}-${String(m).padStart(2,'0')}`;
+
+    // 1) user.id => worker_id 매핑 (현재 월 데이터 기준)
+    const userToWorker = new Map();
+    (window.item || []).forEach(rec => {
+        if (String(rec.date).slice(0, 7) === monthKey) {
+            userToWorker.set(rec.user.id, rec.worker_id ?? null);
+        }
+    });
+
+    // 2) 사용자 단위 그룹
+    const userGroups = {};
+    $("#sheet tbody tr[data-user-id][data-kind]").each(function () {
+        const $tr = $(this);
+        const userId = Number($tr.data("user-id"));
+        const kind = String($tr.data("kind")); // work, ot, night, sat, sat_ot, weekly, etc, annual
+
+        if (!userGroups[userId]) {
+            const workerId = userToWorker.get(userId) ?? null;
+            userGroups[userId] = {
+                // 서버에서 기대하는 키들 정리
+                user_id: userId,               // 필요 시 같이 보냄 (선택)
+                worker_id: workerId,           // ★ 핵심: worker_id로 저장
+                date: `${monthKey}-01`,        // YYYY-MM-01 (월 저장 기준)
+                year: y,                       // 선택: 서버가 year/month 쓰면 활용
+                month: m,                      // 선택
+                work_order_id: work_order_id,
+                hourly_rate: 0,
+                etc_price: 0,
+                work_data: [],
+                ot_data: [],
+                night_data: [],
+                sat_data: [],
+                sat_ot_data: [],
+                weekly_data: [],
+                etc_data: [],
+                annual_data: [],
+                annual_price: 0,  // 기타 금액
+                sum_price: 0,   // 표의 소계 합(우측 total-money)
+                final_price: 0, // 사이드테이블 '총 청구액'
+            };
+        }
+
+        // 3) 날짜 순으로 값 채우기 (빈칸 → null)
+        {% comment %}const arr = [];
+        $tr.find("input.cell").each(function () {
+            const v = $(this).val().trim();
+            arr.push(v === "" ? null : Number(v));
+        });{% endcomment %}
+        
+        // kind에 따라 처리 방식 구분
+        const arr = [];
+        $tr.find("input.cell").each(function () {
+            const v = $(this).val().trim();
+            if (kind === "annual") {
+                arr.push(v === "" ? null : v);  // 텍스트 그대로 저장
+            } else {
+                arr.push(v === "" ? null : Number(v));
+            }
+        });
+
+        // 4) kind별로 주입
+        if (kind === "work")    userGroups[userId].work_data = arr;
+        if (kind === "ot")      userGroups[userId].ot_data = arr;
+        if (kind === "night")   userGroups[userId].night_data = arr;
+        if (kind === "sat")     userGroups[userId].sat_data = arr;
+        if (kind === "sat_ot")  userGroups[userId].sat_ot_data = arr;
+        if (kind === "weekly")  userGroups[userId].weekly_data = arr;
+        if (kind === "etc")  userGroups[userId].etc_data = arr;
+        if (kind === "annual") {
+            userGroups[userId].annual_data = arr;
+        
+            // extra_price 직접인건비 기타금액 반영
+            const annualVal = $tr.find(".annual-input").val().replace(/,/g, "");
+            userGroups[userId].extra_price = Number(annualVal) || 0;
+        }
+    });
+
+    // 5) 금액 필드 수집 (합계 row, 사이드 테이블)
+    $("#sheet tbody tr.total-row").each(function () {
+        const $tr = $(this);
+        const userId = Number($tr.data("user-id"));
+        const g = userGroups[userId];
+        if (!g) return;
+
+        const rateStr = ($tr.find(".company_hourly_rate").val() || "").replace(/,/g, "");
+        const totalMoneyStr = ($tr.find("[data-total-money]").text() || "").replace(/,/g, "");
+        g.hourly_rate = Number(rateStr) || 0;
+
+        // sum_price는 표에서 계산된 소계 합(모든 종류 반영)
+        g.sum_price = Number(totalMoneyStr) || 0;
+    });
+
+    // 6) 사이드 테이블(총 청구액, 기타금액)
+    $("#sheet table.side-table").each(function () {
+        const $table = $(this);
+        const userId = Number($table.data("user-id"));
+        const g = userGroups[userId];
+        if (!g) return;
+
+        const etcStr = ($table.find(".workwear-input").val() || "").replace(/,/g, "");
+        const finalStr = ($table.find('[data-k="user_total_price"]').text() || "").replace(/,/g, "");
+        const mgmtStr = ($table.find('[data-k="mgmt"]').text() || "").replace(/,/g, "");
+
+        g.etc_price   = Number(etcStr)   || 0;
+        g.final_price = Number(finalStr) || 0; // 총 청구액(직접/간접/보험/기타 포함)
+        g.mgmt_price  = Number(mgmtStr)  || 0;  // 💡관리비 필드 (이익)
+    });
+
+    // 7) payload 배열로 정리
+    Object.values(userGroups).forEach(g => updates.push(g));
+    return updates;
+}
+
+function collectInsuranceRates() {
+    const userRates = {};
+
+    $("#sheet .side-table").each(function () {
+        const $table = $(this);
+        const userId = Number($table.data("user-id"));
+        if (!userId) return;
+
+        const rates = [];
+        $table.find("input.ins-rate").each(function () {
+            const k = $(this).data("k");
+            const name = $(this).closest("tr").find("td.side-label:first").text().trim();
+            let val = $(this).val().replace('%','').trim();
+            rates.push({
+                k: k,
+                name: name,
+                rate: parseFloat(val) / 100 || 0
+            });
+        });
+
+        userRates[userId] = rates;
+    });
+
+    return userRates; // userId별 insurance_data 딕셔너리 반환
+}
+
+function save_salary() {
+    let salaryData = collectSalaryData();
+    let insuranceRates = collectInsuranceRates();
+
+    // 사용자별 insurance_data 매핑
+    salaryData.forEach(x => {
+        if (insuranceRates[x.user_id]) {
+            x.insurance_data = insuranceRates[x.user_id];
+        }
+    });
+
+    if (!salaryData.length) {
+        alert("저장할 데이터가 없습니다.");
+        return;
+    }
+
+    const api_data = new FormData();
+    api_data.append('salary_data', JSON.stringify(salaryData));
+
+    fetch_gp('/general_worker_salary_update_fn/', 'post', true, api_data, (done) => {
+        alert(txt.update_ed);
+        a_search();
+    });
+}
+
+function getUserId($tr){
+    if ($tr.data('user-id')) return $tr.data('user-id');
+    const $prev = $tr.prevAll('tr').filter((_, el) => $(el).attr('data-user-id')).first();
+    return $prev.length ? $prev.data('user-id') : null;
+}
+
+function debounce(fn, ms) {
+    let t;
+    return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), ms);
+    };
+}
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+function getInitialRate(userId) {
+    const r = (window.userRates && window.userRates[userId]) || 0;
+    return r > 0 ? r : (COMPANY_HOURLY_RATE || 0);
+}
+
+function getInitialEtc(userId) {
+    const v = window.userEtc && Object.prototype.hasOwnProperty.call(window.userEtc, userId) ? window.userEtc[userId] : 0;
+    return isNaN(v) ? 0 : v;
+}
+</script>

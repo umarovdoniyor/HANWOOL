@@ -1,0 +1,235 @@
+<!-- 구버전 브랜드 페이지 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.nav-item {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.img-wrapper {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.tooltip-img {
+    display: none;
+    width: 1000px;
+    z-index: 10;
+    position: absolute;
+    bottom: 100%; /* 이미지 위로 */
+    left: 50%;     /* 가운데 정렬 시작 */
+    transform: translateX(-50%) translateY(-10px); /* 가운데로 이동 + 약간 띄움 */
+}
+
+.img-wrapper:hover .tooltip-img {
+    display: block;
+}
+
+@media (max-width: 992px) {
+    body {
+        padding-top: 118px !important;
+    }
+
+    .tooltip-img {
+        display: none !important;
+    }
+    
+    .responsive_img {
+        width: 100% !important;
+    }
+    
+    .img-wrapper {
+        cursor: default;
+    }
+}
+</style>
+
+<body class="text-dark" style="padding-top: 82px;">
+
+<!-- Top Navigation -->
+<nav class="navbar navbar-expand-lg bg-white shadow-sm py-2 fixed-top">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center py-2 px-3 m-0" href="{% url 'brand_page' %}">
+            <img src="{% static 'img/tost_office_color_1200px.png' %}" alt="Logo" height="50" class="">
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav" style="border: none;">
+            <span class=""><i class="fa-solid fa-bars text-dark" style="font-size: 30px;"></i></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-center" id="topNav">
+          <ul class="navbar-nav mb-2 mb-lg-0 mx-auto">
+                <li class="nav-item px-2"><a class="nav-link" href="{% url 'brand_fn_intro_page' %}">기능 소개</a></li>
+                <li class="nav-item px-2"><a class="nav-link" href="{% url 'blog_list_page' %}">블로그</a></li>
+                <li class="nav-item px-2" data-toggle="tooltip" data-placement="top" title="준비중 입니다."><a class="nav-link" href="#">도입 사례</a></li>
+            </ul>
+        </div>
+
+        <div class="d-none d-lg-flex align-items-center gap-2">
+            <a href="{% url 'signup_step1' %}" class="btn btn-info fw-bold">시작하기</a>
+            <a href="{% url 'login_page' %}" class="btn btn-success fw-bold">그룹웨어 로그인</a>
+        </div>
+    </div>
+    <div class="d-flex d-lg-none align-items-center gap-2 ms-auto px-3">
+        <a href="{% url 'signup_step1' %}" class="btn btn-info fw-bold">시작하기</a>
+        <a href="{% url 'login_page' %}" class="btn btn-success fw-bold">그룹웨어 로그인</a>
+    </div>
+</nav>
+
+
+<!-- Section 1 -->
+<section class="position-relative text-center text-dark py-5" style="background: url('{% static 'img/login_office.jpg' %}') no-repeat center center/cover; height: 100%;">
+    <!-- 밝은 반투명 오버레이 -->
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background-color: rgba(255, 255, 255, 0.7); z-index: 1;"></div>
+
+    <!-- 콘텐츠 -->
+    <div class="container py-5 position-relative" style="z-index: 2;">
+        <h2 class="display-5 fw-bold mb-5 py-2">쉽고 편한 무료 그룹웨어</h2>
+        <p class="fs-3 lead fw-bold my-5 py-2">클라우드 기반으로 언제 어디서든 누구나<br>빠르게 쉽게 간편하게</p>
+        <p class="fs-5 text-dark my-5 py-2" style="line-height: 180%;">
+            복잡한 건 빼고, 꼭 필요한 기능만 담았습니다.<br>
+            효율적인 회사 관리를 위한 <strong>전자결재 · 근태관리 · 휴가관리</strong><br>
+            설치 없이 지금 바로 시작하세요
+        </p>
+        <a href="{% url 'signup_step1' %}" class="btn btn-lg btn-info fw-bold">간편한 그룹웨어 무료로 도입하기</a>
+    </div>
+</section>
+
+
+<!-- Section 2 -->
+<section class="bg-white my-5 py-2 text-center">
+    <div class="container my-5 py-2">
+        <img src="{% static 'img/tost_office_color_1200px.png' %}" alt="Logo" height="100" class="my-5">
+        <h3 class="fs-2 fw-bold my-5">쉽고 편한 무료 그룹웨어를 목표로,</h3>
+        <p class="fs-5 text-muted my-5" style="line-height: 180%;"><strong>토스트 오피스</strong>는<br>소규모 회사에서도 부담없이 사용할 수 있도록<br>꼭 필요한 기능만을 담아<br>1인 개발자가 직접 만든 비영리 서비스입니다.</p>
+    </div>
+</section>
+
+
+<!-- Section 3 -->
+<section class="position-relative text-center text-dark py-5" style="background: url('{% static 'img/login_office.jpg' %}') no-repeat center center/cover; height: 100%;">
+    <!-- 밝은 반투명 오버레이 -->
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background-color: rgba(0, 0, 0, 0.5); z-index: 1;"></div>
+
+    <!-- 콘텐츠 -->
+    <div class="container py-5 position-relative" style="z-index: 2;">
+        <h3 class="fs-1 text-white fw-bold mb-5">소소하지만 확실한 그룹웨어</h3>
+        <p class="fs-5 text-light" style="line-height: 180%;">
+            <strong>토스트 오피스는 설치 없이 바로 사용</strong>할 수 있으며,<br>
+            노트북, 태블릿, 모바일 어떤 다양한 장치에서도 사용 가능한<br>
+            <strong>웹기반 클라우드 그룹웨어 웹서비스(SaaS)</strong>입니다.<br></p>
+
+        <img src="{% static 'img/case/tost_multi_devices.png' %}" class="mb-3 rounded responsive_img py-4" style="width: 800px;">
+
+        <p class="fs-5 text-light" style="line-height: 180%;">
+            복잡한 기능은 줄이고,<br>
+            누구나 <strong>쉽고 직관적으로 사용할 수 있는</strong> UI로<br>
+            작은 조직에서도 효율적인 업무 환경을 만들어드립니다.<br><br>
+
+            <strong>대시보드, 전자결재, 근태관리, 휴가관리, 일정관리</strong> 등<br>
+            업무에 꼭 필요한 기능들을 모두 <strong>무료로 제공</strong>합니다.</p>
+    </div>
+</section>
+
+
+<!-- Section 4 -->
+<section class="py-5 w-100">
+    <div class="container py-5 w-100">
+        <h3 class="fs-1 text-center fw-bold mb-5">그룹웨어 핵심 기능 전부 무료 제공</h3>
+        <div class="row text-center g-4 w-100 w-md-auto m-auto">
+            <div class="col-md-4">
+                <div class="img-wrapper position-relative">
+                    <img src="{% static 'img/case/approval_case_1.JPG' %}" alt="Logo" width="350" height="150" class="mb-3 border border-secondary rounded main-img">
+                    <img src="{% static 'img/case/approval_case_1.JPG' %}" alt="Zoom" class="tooltip-img position-absolute border border-dark rounded shadow">
+                </div>
+                <h5>📝 전자결재</h5>
+                <p class="text-muted">쉽고 편리한 직관적 디자인의 결재 프로세스</p>
+            </div>
+            <div class="col-md-4">
+                <div class="img-wrapper position-relative">
+                    <img src="{% static 'img/case/worktime_case_1.JPG' %}" alt="Logo" width="350" height="150" class="mb-3 border border-secondary rounded main-img">
+                    <img src="{% static 'img/case/worktime_case_1.JPG' %}" alt="Zoom" class="tooltip-img position-absolute border border-dark rounded shadow">
+                </div>
+                <h5>⏱ 근태관리</h5>
+                <p class="text-muted">출퇴근 기록과 실시간 근무 현황 확인</p>
+            </div>
+
+            <div class="col-md-4">
+                <div class="img-wrapper position-relative">
+                    <img src="{% static 'img/case/leave_case_1.JPG' %}" alt="Logo" width="350" height="150" class="mb-3 border border-secondary rounded main-img">
+                    <img src="{% static 'img/case/leave_case_1.JPG' %}" alt="Zoom" class="tooltip-img position-absolute border border-dark rounded shadow">
+                </div>
+                <h5>🏖 휴가관리</h5>
+                <p class="text-muted">연차 사용내역 관리 및 연간 통계 확인</p>
+            </div>
+
+            <div class="col-md-4">
+                <div class="img-wrapper position-relative">
+                    <img src="{% static 'img/case/org_case_1.JPG' %}" alt="Logo" width="350" height="150" class="mb-3 border border-secondary rounded main-img">
+                    <img src="{% static 'img/case/org_case_1.JPG' %}" alt="Zoom" class="tooltip-img position-absolute border border-dark rounded shadow">
+                </div>
+                <h5>👥 조직관리</h5>
+                <p class="text-muted">깔끔한 디자인의 부서별 사용자 관리 기능</p>
+            </div>
+
+            <div class="col-md-4">
+                <div class="img-wrapper position-relative">
+                    <img src="{% static 'img/case/calendar_case_1.JPG' %}" alt="Logo" width="350" height="150" class="mb-3 border border-secondary rounded main-img">
+                    <img src="{% static 'img/case/calendar_case_1.JPG' %}" alt="Zoom" class="tooltip-img position-absolute border border-dark rounded shadow">
+                </div>
+                <h5>📅 일정관리</h5>
+                <p class="text-muted">공유 캘린더로 회사의 일정을 한눈에 확인</p>
+            </div>
+
+            <div class="col-md-4">
+                <div class="img-wrapper position-relative">
+                    <img src="{% static 'img/case/notice_case_1.JPG' %}" alt="Logo" width="350" height="150" class="mb-3 border border-secondary rounded main-img">
+                    <img src="{% static 'img/case/notice_case_1.JPG' %}" alt="Zoom" class="tooltip-img position-absolute border border-dark rounded shadow">
+                </div>
+                <h5>📢 공지사항</h5>
+                <p class="text-muted">조직 내 전달사항을 빠르게 공지</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- Call to Action -->
+<section class="bg-success bg-opacity-10 py-5 text-center">
+    <div class="container py-5">
+        <div class="text-success mb-3" style="font-size: 100px;"><i class="fa-solid fa-rocket fa-bounce"></i></div>
+        <h3 class="fs-2 fw-bold mb-3">지금 바로 시작해보세요</h3>
+        <p class="fs-5 text-muted mb-4">설치 NO, 유지보수 걱정 NO<br>복잡한 가입 없이, 클릭 몇 번이면 충분합니다.</p>
+        <a href="{% url 'signup_step1' %}" class="btn btn-success text-white fw-semibold btn-lg">쉽고 편한 그룹웨어 시작하기</a>
+    </div>
+</section>
+
+
+<!-- Footer -->
+<footer class="text-center py-4 text-muted w-100">
+    <div class="row text-secondary w-100 m-auto">
+        <div class="col-md-6 d-flex justify-content-center m-0 p-0">
+            <script>document.write(new Date().getFullYear())</script> © TOST Office. All rights reserved.
+        </div>
+        <div class="col-md-6 d-flex justify-content-center align-items-center">
+            <div><i class="fa-regular fa-envelope me-1"></i>tost.korea@gmail.com</div>
+            <div class="mx-2">|</div>
+            <a href="https://www.instagram.com/tost_office_korea/" target="_blank" rel="noopener noreferrer"
+            data-toggle="tooltip" data-placement="top" title="DM으로도 문의하실 수 있습니다."
+            style="background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent;">
+                <i class="fa-brands fa-instagram me-1"></i>Instagram
+            </a>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,1281 @@
+<!-- 프로젝트 > 프로젝트 간트 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+/* 전체 컨테이너 */
+#gantt-container {
+    overflow-x: auto;
+}
+#month-header, #timeline, #gantt-table {
+    width: fit-content;
+}
+
+/* 행 레이아웃 기본 */
+.month-row, .date-row, .project-row {
+    display: flex;
+    min-width: max-content;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* 월/일 공통 셀 스타일 */
+.month-cell, .day-cell {
+    width: 30px;
+    min-width: 30px;
+    height: 32px;
+    line-height: 32px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: center;
+    border-right: 1px solid #dee2e6;
+    box-sizing: border-box;
+    background-color: white;
+    transition: background-color 0.2s ease;
+}
+
+/* 프로젝트셀 공용 */
+.project-cell {
+    border-right: 1px solid #dee2e6;
+    background-color: white;
+    box-sizing: border-box;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    align-items: center;
+    padding: 6px 8px;
+}
+
+.project-no {
+    width: 45px;
+    min-width: 45px;
+    display: flex;
+}
+
+.project-title {
+    width: 250px;
+    min-width: 250px;
+    position: sticky;
+    left: 0;
+    z-index: 7;
+}
+
+.project-info {
+    width: 100px;
+    min-width: 100px;
+}
+
+.project-title.info-header, .project-info.info-header, .project-no.info-header {
+    font-weight: 600;
+    background-color: #f8f9fa;
+    text-align: center;
+}
+
+/* 사용자 필드 스크롤시 고정 */
+.user_top_fixed {
+    position: sticky;
+    left: 250px;
+    z-index: 7;
+    width: 150px;
+}
+
+/* day-row : 주말 cell 표시 */
+.day-cell.weekend {
+    background-color: rgba(255, 182, 193, 0.2);
+}
+
+/* day-row : 공휴일 cell 표시 */
+.day-cell.holiday {
+    background-color: rgba(240, 128, 128, 0.2);
+}
+
+/* day-row : 오늘 cell 표시 */
+.day-cell.today {
+    border-left: 2px solid #ffc107 !important;
+    border-right: 2px solid #ffc107 !important;
+    z-index: 2;
+}
+
+.day-header.day-cell.today {
+    background-color: #ffc107 !important;
+    z-index: 2;
+}
+
+/* day-row : 프로젝트 cell 표시 */
+.day-cell.project-active {
+    background-color: rgba(135, 206, 250, 0.2) !important;
+}
+
+/* day-row : 프로젝트 + 주말(공휴일) cell 표시 */
+.day-cell.weekend.project-active, .day-cell.holiday.project-active {
+    background-color: rgba(135, 206, 250, 0.4) !important;
+}
+
+/* 프로젝트 행 내 셀 */
+.project-row .day-cell {
+    border-right: 1px solid #dee2e6;
+    height: 32px;
+}
+
+.project-row {
+    position: relative;
+    cursor: pointer;
+}
+
+.project-row.clicked .project-no, .project-row.clicked .project-title, .project-row.clicked .project-info {
+    background-color: rgb(245,245,245) !important;
+}
+
+/* 실제일정바 */
+.real-bar {
+    margin-top: 0.5rem;
+    height: 16px;
+    background-color: rgba(52, 193, 142, 0.7);
+    position: absolute;
+    top: 0;
+    z-index: 5;
+}
+.real-container {
+    position: relative;
+    width: fit-content;
+    height: 0;
+}
+
+/* 멤버 아바타 그룹 */
+.members_avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    vertical-align: middle;
+    display: inline-block;
+    position: relative;
+    border: 1px solid #fff;
+    transition: all 0.3s;
+}
+.members_avatar:hover {
+    z-index: 3;
+    transform: scale(1.3);
+}
+
+/* context-menu 스타일 */
+#custom-context-menu {
+    min-width: 150px;
+    padding: 5px 0;
+}
+#custom-context-menu .dropdown-item {
+    padding: 8px 16px;
+    cursor: pointer;
+}
+#custom-context-menu .dropdown-item:hover {
+    background-color: rgba(135, 206, 250, 0.5);
+}
+
+
+/* select2 컨테이너 너비 지정 */
+.input_sel2 + .select2-container {
+    width: 180px !important;
+}
+
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+.input_sel2 + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+
+/* 선택된 항목 텍스트 정렬 */
+.input_sel2 + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+
+/* 화살표 위치 조정 */
+.input_sel2 + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+
+/* 클리어버튼 위치 조정 */
+.input_sel2 + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-list me-2"></i>프로젝트 간트
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip"
+                       data-placement="top" onclick="event.stopPropagation();"
+                       title="• 프로젝트를 등록/수정/삭제하고 진행 상황을 확인할 수 있는 페이지입니다.<br>• 프로젝트 항목에서 마우스를 더블클릭하면 프로젝트 뷰어를 불러올 수 있습니다. <br>•마우스 오른쪽 버튼을 클릭하여 신규 프로젝트를 등록하거나 선택된 프로젝트를 수정, 삭제할 수 있습니다."></i>
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1"
+                                     data-toggle="tooltip" data-placement="top" title="프로젝트 계획일로 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                </div>
+                                
+                                <div class="d-none d-xl-flex w-auto me-1" data-toggle="tooltip" data-placement="top" title="대분류로 검색">
+                                    <select class="page_size form-select form-select-sm me-1 input_sel2" id="sch_cat1"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+                                
+                                <div class="d-none d-xl-flex w-auto me-1" data-toggle="tooltip" data-placement="top" title="프로젝트 매니저로 검색">
+                                    <select class="page_size form-select form-select-sm me-1 input_sel2" id="sch_manager"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+                                
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_status"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="진행 상태로 검색">
+                                    <option value="" selected>모두</option>
+                                    <option value="대기">대기</option>
+                                    <option value="진행">진행</option>
+                                    <option value="완료">완료</option>
+                                    <option value="중단">중단</option>
+                                </select>
+
+                                <div class="search-box d-flex me-1" data-toggle="tooltip" data-placement="top" title="프로젝트 / 고객사 텍스트 검색">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                                
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="openCodePage('project_category', 'create')">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">코드</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                </button>
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 간트 차트 -->
+                        <div class="col-12 d-flex align-items-start mb-3">
+                            <div class="table-responsive border rounded shadow-sm w-100" id="gantt-container">
+                                <div id="gantt-table" class="w-100">
+                                    <!-- 여기에 JS로 표 구조 삽입 -->
+                                </div>
+                            </div>
+                        </div>
+        
+                        <div class="div_center" id="a_nation_id"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">프로젝트 간트 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-4 mb-3">
+                        <label for="code" class="form-label">프로젝트 코드</label>
+                        <input type="text" class="form-control" id="code" placeholder="자동 생성" disabled>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="title" class="form-label fw-bold">프로젝트</label>
+                        <input type="text" class="form-control div_required" id="title">
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="manager" class="form-label">프로젝트 매니저</label>
+                        <select class="form-control" id="manager"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4 mb-3">
+                        <label for="cat1" class="form-label">대분류</label>
+                        <select class="form-control" id="cat1"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="cat2" class="form-label">중분류</label>
+                        <select class="form-control" id="cat2"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="cat3" class="form-label">소분류</label>
+                        <select class="form-control" id="cat3"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4 mb-3">
+                        <label for="plan_start" class="form-label">계획 시작일</label>
+                        <input type="text" class="form-control date_flatpickr" id="plan_start">
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="plan_end" class="form-label">계획 목표일</label>
+                        <input type="text" class="form-control date_flatpickr" id="plan_end">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="progress" class="form-label">진행률</label>
+                        <input type="number" class="form-control" id="progress" value="0" min="0" max="100">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="select_status" class="form-label">진행상태</label>
+                        <select class="form-select" id="select_status">
+                            <option value="대기">대기</option>
+                            <option value="진행">진행</option>
+                            <option value="완료">완료</option>
+                            <option value="중단">중단</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="detail" class="form-label">세부내용</label>
+                        <textarea class="form-control" id="detail" rows="4"></textarea>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label for="desc1" class="form-label">프로젝트 정보1</label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="desc2" class="form-label">프로젝트 정보2</label>
+                        <input type="text" class="form-control" id="desc2">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="desc3" class="form-label">프로젝트 정보3</label>
+                        <input type="text" class="form-control" id="desc3">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="customer" class="form-label">고객사</label>
+                        <input type="text" class="form-control" id="customer">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">프로젝트 간트 <i class="fa-solid fa-angle-right px-1"></i> 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-4 mb-3">
+                        <label for="code" class="form-label">프로젝트 코드</label>
+                        <input type="text" class="form-control" id="code" placeholder="자동 생성" disabled>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="title" class="form-label fw-bold">프로젝트</label>
+                        <input type="text" class="form-control div_required" id="title" style="border: 2px solid;">
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="manager" class="form-label">프로젝트 매니저</label>
+                        <select class="form-control" id="manager"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4 mb-3">
+                        <label for="cat1" class="form-label">대분류</label>
+                        <select class="form-control" id="cat1"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="cat2" class="form-label">중분류</label>
+                        <select class="form-control" id="cat2"></select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="cat3" class="form-label">소분류</label>
+                        <select class="form-control" id="cat3"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4 mb-3">
+                        <label for="plan_start" class="form-label">계획 시작일</label>
+                        <input type="text" class="form-control date_flatpickr" id="plan_start">
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label for="plan_end" class="form-label">계획 목표일</label>
+                        <input type="text" class="form-control date_flatpickr" id="plan_end">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="progress" class="form-label">진행률</label>
+                        <input type="number" class="form-control" id="progress" value="0" min="0" max="100">
+                    </div>
+                    <div class="col-2 mb-3">
+                        <label for="select_status" class="form-label">진행상태</label>
+                        <select class="form-select" id="select_status">
+                            <option value="대기">대기</option>
+                            <option value="진행">진행</option>
+                            <option value="완료">완료</option>
+                            <option value="중단">중단</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="detail" class="form-label">세부내용</label>
+                        <textarea class="form-control" id="detail" rows="4"></textarea>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label for="desc1" class="form-label">프로젝트 정보1</label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="desc2" class="form-label">프로젝트 정보2</label>
+                        <input type="text" class="form-control" id="desc2">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="desc3" class="form-label">프로젝트 정보3</label>
+                        <input type="text" class="form-control" id="desc3">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="customer" class="form-label">고객사</label>
+                        <input type="text" class="form-control" id="customer">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="custom-context-menu" class="position-absolute bg-white border shadow" style="display:none; z-index: 9999;">
+    <div class="dropdown-item" onclick="a_modal_popup_open()">선택 프로젝트 뷰어 열기</div>
+    <hr class="my-1">
+    <div class="dropdown-item" onclick="a_update_modal_in()">선택 프로젝트 수정</div>
+    <div class="dropdown-item" onclick="a_delete_submit()">선택 프로젝트 삭제</div>
+    <hr class="my-1">
+    <div class="dropdown-item" onclick="a_create_modal_in()">신규 프로젝트 등록</div>
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_code;
+let a_click_title;
+let a_click_manager_id;
+let a_click_manager_name;
+let a_click_cat1_id;
+let a_click_cat1_name;
+let a_click_cat2_id;
+let a_click_cat2_name;
+let a_click_cat3_id;
+let a_click_cat3_name;
+let a_click_plan_start;
+let a_click_plan_end;
+let a_click_progress;
+let a_click_status;
+let a_click_detail;
+let a_click_desc1;
+let a_click_desc2;
+let a_click_desc3;
+let a_click_customer;
+
+let customWeekends;
+
+let fr_date;
+let to_date;
+let all_sch;
+let sch_cat1;
+let sch_manager;
+let sch_status;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('prj_gantt_page_size', $(this).val());
+});
+
+$('#sch_status').on('change', function () {
+    localStorage.setItem('prj_gantt_sch_status', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('prj_gantt_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    let savedStatus = localStorage.getItem('prj_gantt_sch_status');
+    if (savedStatus) { $('#sch_status').val(savedStatus);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_cat1', '대분류 선택', '/sel2_code_prj_cat1/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_manager', '매니저 선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+}
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    all_sch = $('#all_sch').val();
+    sch_cat1 = $('#sch_cat1').val();
+    sch_manager = $('#sch_manager').val();
+    sch_status = $('#sch_status').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (fr_date) { query += "&fr_date=" + fr_date; }
+    if (to_date) { query += "&to_date=" + to_date; }
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_cat1) { query += "&sch_cat1=" + sch_cat1; }
+    if (sch_status) { query += "&sch_status=" + sch_status; }
+    if (sch_manager) { query += "&sch_manager=" + sch_manager; }
+    
+    // 공휴일 정보를 찾고 간트차트를 불러와야 오류 방지 (비동기 문제)
+    fetch_gp("/company_offday_read_fn/" + query, 'GET', true, {}, (done) => {
+        // console.log("company_offday_read_fn: ", done);
+        customWeekends = done;
+
+        fetch_gp("/project_read_fn/" + query, 'GET', true, {}, (done) => {
+            // console.log("project_read_fn: ", done);
+            draw_gantt_chart(done.results);
+            a_nation.nation_display(done);
+            $('[data-bs-toggle="tooltip"]').tooltip({html: true, placement: 'top'});
+        });
+    });
+}
+
+function a_create_modal_in() {
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    init_Select2_modal('#a_create_modal #manager', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #cat1', '선택', '/sel2_code_prj_cat1/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #cat2', '선택', '/sel2_code_prj_cat2/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #cat3', '선택', '/sel2_code_prj_cat3/', {id: 'id', txt: item => `${item.text}`});
+    
+    $('#a_create_modal #code').val('');
+    $('#a_create_modal #title').val('');
+    $('#a_create_modal #plan_start').val('');
+    $('#a_create_modal #plan_end').val('');
+    $('#a_create_modal #progress').val('0');
+    $('#a_create_modal #select_status').val('대기');
+    $('#a_create_modal #detail').val('');
+    $('#a_create_modal #desc1').val('');
+    $('#a_create_modal #desc2').val('');
+    $('#a_create_modal #desc3').val('');
+    $('#a_create_modal #customer').val('');
+    
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_submit() {
+    if (!$('#a_create_modal #title').val().trim()) {
+        alert("[프로젝트]을 입력해주세요");
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("code", nullapply($('#a_create_modal #code').val()));
+        api_data.append("title", nullapply($('#a_create_modal #title').val()));
+        api_data.append("manager", nullapply($('#a_create_modal #manager').val()));
+        api_data.append("cat1", nullapply($('#a_create_modal #cat1').val()));
+        api_data.append("cat2", nullapply($('#a_create_modal #cat2').val()));
+        api_data.append("cat3", nullapply($('#a_create_modal #cat3').val()));
+        api_data.append("plan_start", nullapply($('#a_create_modal #plan_start').val()));
+        api_data.append("plan_end", nullapply($('#a_create_modal #plan_end').val()));
+        api_data.append("progress", nullapply($('#a_create_modal #progress').val()));
+        api_data.append("status", nullapply($('#a_create_modal #select_status').val()));
+        api_data.append("detail", nullapply($('#a_create_modal #detail').val()));
+        api_data.append("desc1", nullapply($('#a_create_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#a_create_modal #desc2').val()));
+        api_data.append("desc3", nullapply($('#a_create_modal #desc3').val()));
+        api_data.append("customer", nullapply($('#a_create_modal #customer').val()));
+
+    fetch_gp('/project_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        a_search_ready();
+        alert(txt.create_ed);
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    init_Select2_modal('#a_update_modal #manager', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`}, a_click_manager_id);
+    init_Select2_modal('#a_update_modal #cat1', '선택', '/sel2_code_prj_cat1/', {id: 'id', txt: item => `${item.text}`}, a_click_cat1_id);
+    init_Select2_modal('#a_update_modal #cat2', '선택', '/sel2_code_prj_cat2/', {id: 'id', txt: item => `${item.text}`}, a_click_cat2_id);
+    init_Select2_modal('#a_update_modal #cat3', '선택', '/sel2_code_prj_cat3/', {id: 'id', txt: item => `${item.text}`}, a_click_cat3_id);
+    
+    $('#a_update_modal #code').val(a_click_code);
+    $('#a_update_modal #title').val(a_click_title);
+    $('#a_update_modal #plan_start').val(a_click_plan_start);
+    $('#a_update_modal #plan_end').val(a_click_plan_end);
+    $('#a_update_modal #progress').val(Number(a_click_progress) || 0);
+    $('#a_update_modal #select_status').val(a_click_status).change();
+    $('#a_update_modal #detail').val(a_click_detail);
+    $('#a_update_modal #desc1').val(a_click_desc1);
+    $('#a_update_modal #desc2').val(a_click_desc2);
+    $('#a_update_modal #desc3').val(a_click_desc3);
+    $('#a_update_modal #customer').val(a_click_customer);
+
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    if (!$('#a_update_modal #title').val().trim()) {
+        alert("[프로젝트]을 입력해주세요");
+        return;
+    }
+    
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("code", nullapply($('#a_update_modal #code').val()));
+        api_data.append("title", nullapply($('#a_update_modal #title').val()));
+        api_data.append("manager", nullapply($('#a_update_modal #manager').val()));
+        api_data.append("cat1", nullapply($('#a_update_modal #cat1').val()));
+        api_data.append("cat2", nullapply($('#a_update_modal #cat2').val()));
+        api_data.append("cat3", nullapply($('#a_update_modal #cat3').val()));
+        api_data.append("plan_start", nullapply($('#a_update_modal #plan_start').val()));
+        api_data.append("plan_end", nullapply($('#a_update_modal #plan_end').val()));
+        api_data.append("progress", nullapply($('#a_update_modal #progress').val()));
+        api_data.append("status", nullapply($('#a_update_modal #select_status').val()));
+        api_data.append("detail", nullapply($('#a_update_modal #detail').val()));
+        api_data.append("desc1", nullapply($('#a_update_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#a_update_modal #desc2').val()));
+        api_data.append("desc3", nullapply($('#a_update_modal #desc3').val()));
+        api_data.append("customer", nullapply($('#a_update_modal #customer').val()));
+    
+    fetch_gp('/project_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search();
+        alert(txt.update_ed);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+    
+    let res = prompt("프로젝트를 삭제하면 하위 태스크도 모두 삭제됩니다.\n\n" +
+        txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+        
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        
+        fetch_gp('/project_delete_fn/', 'post', true, api_data, (done) => {
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function draw_gantt_chart(items) {
+    const $gantt = $('#gantt-table');
+    $gantt.empty();
+
+    if (!items || items.length === 0) {
+        $gantt.append(`
+        <div class="text-center text-muted py-5" style="font-size: 26px; margin: 100px 0;">
+            <i class="fa-solid fa-exclamation-triangle fa-2x mb-3" style="font-size: 100px;"></i><br>
+            검색 조건을 만족하는 프로젝트가 없습니다.<br>검색 조건을 다시 확인해주세요.
+        </div>
+    `);
+        return;
+    }
+
+    const dates = getMinMaxDates(items);
+    const startDate = dates.startDate;
+    const endDate = dates.endDate;
+    const dayCount = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    $gantt.append(renderMonthHeader(startDate, dayCount));
+    $gantt.append(renderDateHeader(startDate, dayCount, today));
+
+    items.forEach((item, index) => {
+        $gantt.append(renderProjectRow(item, startDate, dayCount, today, index + 1));
+    });
+}
+
+function getMinMaxDates(items) {
+    const dates = items.flatMap(i => {
+        const starts = [i.plan_start, i.real_start].filter(Boolean).map(d => new Date(d));
+        const ends = [i.plan_end, i.real_end].filter(Boolean).map(d => new Date(d));
+        return [...starts, ...ends];
+    });
+    return {
+        startDate: new Date(Math.min(...dates)),
+        endDate: new Date(Math.max(...dates))
+    };
+}
+
+function renderMonthHeader(startDate, dayCount) {
+    let html = `<div class="month-row">
+    <div class="project-cell project-no info-header" style="border-right: none !important;"></div>
+    <div class="project-cell project-title info-header" style="border-right: none !important;"></div>
+    <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+    <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+    <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+    <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+    <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+    <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+    <div class="project-cell project-info info-header" style="border-right: none !important;"></div>
+    <div class="project-cell project-info info-header user_top_fixed" style="border-right: none !important;"></div>
+    <div class="project-cell project-info info-header" style="border-right: none !important;"></div>`;
+    let span = 0;
+    let currentDate = new Date(startDate);
+    let prevMonth = currentDate.getMonth();
+    let labelDate = new Date(currentDate);
+
+    for (let i = 0; i <= dayCount; i++) {
+        const loopMonth = currentDate.getMonth();
+        if (loopMonth !== prevMonth || i === dayCount) {
+            const label = `${labelDate.getFullYear()}년 ${String(prevMonth + 1).padStart(2)}월`;
+            html += `<div class="month-cell" style="width:${span * 30}px;">${label}</div>`;
+            span = 0;
+            prevMonth = loopMonth;
+            labelDate = new Date(currentDate);
+        }
+        span++;
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    html += `</div>`;
+    return html;
+}
+
+function renderDateHeader(startDate, dayCount, today) {
+    let html = `<div class="date-row">
+    <div class="project-cell project-no info-header">순번</div>
+    <div class="project-cell project-title info-header">프로젝트</div>
+    <div class="project-cell project-info info-header">대분류</div>
+    <div class="project-cell project-info info-header">중분류</div>
+    <div class="project-cell project-info info-header">소분류</div>
+    <div class="project-cell project-info info-header">계획시작일</div>
+    <div class="project-cell project-info info-header">계획목표일</div>
+    <div class="project-cell project-info info-header">잔여일 / 계획일</div>
+    <div class="project-cell project-info info-header">진행률</div>
+    <div class="project-cell project-info info-header user_top_fixed">매니저</div>
+    <div class="project-cell project-info info-header">멤버</div>`;
+
+    for (let i = 0; i < dayCount; i++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const isToday = isSameDate(d, today);
+        const holiday = getHoliday(d);
+
+        let classes = "day-cell";
+        if (isWeekend) classes += " weekend";
+        if (holiday) classes += " holiday";
+        if (isToday) classes += " today";
+
+        const tooltip = holiday ?
+            `data-bs-toggle="${holiday.toggle}" data-bs-placement="${holiday.placement}" title="${d.toISOString().split("T")[0]} ${holiday.name}"` :
+            "";
+
+        html += `<div class="day-header ${classes}" ${tooltip}>${d.getDate()}</div>`;
+    }
+    html += `</div>`;
+    return html;
+}
+
+function renderProjectRow(item, startDate, dayCount, today, row_no) {
+    const rowHTML = $('<div class="project-row"></div>');
+    const progress = parseInt(item.progress) || 0;
+    const status = item.status ?? '';
+    let progressText = '';
+
+    if (status === '대기') {
+        progressText = `대기`;
+    } else if (status === '완료') {
+        progressText = `완료`;
+    } else if (status === '중단') {
+        progressText = `중단 (${progress}%)`;
+    } else {
+        progressText = `진행 (${progress}%)`;
+    }
+
+    const progressBarColor =
+        status === '완료' ? 'rgba(52, 193, 142, 0.8)' :    // 초록
+        status === '중단' ? 'rgba(255, 99, 132, 0.5)' :     // 빨강
+        status === '대기' ? 'rgba(108, 117, 125, 0.5)' :    // 회색
+        'rgba(0,157,255,0.7)';                           // 파랑 (진행)
+    
+    let remainingLeft = '-';
+    let remainingRight = '-';
+    let remainingDisplay = '-';
+    
+    // 완료 상태는 total_days만 단독 표시
+    if (status === '완료' && typeof item.total_days === 'number' && !isNaN(item.total_days)) {
+        remainingDisplay = `${item.total_days}일`;
+    } else {
+        // 남은 일수 (왼쪽)
+        if (typeof item.remaining_days === 'number' && !isNaN(item.remaining_days)) {
+            if (item.remaining_days >= 0) {
+                remainingLeft = `${item.remaining_days}일`;
+            } else {
+                remainingLeft = `<span style="color: red;">+${Math.abs(item.remaining_days)}일</span>`;
+            }
+        }
+    
+        // 전체 일수 (오른쪽)
+        if (typeof item.total_days === 'number' && !isNaN(item.total_days)) {
+            remainingRight = `${item.total_days}일`;
+        }
+    
+        remainingDisplay = `${remainingLeft} / ${remainingRight}`;
+    }
+
+    let manager_html = '-';
+    if (item.manager.name) {
+        manager_html = `
+            <img src="${item.manager.profile_image}" alt="프로필" class="d-none d-md-inline-block"
+                 style="width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; display: inline-block;">
+            <span style="margin-left: 2px; display: inline-block; vertical-align: middle;">
+                ${item.manager.name} ${item.manager.job_level || ''}</span>
+            </span>
+        `;
+    }
+    
+    let members_html = '-';
+    if (item.members && item.members.length > 0) {
+        members_html = '';
+        let overlap = item.members.length >= 1;
+        item.members.some(function(member, index) {   // ← some() 사용
+            if (index >= 5) {  // 6번째부터는 +N 하나만 표시
+                const remain = item.members.length - 5;
+                let hidden_members = item.members.slice(5).map(m => `${m.name} ${m.job_level || ''}`).join('<br>');
+                
+                members_html += `
+                    <div class="members_avatar bg-warning text-center"
+                         style="display: inline-block; width: 20px; height: 20px; font-size: 9px; border-radius:50%; padding: 2px; margin-left:-11px;"
+                         data-bs-toggle="tooltip" data-bs-placement="top" title='<div class="text-start">${hidden_members}</div>'>
+                        +${remain}
+                    </div>
+                `;
+                return true;  // 반복 중단 (some은 true면 break)
+            }
+            let marginStyle = overlap && index > 0 ? 'margin-left: -11px;' : 'margin-right: 0;';
+            members_html += `
+                <img src="${member.profile_image}" alt="${member.name}" class="members_avatar"
+                     data-bs-toggle="tooltip" data-bs-placement="top" title="${member.name} ${member.job_level || ''}"
+                     style="${marginStyle}">
+            `;
+        });
+    }
+
+    const projectInfo = `
+            <div class="project-cell project-no">${row_no}</div>
+            <div class="project-cell project-title">${item.title}</div>
+            <div class="project-cell project-info">${item.cat1_name || '-'}</div>
+            <div class="project-cell project-info">${item.cat2_name || '-'}</div>
+            <div class="project-cell project-info">${item.cat3_name || '-'}</div>
+            <div class="project-cell project-info">${item.plan_start || '-'}</div>
+            <div class="project-cell project-info">${item.plan_end || '-'}</div>
+            <div class="project-cell project-info">${remainingDisplay}</div>
+            <div class="project-cell project-info d-flex align-items-center">
+                <div class="progress-container" style="position: relative; background-color: rgba(135,206,250,0.2); border-radius: 4px; height: 16px; width: 100%;">
+                    <div class="progress-bar" style="width: ${status === '완료' ? '100%' : progress + '%'}; background-color: ${progressBarColor}; height: 14px; border-radius: 4px; box-shadow: 0 2px 4px 0 ${progressBarColor}; transition: width 0.8s ease;"></div>
+                    <span class="progress-text" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 0.65rem; color: #222; z-index: 2;">${progressText}</span>
+                </div>
+            </div>
+            <div class="project-cell project-info user_top_fixed">${manager_html}</div>
+            <div class="project-cell project-info">${members_html}</div>
+        `;
+    rowHTML.append(projectInfo);
+
+    rowHTML.attr({
+        'data-id': item.id,
+        'data-code': item.code,
+        'data-title': item.title,
+        'data-manager_id': item.manager?.id ?? '',
+        'data-manager_name': item.manager?.name ?? '',
+        'data-customer': item.customer ?? '',
+        'data-cat1_id': item.cat1_id ?? '',
+        'data-cat1_name': item.cat1_name ?? '',
+        'data-cat2_id': item.cat2_id ?? '',
+        'data-cat2_name': item.cat2_name ?? '',
+        'data-cat3_id': item.cat3_id ?? '',
+        'data-cat3_name': item.cat3_name ?? '',
+        'data-plan_start': item.plan_start ?? '',
+        'data-plan_end': item.plan_end ?? '',
+        'data-progress': item.progress ?? 0,
+        'data-status': item.status ?? '',
+        'data-detail': item.detail ?? '',
+        'data-desc1': item.desc1 ?? '',
+        'data-desc2': item.desc2 ?? '',
+        'data-desc3': item.desc3 ?? '',
+    });
+    
+    const planStart = item.plan_start ? new Date(item.plan_start) : null;
+    const planEnd = item.plan_end ? new Date(item.plan_end) : null;
+    const realStart = item.real_start ? new Date(item.real_start) : null;
+    const realEnd = item.real_end ? new Date(item.real_end) : null;
+
+    const realContainer = $('<div class="real-container"></div>');
+    if (realStart && realEnd) {
+        const offset = (realStart - startDate) / (1000 * 60 * 60 * 24);
+        const length = (realEnd - realStart) / (1000 * 60 * 60 * 24) + 1;
+        const realBar = $('<div class="real-bar"></div>');
+        realBar.css('width', `${length * 30}px`);
+        realBar.css('left', `${offset * 30}px`);
+        realBar.css('background-color', progressBarColor);
+        realBar.attr({
+            'title': `
+                <div class="text-start">
+                    [${item.code}]<br>
+                    · 프로젝트: ${item.title}<br>
+                    · 계획 일정: ${item.plan_start} ~ ${item.plan_end} ${item.plan_time_sum? `(총 ${item.plan_time_sum}시간)`:''}<br>
+                    · 실제 일정: ${item.real_start} ~ ${item.real_end} ${item.real_time_sum? `(총 ${item.real_time_sum}시간)`:''}<br>
+                    · 상태: ${item.status} ${item.progress? `(${item.progress}%)`:''}<br>
+                    · 프로젝트 매니저: ${item.manager? item.manager.name: '-'} ${item.manager? item.manager.job_level:''}
+                </div>
+            `,
+            'data-bs-toggle': 'tooltip'
+        });
+        realContainer.append(realBar);
+    }
+    rowHTML.append(realContainer);
+
+    for (let i = 0; i < dayCount; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+
+        const holiday = getHoliday(currentDate);
+        const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
+        const isToday = isSameDate(currentDate, today);
+        const isInPlan = planStart && planEnd && currentDate >= planStart && currentDate <= planEnd;
+
+        const cell = $('<div class="day-cell"></div>');
+        if (isWeekend) cell.addClass('weekend');
+        if (holiday) cell.addClass('holiday');
+        if (isToday) cell.addClass('today');
+        if (isInPlan) cell.addClass('project-active');
+        cell.attr('title', `${item.title} (계획: ${item.plan_start} ~ ${item.plan_end}, 총 ${item.total_days}일)`);
+
+        rowHTML.append(cell);
+    }
+
+    // 프로젝트행 좌클릭 clicked 정의
+    rowHTML.on('click', function () {
+        $('.project-row').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).data("id");
+        a_click_code = $(this).data("code");
+        a_click_title = $(this).data("title");
+        a_click_manager_id = $(this).data("manager_id");
+        a_click_manager_name = $(this).data("manager_name");
+        a_click_cat1_id = $(this).data("cat1_id");
+        a_click_cat1_name = $(this).data("cat1_name");
+        a_click_cat2_id = $(this).data("cat2_id");
+        a_click_cat2_name = $(this).data("cat2_name");
+        a_click_cat3_id = $(this).data("cat3_id");
+        a_click_cat3_name = $(this).data("cat3_name");
+        a_click_plan_start = $(this).data("plan_start");
+        a_click_plan_end = $(this).data("plan_end");
+        a_click_progress = $(this).data("progress");
+        a_click_status = $(this).data("status");
+        a_click_detail = $(this).data("detail");
+        a_click_desc1 = $(this).data("desc1");
+        a_click_desc2 = $(this).data("desc2");
+        a_click_desc3 = $(this).data("desc3");
+        a_click_customer = $(this).data("customer");
+    });
+
+    // 프로젝트행 더블클릭 팝업 오픈
+    rowHTML.on('dblclick', function () {
+        $('.project-row').removeClass('clicked');
+        $(this).addClass('clicked');
+        
+        a_click_id = $(this).data("id");
+        a_modal_popup_open();
+    });
+
+    // 프로젝트행 우클릭 메뉴 오픈
+    rowHTML.on('contextmenu', function (e) {
+        e.preventDefault();
+
+        $('.project-row').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        $('#custom-context-menu').css({
+            display: 'block',
+            left: e.pageX,
+            top: e.pageY
+        });
+
+        a_click_id = $(this).data("id");
+        a_click_code = $(this).data("code");
+        a_click_title = $(this).data("title");
+        a_click_manager_id = $(this).data("manager_id");
+        a_click_manager_name = $(this).data("manager_name");
+        a_click_customer = $(this).data("customer");
+        a_click_cat1_id = $(this).data("cat1_id");
+        a_click_cat1_name = $(this).data("cat1_name");
+        a_click_cat2_id = $(this).data("cat2_id");
+        a_click_cat2_name = $(this).data("cat2_name");
+        a_click_cat3_id = $(this).data("cat3_id");
+        a_click_cat3_name = $(this).data("cat3_name");
+        a_click_plan_start = $(this).data("plan_start");
+        a_click_plan_end = $(this).data("plan_end");
+        a_click_progress = $(this).data("progress");
+        a_click_status = $(this).data("status");
+        a_click_detail = $(this).data("detail");
+        a_click_desc1 = $(this).data("desc1");
+        a_click_desc2 = $(this).data("desc2");
+        a_click_desc3 = $(this).data("desc3");
+
+        return false;
+    });
+
+    // 다른 곳 클릭 시 메뉴 숨기기
+    $(document).on('click', function () {
+        $('#custom-context-menu').hide();
+    });
+
+    return rowHTML;
+}
+
+// 주말 반영 함수
+function getHoliday(date) {
+    const ymd = date.toISOString().split("T")[0];
+    const h = customWeekends.find(h => {
+        const start = new Date(h.start_date).toISOString().split("T")[0];
+        const end = new Date(h.end_date).toISOString().split("T")[0];
+        return start <= ymd && ymd <= end;
+    });
+
+    if (h) {
+        return {
+            ...h,
+            toggle: "tooltip",
+            placement: "top"
+        };
+    }
+    return null;
+}
+
+// 오늘 반영 함수
+function isSameDate(d1, d2) {
+    return (
+        d1.getFullYear() === d2.getFullYear() &&
+        d1.getMonth() === d2.getMonth() &&
+        d1.getDate() === d2.getDate()
+    );
+}
+
+function a_modal_popup_open() {
+    if (!a_click_id) {
+        alert("프로젝트가 선택되지 않았습니다.");
+        return;
+    }
+
+    const popupUrl = `/prj/prj_viewer/${a_click_id}/`;
+
+    const popup = window.open(
+        popupUrl,
+        'projectPopup',
+        `width=${screen.width},height=${screen.height},top=0,left=0,scrollbars=yes,resizable=yes`
+    );
+
+    if (popup) {
+        popup.moveTo(0, 0);
+        popup.resizeTo(screen.width, screen.height);
+        popup.focus();
+    }
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+</script>

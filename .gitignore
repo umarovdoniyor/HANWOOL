@@ -1,0 +1,58 @@
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pot
+*.so
+
+# --- Virtual environments ---
+venv/
+.venv/
+env/
+
+# --- Django ---
+config/settings.py
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+*.log
+static/
+data/
+media/
+log/
+uwsgi.ini
+
+# Migrations are sourced from the shared DB rather than tracked in git
+# (see README: "db 복사했으면 --fake 처리")
+api/migrations/
+**/migrations/*
+
+# --- Secrets / runtime tokens ---
+.env
+.env.*
+ppurio_token*.json
+*.pem
+*.key
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Build / coverage ---
+build/
+dist/
+*.egg-info/
+.eggs/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+
+# --- Unrelated scratch ---
+test/

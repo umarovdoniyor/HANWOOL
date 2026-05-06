@@ -1,0 +1,392 @@
+{% load static %}
+<style>
+.menu-title {
+    color: #eee !important;
+}
+.menu_item {
+    cursor: pointer;
+}
+.menu_item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: background-color 0.3s ease-in-out;
+}
+.menu_clicked {
+    background-color: rgba(255, 255, 255, 0.2);
+    transition: background-color 5s ease-in-out;
+}
+.menu_item a, .menu_item i {
+    color: #ccc !important;
+}
+.menu_item a:hover, .menu_item i:hover {
+    color: #fff !important;
+}
+.menu_clicked i, .menu_clicked span {
+    color: #fff !important;
+}
+</style>
+<body data-sidebar="dark" id="main-body">
+
+<div id="layout-wrapper">
+    <!-- ========== Topbar Start ========== -->
+    <header id="page-topbar">
+        <div class="navbar-header">
+            <div class="d-flex">
+                <!-- LOGO -->
+                <div class="navbar-brand-box">
+                    <a href="{% url 'index_page' %}" class="logo logo-light">
+                        <span class="logo-sm">
+                            <img src="{% static 'img/icon_hanwool.png' %}" alt="logo-sm" height="24" style="margin-left: -2px;">
+                        </span>
+                        <span class="logo-lg">
+                            {% with company_info=request.user.company.company_info.first %}
+                                {% if company_info and company_info.logo %}
+                                    <img src="{{ company_info.logo.url }}" alt="logo-lg" style="margin-bottom: -40px; max-width: 160px; max-height: 80px;">
+                                {% else %}
+                                    <img src="{% static 'img/logo_hanwool_color_neon.png' %}" alt="logo-lg" style="margin-bottom: -40px; max-width: 160px; max-height: 80px;">
+                                {% endif %}
+                            {% endwith %}
+                        </span>
+                    </a>
+                </div>
+                <!-- Sidebar Toggle -->
+                <button type="button" class="btn btn-sm px-3 font-size-16 header-item"
+                        id="vertical-menu-btn">
+                    <i class="fa fa-fw fa-bars"></i>
+                </button>
+                
+                <div class="d-flex flex-column justify-content-center align-items-start">
+                    <div class="text-dark fw-bold">{{ request.user.company.company_info.first.company_name }}</div>
+                    {% for company in results %}
+                    <div class="text-muted font-size-11"><i class="fa-solid fa-user me-2"></i>{{ company.active_users }}</div>
+                    {% endfor %}
+                </div>   
+            </div>
+
+            <div class="d-flex">
+
+                <!-- Notification -->
+                <div class="dropdown d-inline-block">
+                    <button type="button" class="btn header-item noti-icon position-relative" id="page-header-notifications-dropdown"
+                            data-bs-toggle="dropdown" data-bs-auto-close="true" aria-haspopup="true" aria-expanded="false">
+                        <i class="bx bx-bell" style="font-size: 28px; color: #2a3041;" id="noti_bell"></i>
+                        <span class="position-absolute translate-middle badge rounded-pill d-none"
+                              id="noti_count" style="background-color: #da3544; top: 35%; left: 65%; font-size: 10px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;">
+                        </span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
+                         aria-labelledby="page-header-notifications-dropdown">
+                        <div class="p-3">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <h6 class="m-0"><i class="fa-solid fa-bell me-2"></i>알림</h6>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="font-size-12 text-muted mx-2" style="cursor: pointer;"
+                                          onclick="noti_read_mass_update()"
+                                          onmouseover="this.style.textDecoration='underline'"
+                                          onmouseout="this.style.textDecoration='none'">모두 읽음처리</span>
+                                    <i class="fa-solid fa-xmark fa-lg mx-2" title="닫기" style="cursor: pointer;"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div data-simplebar style="max-height: 300px;">
+                            <div id="noti_list_area"></div>
+                        </div>
+
+                        <div class="border-top d-grid">
+                            <a class="btn btn-sm font-size-12 text-center p-3" onclick="url_click('{% url 'noti_list_page' %}', this)">
+                                <i class="fa-solid fa-up-right-from-square me-2"></i>알림센터 페이지로 이동
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- User Profile -->
+                <div class="dropdown d-inline-block">
+                    <div type="button" class="btn header-item" id="page-header-user-dropdown"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <div class="d-flex justify-content-start align-items-center mt-1">
+                            <div class="flex-shrink-0">
+                                 <img src="{{ request.user.profile_image.url }}" alt="profile_image" class="avatar-sm p-1" style="border-radius: 8px;">
+                            </div>
+                            <div class="d-none d-md-inline text-start ms-1" style="font-size: 11px;">
+                                <h6 class="fw-bold" style="margin: 2px auto;">{{ request.user.name }} {{ request.user.job_level.name|default_if_none:"" }}</h6>
+                                <span>{{ request.user.team.name|default_if_none:"" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <!-- item-->
+                        <div class="dropdown-item" onclick="url_click('{% url 'myinfo_page' %}')">
+                            <i class="fa-solid fa-user-gear me-2"></i>내 정보</div>
+                        <div class="dropdown-item" onclick="my_salary_popup_open()">
+                            <i class="fa-solid fa-wallet me-2"></i>급여명세서</div>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" href="/logout" id="logout">
+                            <i class="fa-solid fa-power-off me-2"></i>로그아웃</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+<!-- ========== Left Sidebar Start ========== -->
+    <div class="vertical-menu">
+        <div data-simplebar class="h-100">
+
+            <!--- Sidemenu -->
+            <div id="sidebar-menu">
+
+                <!-- Left Menu Start -->
+                <ul class="metismenu list-unstyled" id="side-menu">
+                </ul>
+            </div>
+            <!-- Sidebar -->
+        </div>
+    </div>
+    <!-- Left Sidebar End --></div>
+
+<script>
+let request_user = '{{ request.user }}';
+let menu_access = [];
+                    
+fetch_gp("/sel2_code_menu/", 'GET', true, {}, (done) => {
+    menu_access = [];
+    try {
+        if (done.menu_access) {
+            menu_access = JSON.parse(done.menu_access);
+        }
+    } catch (error) {
+        console.log("error:", error)
+    }
+    for (let i = 0; i < done.results.length; i++) {
+        let item = done.results[i];
+        if (!item.desc1) {
+            let child_menu = false;
+            for (let j = 0; j < done.results.length; j++) {
+                let item2 = done.results[j];
+                if (item2.desc1 == item.id && !item2.desc2) {
+                    let sub_heml = [];
+                    for (let k = 0; k < done.results.length; k++) {
+                        let item3 = done.results[k];
+                        if (item3.desc1 == item.id && item3.desc2 == item2.id) {
+                            let access_yn = "N";
+                            {% if request.user.is_master %}
+                                access_yn = "Y";
+                            {% else %}
+                                for (let k = 0; k < menu_access.length; k++) {
+                                    let access_item = menu_access[k];
+                                    if (access_item.id == item3.id) {
+                                        access_yn = "Y";
+                                    }
+                                }
+                            {% endif %}
+                            if (access_yn == "Y") {
+                                sub_heml.push(
+                                    `
+                                    <li class="menu_item">
+                                        <a class="" onclick="url_click('${item3.desc4}')"}>
+                                            <span>${item3.text}</span>
+                                        </a>
+                                    </li>
+                                    `
+                                );
+                            }
+                        }
+                    }
+                    let access_yn = "N";
+                    {% if request.user.is_master %}
+                        access_yn = "Y";
+                    {% else %}
+                        for (let k = 0; k < menu_access.length; k++) {
+                            let access_item = menu_access[k];
+                            if (access_item.id == item2.id) {
+                                access_yn = "Y";
+                            }
+                        }
+                    {% endif %}
+                    if (sub_heml.length > 0 || item2.desc4 && access_yn == "Y") {
+                        if (!child_menu) {
+                            $("#side-menu").append(`
+                                <li class="menu-title" style="margin-top: 20px; padding-bottom: 6px !important;">${item.text}</li>
+                            `);
+                            child_menu = true;
+                        }
+                        $("#side-menu").append(`
+                            <li class="menu_item">
+                                <a href="${sub_heml.length > 0 ? "javascript: void(0);" : `javascript: url_click('${item2.desc4}')`}" class="${sub_heml.length > 0 ? "has-arrow" : ""}">
+                                    <i class="fa-solid ${item2.desc3} font-size-16"></i>
+                                    <span class="fw-bold">${item2.text}</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    ${sub_heml.join("")}
+                                </ul>
+                            </li>
+                        `);
+                    }
+                }
+            }
+        }
+    }
+    $('#side-menu').metisMenu('dispose');
+    $("#side-menu").metisMenu();
+});
+
+$(function () {
+    noti_search();
+    url_click('{% url 'dashboard_page' %}')
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const body = document.getElementById('main-body');
+    const toggleBtn = document.getElementById('vertical-menu-btn');
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function () {
+        setTimeout(() => {
+          const isCollapsed = body.classList.contains('vertical-collpsed');
+          localStorage.setItem('sidebar-collapsed', isCollapsed);
+        }, 10);
+      });
+    }
+  });
+
+function noti_search() {
+    {% comment %}let range = getKSTRange(7);  // 최근 7일 알림만 보여주기{% endcomment %}
+    let query = "?page=1&page_size=9999";
+    {% comment %}query += "&fr_date=" + range.fr_date;
+    query += "&to_date=" + range.to_date;{% endcomment %}
+    query += "&notibox_filter=" + "unreadBox";
+
+    fetch_gp("/noti_list_fn/" + query, 'GET', true, {}, (done) => {
+        noti_draw_table(done);
+    });
+}
+window.noti_search = noti_search;  // window함수로 선언
+
+function noti_draw_table(done) {
+    const results = done.results || [];
+    const count = results.filter(noti => !noti.is_read).length;
+    const badge = document.getElementById("noti_count");
+    badge.innerText = count > 0 ? count : "";
+
+    // 카운트 뱃지 & 벨 애니메이션
+    if (count > 0) {
+        $('#noti_count').removeClass("d-none");
+        $('#noti_bell').addClass("bx-tada");
+    } else {
+        $('#noti_count').addClass("d-none");
+        $('#noti_bell').removeClass("bx-tada");
+    }
+
+    const listArea = document.getElementById("noti_list_area");
+    listArea.innerHTML = "";
+
+    if (results.length === 0) {
+        listArea.innerHTML = `
+            <div class="text-center text-muted p-2 mb-3 font-size-12">
+                <i class="fa-regular fa-bell me-2"></i>표시할 알림이 없습니다.
+            </div>`;
+        return;
+    }
+
+    done.results.forEach(noti => {
+        const iconInfo = getNotiIcon(noti.noti_type);
+        const readClass = noti.is_read ? "" : "bg-success-subtle-50";  // 읽지 않았을 때만 배경색
+
+        const itemHTML = `
+            <div class="text-reset notification-item d-block ${readClass}" style="cursor: pointer;"
+                 onclick="noti_read_update(${noti.id}, 'read'); url_click_request('${noti.url}'); noti_search()">
+                <div class="d-flex p-2">
+                    <div class="avatar-xs me-2">
+                        <span class="avatar-title ${iconInfo.bg} rounded-circle font-size-16" style="min-width: 32px; min-height: 32px;">
+                            <i class="${iconInfo.icon}"></i>
+                        </span>
+                    </div>
+                    <div class="d-flex flex-column p-0" style="min-width: 0;">
+                        <div class="font-size-12 mb-0">${noti.message}</div>
+                        <div class="font-size-11 text-nowrap text-muted mb-0" style="display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis;">${noti.content}</div>
+                        <div class="font-size-10 text-muted"><i class="fa-regular fa-clock me-1"></i>${noti.created_at}</div>
+                    </div>
+                </div>
+            </div>`;
+        listArea.innerHTML += itemHTML;
+    });
+}
+
+function getTodayKST() {
+    const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000;  // 9시간(ms)
+    const kstDate = new Date(now.getTime() + kstOffset);
+    return kstDate.toISOString().slice(0, 10);  // YYYY-MM-DD
+}
+
+function getKSTRange(daysAgo = 7) {
+    const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const kstNow = new Date(now.getTime() + kstOffset);
+
+    const kstFrom = new Date(kstNow);
+    kstFrom.setDate(kstFrom.getDate() - daysAgo);
+
+    return {
+        fr_date: kstFrom.toISOString().slice(0, 10),
+        to_date: kstNow.toISOString().slice(0, 10),
+    };
+}
+
+function getNotiIcon(type) {
+    const icons = {
+        board_comment: { icon: "fa-regular fa-comment-dots", bg: "bg-success" },
+        calendar_with_create: { icon: "fa-solid fa-calendar-days", bg: "bg-success" },
+        calendar_with_update: { icon: "fa-solid fa-calendar-days", bg: "bg-warning" },
+        approval_requested: { icon: "fa-solid fa-envelope-circle-check", bg: "bg-primary" },
+        approval_approved: { icon: "fa-solid fa-envelope-circle-check", bg: "bg-success" },
+        approval_rejected: { icon: "fa-solid fa-envelope-circle-check", bg: "bg-danger" },
+        approval_canceled: { icon: "fa-solid fa-envelope-circle-check", bg: "bg-warning" },
+        approval_comment: { icon: "fa-regular fa-comment-dots", bg: "bg-info" },
+        worktime_byadmin: { icon: "fa-solid fa-user-clock", bg: "bg-success" },
+        worktime_cancel: { icon: "fa-solid fa-user-clock", bg: "bg-warning" },
+        worktime_deleted: { icon: "fa-solid fa-user-clock", bg: "bg-danger" },
+        leave_create: { icon: "fa-solid fa-house-user", bg: "bg-success" },
+        leave_delete: { icon: "fa-solid fa-house-user", bg: "bg-danger" },
+    };
+    return icons[type] || { icon: "fa-solid fa-bell", bg: "bg-secondary" };
+}
+
+// 드롭다운 열릴 때마다 알림 불러오기
+document.getElementById('page-header-notifications-dropdown').addEventListener('click', noti_search);
+
+function noti_read_mass_update() {
+    let api_data = new FormData();
+        api_data.append("noti_ids", JSON.stringify([]));
+        api_data.append("change_range", "all");
+        api_data.append("change_type", "read");
+
+    fetch_gp('/noti_read_mass_update_fn/', 'post', true, api_data, (done) => {
+        noti_search();
+    });
+}
+
+function my_salary_popup_open() {
+    let url = `/my_salary/`;
+    window.open(url, '_blank', 'width=1000,height=1000,scrollbars=yes,resizable=yes');
+}
+
+let user_factory_status = "{{ request.user.company.factory|default_if_none:'' }}";
+function factoryRedirection(popup) {
+    if (!user_factory_status || user_factory_status.trim() === '') {
+        url_click('{% url 'factory_init_setup_page' %}')
+        
+    } else {
+        if (popup) {
+            window.open("{% url 'factory_index_page' %}", '_blank', 'noopener,noreferrer');
+        } else {
+            window.location.href = "{% url 'factory_index_page' %}";
+        }
+    }
+}
+
+</script>

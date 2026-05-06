@@ -1,0 +1,524 @@
+<!-- 전자결재 > 지출 통계 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.href_style {
+    text-decoration: none !important;
+    color: inherit !important;
+    cursor: pointer !important;
+}
+.href_style:hover {
+    text-decoration: underline !important;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-envelope-circle-check me-2"></i>전자결재 <i class="fa-solid fa-angle-right px-1"></i> 지출 통계
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange position-relative w-auto me-1"
+                                     id="date_filter" data-toggle="tooltip" data-placement="top" title="지출관련일자 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px; border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
+
+                                    <div id="date_dropdown" class="d-none position-absolute bg-light border border-secondary-subtle rounded shadow-sm p-1"
+                                         style="top: 100%; left: 0; z-index: 1000; min-width: 150px;">
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('yesterday')">어제</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('today')">오늘</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('tomorrow')">내일</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_week')">지난주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_week')">이번주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_week')">다음주</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_month')">지난달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_month')">이번달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_month')">다음달</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_year')">작년</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_year')">올해</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_year')">내년</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="search-box d-flex me-1" data-toggle="tooltip" data-placement="top" title="결재번호, 지출목적, 내용, 비고, 지출처 등 텍스트 검색">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_is_approved" style="width: 100px;"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="결재 상태로 검색">
+                                    <option value="">전체</option>
+                                    <option value="미승인">결재 미승인</option>
+                                    <option value="승인">결재 승인</option>
+                                </select>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+                            
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="exportToExcel()">
+                                    <i class="fa-solid fa-file-excel"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">엑셀 다운로드</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-12">
+                            <!-- 그래프 영역 -->
+                            <div class="card border border-light">
+                                <div class="card-body">
+                                    <div class="" id="a_graph" style="height: 330px; max-height: 330px; margin-left: -10px;"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 테이블 영역 -->
+                            <div class="custom_table table-responsive">
+                                <table class="table">
+                                    <colgroup>
+                                        <col style="width: 2%"/>
+                                        <col style="width: 10%"/>
+                                        <col style="width: 10%"/>
+                                        
+                                        <col style="width: 5%"/>
+                                        <col style="width: 10%"/>
+                                        <col style="width: 10%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 10%"/>
+                                    </colgroup>
+                                    
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th>순번</th>
+                                            <th>전자결재</th>
+                                            <th>지출목적</th>
+                                            
+                                            <th>지출관련일자</th>
+                                            <th>지출내용</th>
+                                            <th>지출처</th>
+                                            <th>지출금액</th>
+                                            <th>지출비고</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let fr_date;
+let to_date;
+let all_sch;
+let sch_is_approved;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('approval_cost_page_size', $(this).val());
+});
+
+$('#sch_is_approved').on('change', function () {
+    localStorage.setItem('approval_cost_is_approved', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    let baseUrl = window.location.origin + window.location.pathname;
+    window.location.href = baseUrl;
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('approval_cost_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    let savedIsApproved = localStorage.getItem('approval_cost_is_approved');
+    if (savedIsApproved) { $('#sch_is_approved').val(savedIsApproved);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+
+    a_search_ready();
+}
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    all_sch = $('#all_sch').val();
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    sch_is_approved = $('#sch_is_approved').val();
+
+    a_search();
+}
+
+// 선택대상 유지 : 주로 update 후 호출
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (fr_date) { query += "&fr_date=" + fr_date; }
+    if (to_date) { query += "&to_date=" + to_date; }
+    if (sch_is_approved) { query += "&sch_is_approved=" + sch_is_approved; }
+
+    fetch_gp("/approval_cost_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+        a_draw_graph(done.monthly_summary);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+    
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr class="empty-row">
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let total_price_sum = 0;
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        let price = parseFloat(item.price) || 0;
+        total_price_sum += price;
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap'>
+            <td>${num + i}</td>
+            <td name='apv_no'>
+                <a class="href_style" href="#" onclick="openBadgeLink('${item.category}', '${item.apv_id}'); return false;">
+                    ${item.apv_no || ""} (${item.category_name || ""})
+                    <span class="badge ${item.status === '완료' ? 'bg-success' : 'bg-primary'} px-2 py-1 ms-1">${item.status}</span>
+                </a></td>
+            <td name='purpose' class='text-truncate' style="max-width: 250px;">${item.purpose || ""}</td>
+            <td name='desc3'>${item.desc3 || ""}</td>
+            <td name='desc1' class='text-truncate' style="max-width: 250px;">${item.desc1 || ""}</td>
+            <td name='desc2' class='text-truncate' style="max-width: 250px;">${item.desc2 || ""}</td>
+            <td name='price'>${formatNumber(item.price, 2) || ""}</td>
+            <td name='remarks' class='text-truncate' style="max-width: 250px;">${item.remarks || ""}</td>
+        </tr>`;
+        rows += row;
+    }
+    
+    let sumRow = `
+        <tr class="no-click" style="background: #f8f8f8; border-top: 1px solid #d9dee3 !important;" id="tr_total_price_amount">
+            <td colspan="5" class="fw-bold text-end">지출금액 합계</td>
+            <td colspan="3" class="fw-bold text-center">${formatNumber(total_price_sum, 0) || ""} 원</td>
+        </tr>`;
+        rows += sumRow;
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+}
+
+function openBadgeLink(apvIdCate, apvId) {
+    let url = `/approval/progress/${apvIdCate}/${apvId}`;
+    let newWindow = window.open(url, '_blank', 'width=1300,height=900,scrollbars=yes,resizable=yes');
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function add_comma(val) {
+    const num = Number(val);
+    return isNaN(num) ? val : num.toLocaleString();
+}
+
+
+function a_draw_graph(done) {
+    // console.log("a_draw_graph: ", done);
+
+    const container = document.querySelector("#a_graph");
+    if (!container || !Array.isArray(done) || done.length === 0) {
+        container.innerHTML = `
+            <div class='d-flex justify-content-center align-items-center text-muted' style='height: 100%; min-height: 200px;'>
+                등록된 데이터가 없습니다.
+            </div>`;
+        return;
+    }
+
+    const categories = [];
+    const seriesData = [];
+
+    done.forEach(item => {
+        const label = item.month; // e.g. "2024-06"
+        categories.push(label);
+        seriesData.push(item.total_price || 0);
+    });
+
+    container.innerHTML = `<div id="a_graph_chart"></div>`;
+    const chartEl = document.querySelector("#a_graph_chart");
+
+    if (window.approval_cost_chart instanceof ApexCharts) {
+        window.approval_cost_chart.destroy();
+    }
+
+    const chartOptions = {
+        series: [{
+            name: '지출 금액',
+            data: seriesData
+        }],
+        chart: {
+            height: 330,
+            type: 'area',
+            toolbar: { show: false },
+            animations: {
+                enabled: true,
+                easing: 'easeInOut',
+                speed: 800
+            }
+        },
+        colors: ['#f39c12'],
+        dataLabels: {
+            enabled: true,
+            formatter: function (val) {
+                return add_comma(val.toFixed(0)) + ' 원';
+            },
+            style: {
+                fontSize: '11px'
+            }
+        },
+        stroke: {
+            show: true,
+            curve: 'smooth',
+            width: 0
+        },
+        xaxis: {
+            categories: categories,
+            labels: {
+                style: {
+                    fontSize: '12px'
+                }
+            }
+        },
+        yaxis: {
+            labels: {
+                formatter: val => {
+                    if (val >= 1e8) return `${add_comma((val / 1e8).toFixed(1))} 억`;
+                    if (val >= 1e4) return `${add_comma((val / 1e4).toFixed(1))} 만`;
+                    return add_comma(val.toFixed(0));
+                },
+                style: {
+                    fontSize: '12px'
+                }
+            }
+        },
+        tooltip: {
+            y: {
+                formatter: val => add_comma(val.toFixed(0)) + ' 원'
+            }
+        }
+    };
+
+    window.approval_cost_chart = new ApexCharts(chartEl, chartOptions);
+    window.approval_cost_chart.render();
+}
+
+function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+// 데이트 필터 드랍다운 이벤트
+$('#date_filter').on('mouseenter', function () {
+    $('#date_dropdown').removeClass('d-none');
+});
+$('#date_filter').on('mouseleave', function () {
+    $('#date_dropdown').addClass('d-none');
+});
+
+function set_date_range(range) {
+    const today = new Date();
+    let start, end;
+
+    if (range === 'yesterday') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end.setDate(today.getDate() - 1);
+    } else if (range === 'today') {
+        start = end = new Date(today);
+    } else if (range === 'tomorrow') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() + 1);
+        end.setDate(today.getDate() + 1);
+    } else if (range === 'last_week') {
+        const day = today.getDay() || 7;
+        end = new Date(today);
+        end.setDate(today.getDate() - day);
+        start = new Date(end);
+        start.setDate(end.getDate() - 6);
+    } else if (range === 'this_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 1);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'next_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 8);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (range === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (range === 'next_month') {
+        start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    }
+    
+    else if (range === 'last_year') {
+        start = new Date(today.getFullYear() - 1, 0, 1);
+        end = new Date(today.getFullYear() - 1, 11, 31); }
+
+    else if (range === 'this_year') {
+        start = new Date(today.getFullYear(), 0, 1);
+        end = new Date(today.getFullYear(), 11, 31); }
+
+    else if (range === 'next_year') {
+        start = new Date(today.getFullYear() + 1, 0, 1);
+        end = new Date(today.getFullYear() + 1, 11, 31); }
+
+
+    $('#fr_date').val(formatDate(start));
+    $('#to_date').val(formatDate(end));
+    a_search_ready();
+}
+
+function exportToExcel() {
+    const tbody = document.querySelector('#a_tbody');
+    const thead = document.querySelector('table thead');
+    if (!tbody || !thead) return;
+
+    let wb = XLSX.utils.book_new();
+    let ws_data = [];
+
+    // 헤더 수집
+    let headerRow = [];
+    thead.querySelectorAll('th').forEach(th => {
+        headerRow.push(th.innerText.trim());
+    });
+    ws_data.push(headerRow);
+
+    // 바디 수집
+    tbody.querySelectorAll('tr').forEach(row => {
+        let rowData = [];
+        row.querySelectorAll('td').forEach(cell => {
+            rowData.push(cell.innerText.trim());
+        });
+        if (rowData.length > 0) {
+            ws_data.push(rowData);
+        }
+    });
+
+    let ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "지출 통계");
+    XLSX.writeFile(wb, "지출통계.xlsx");
+}
+</script>

@@ -1,0 +1,1599 @@
+<!-- 설정관리 > 직원관리 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.nav-link {
+    color: #ccc;
+}
+.nav-link.active, .nav-link:hover {
+    color: #2a303f;
+}
+
+/* select2 컨테이너 너비 지정 */
+#sch_team + .select2-container, #sch_job_title + .select2-container {
+    width: 180px !important;
+}
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_team + .select2-container .select2-selection--single, #sch_job_title + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+/* 선택된 항목 텍스트 정렬 */
+#sch_team + .select2-container .select2-selection__rendered, #sch_job_title + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+/* 화살표 위치 조정 */
+#sch_team + .select2-container .select2-selection__arrow, #sch_job_title + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+/* 클리어버튼 위치 조정 */
+#sch_team + .select2-container .select2-selection__clear, #sch_job_title + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-users-gear me-2"></i>총원데이터/권한
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 사원을 등록하고 수정, 삭제할 수 있는 페이지 입니다.<br>• 퇴사자 및 삭제된 사원은 접속이 제한됩니다.<br>• 수정하려는 항목에서 더블클릭하면 수정 팝업이 열립니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_work_type" style="width: 100px;"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="직군 검색">
+                                    <option value="">전체</option>
+                                    <option value="관리직">관리직</option>
+                                    <option value="정규직">정규직</option>
+                                    <option value="단기직">단기직</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="부서(사업부) 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_team"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="직책(공정/직무) 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_job_title"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1">
+                                        <form autocomplete="off" onsubmit="return false;"> <!-- form을 써야 all_sch에서 autocomplete이 차단됨 -->
+                                            <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                            <i class="mdi mdi-magnify search-icon"></i>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+
+                                <div class="position-relative d-inline-block">
+                                    <button class="btn btn-secondary dropdown-toggle text-nowrap me-1 px-2.5" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-filter"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">필터</span>
+                                    </button>
+                                    <ul class="dropdown-menu" style="top: 100%; left: 0;">
+                                        <li>
+                                            <div class="form-check form-check-secondary d-flex align-items-center my-2 mx-3">
+                                                <input class="form-check-input me-2 checkbox_filter" type="checkbox" id="is_staff" name="is_staff">
+                                                <label class="form-check-label text-nowrap" for="is_staff">퇴사자 포함</label>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- 필드 선택 버튼 -->
+                                <div class="position-relative d-inline-block">
+                                    <button class="btn btn-primary dropdown-toggle text-nowrap me-1 px-2.5" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-sliders"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">항목</span>
+                                    </button>
+                                    <ul class="dropdown-menu" id="columnDropdownMenu" style="top: 100%; left: 0;"></ul>
+                                </div>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                </button>
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                </button>
+
+                                {% comment %}<div class="dropdown d-none d-md-flex">
+                                    <button class="btn btn-info dropdown-toggle text-nowrap ms-1 px-2.5" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-wand-sparkles"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">옵션</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><button class="dropdown-item" type="button" onclick="v_popup_open()">
+                                            <i class="fa-regular fa-file-pdf me-1"></i>증명서 발급
+                                        </button></li>
+                                    </ul>
+                                </div>{% endcomment %}
+                            </div>
+                        </div>
+
+                        <!-- 건별 게시물 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th>순번</th>
+                                            <th>성명</th>
+                                            <th name="job_level_name">직급</th>
+                                            <th name="gender">성별</th>
+                                            <th name="rrn">주민번호</th>
+                                            <th name="nation">국적</th>
+                                            <th name="address">주소</th>
+                                            <th name="phone">연락처</th>
+
+                                            <th name="work_type">직군</th>
+                                            <th name="team_name">부서(사업부)</th>
+                                            <th name="job_title_name">직책(공정/직무)</th>
+                                            <th name="hire_type">근무형태</th>
+                                            <th name="working_years">근속연수</th>
+                                            <th name="monthly_leave">월차</th>
+                                            <th name="insurance">4대보험 취득정보</th>
+
+                                            <th name="bank_name">은행</th>
+                                            <th name="account_code">계좌번호</th>
+
+                                            <th name="join_date">입사일</th>
+                                            <th name="retire_date">퇴사일</th>
+                                            <th name="is_staff_value">재직여부</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">직원 관리 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <!-- 탭 네비게이션 -->
+                <ul class="nav nav-tabs" id="modalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="create_account-tab" data-bs-toggle="tab" data-bs-target="#create_account"
+                        type="button" role="tab" aria-controls="account" aria-selected="true">계정정보</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="create_hr-tab" data-bs-toggle="tab" data-bs-target="#create_hr"
+                        type="button" role="tab" aria-controls="hr" aria-selected="false">인사정보</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="create_personal-tab" data-bs-toggle="tab" data-bs-target="#create_personal"
+                        type="button" role="tab" aria-controls="personal" aria-selected="false">인적사항</button>
+                    </li>
+                </ul>
+
+                <!-- 탭 컨텐츠 -->
+                <div class="tab-content mt-3" id="modalTabsContent">
+
+                    <!-- 계정정보 탭 -->
+                    <div class="tab-pane fade show active" id="create_account" role="tabpanel" aria-labelledby="create_account-tab">
+                        <div class="row" id="menu_list">
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <div class="col-10 m-0">
+                                    <label for="employee_code" class="form-label fw-bold d-block">사번</label>
+                                    <input type="text" class="form-control div_required" id="employee_code" placeholder="자동 생성" disabled>
+                                </div>
+                                <div class="col-1 m-0 d-flex align-items-center ms-2">
+                                    <input class="form-check-input mb-2" style="width: 20px; height: 20px;" type="checkbox" id="auto_id_code" checked>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <div class="col-10 m-0">
+                                    <label for="user_id" class="form-label fw-bold d-block">접속 ID</label>
+                                    <input type="text" class="form-control div_required" id="user_id" placeholder="자동 생성" disabled>
+                                </div>
+                                <div class="col-1 m-0 d-flex align-items-center ms-2">
+                                    <input class="form-check-input mb-2" style="width: 20px; height: 20px;" type="checkbox" id="auto_user_id" checked>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="password" class="form-label fw-bold">비밀번호</label>
+                                <input type="password" class="form-control div_required" id="password">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="name" class="form-label fw-bold">이름</label>
+                                <input type="text" class="form-control div_required" id="name">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="join_date" class="form-label fw-bold">입사일</label>
+                                <input type="text" class="form-control date_flatpickr div_required" id="join_date">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="is_master" class="form-label">관리자 권한</label>
+                                <select class="form-select" id="is_master"  {% if request.user.is_master != 1 %} disabled {% endif %}>
+                                    <option value="false" selected>해당없음</option>
+                                    <option value="true">관리자</option>
+                                </select>
+                            </div>
+                            <!--
+                            <div class="col-md-4 mb-3">
+                                <label for="leave_manage_access" class="form-label">연차관리 메뉴권한</label>
+                                <select class="form-select" id="leave_manage_access">
+                                    <option value="false" selected>해당없음</option>
+                                    <option value="true">권한있음</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="salary_manage_access" class="form-label">급여관리 메뉴권한</label>
+                                <select class="form-select" id="salary_manage_access">
+                                    <option value="false" selected>해당없음</option>
+                                    <option value="true">권한있음</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="company_card_access" class="form-label">광고경비 메뉴권한</label>
+                                <select class="form-select" id="company_card_access">
+                                    <option value="false" selected>해당없음</option>
+                                    <option value="true">권한있음</option>
+                                </select>
+                            </div>
+                            -->
+                        </div>
+                    </div>
+
+                    <!-- 인사정보 탭 -->
+                    <div class="tab-pane fade" id="create_hr" role="tabpanel" aria-labelledby="create_hr-tab">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="subsidiary" class="form-label">관리 법인
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="• 관리자: 팀(각종 통계처리에 중요)<br>• 정규/단기직: 해당없음"></i>
+                                    <button class="btn btn-sm px-1 py-0"
+                                            onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                        <i class="fa-solid fa-up-right-from-square"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control" id="subsidiary"></select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="team" class="form-label">부서
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="• 관리자: 팀(각종 통계처리에 중요)<br>• 정규/단기직: 해당없음(단순 분류용으로 사용가능)"></i>
+                                </label>
+                                <button class="btn btn-sm px-1 py-0" onclick="openCodePage('team', 'create')">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <select class="form-control" id="team"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="job_level" class="form-label">직급
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="• 관리자: 직급(이름 뒤에 표시되는 호칭, 중요하지 않음)<br>• 정규/단기직: 해당없음(단순 분류용으로 사용가능)"></i>
+                                </label>
+                                <button class="btn btn-sm px-1 py-0" onclick="openCodePage('job_level', 'create')">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <select class="form-control" id="job_level"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="job_title" class="form-label">직책/업무내용
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="• 관리자: 직책(단순 분류용으로 사용가능)<br>• 정규직: 근로계약서 업무내용에 표시됨(중요)<br>• 단기직: 해당없음(단순 분류용으로 사용가능)"></i>
+                                </label>
+                                <button class="btn btn-sm px-1 py-0" onclick="openCodePage('job_title', 'create')">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <select class="form-control" id="job_title"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="work_type" class="form-label">직군
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="매우 중요"></i>
+                                </label>
+                                <select class="form-select" id="work_type">
+                                    <option value="관리직">관리직</option>
+                                    <option value="정규직">정규직</option>
+                                    <option value="단기직">단기직</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="hire_type" class="form-label">근무형태
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="중요하지 않음, 단순 분류용으로 사용가능"></i>
+                                </label>
+                                <input type="text" class="form-control" id="hire_type">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="bank" class="form-label">은행</label>
+                                <button class="btn btn-sm px-1 py-0" onclick="openCodePage('bank', 'create')">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <select class="form-control" id="bank"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="account_code" class="form-label">계좌번호</label>
+                                <input type="text" class="form-control" id="account_code">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="account_name" class="form-label">예금주</label>
+                                <input type="text" class="form-control" id="account_name">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="company_card" class="form-label">법인카드</label>
+                                <select class="form-control" id="company_card"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="is_staff" class="form-label">재직여부</label>
+                                <select class="form-select" id="is_staff">
+                                    <option value="true">재직</option>
+                                    <option value="false">퇴사</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="retire_date" class="form-label">퇴사일</label>
+                                <input type="text" class="form-control date_flatpickr" id="retire_date">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="insurance" class="form-label">4대보험 취득정보</label>
+                                <input type="text" class="form-control" id="insurance">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 인적사항 탭 -->
+                    <div class="tab-pane fade" id="create_personal" role="tabpanel" aria-labelledby="create_personal-tab">
+                        <div class="row">
+                            <div class="col-md-4 d-flex flex-column mb-3">
+                                <label for="profile_image" class="form-label">프로필 사진
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" onclick="event.stopPropagation();"
+                                       data-toggle="tooltip" data-placement="top" title="1:1 비율의 사진을 권장합니다."></i>
+                                </label>
+                                <img id="profile_image_preview" style="margin-bottom: 10px; display: none; width: 150px;
+                                height: 150px; object-fit: cover; border: 1px solid #ced4da; border-radius: 5px;">
+                                <div class="d-flex">
+                                    <input type="file" class="form-control" id="profile_image" accept="image/*">
+                                    <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="image_clear_btn('a_create_modal')">
+                                        <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">제거</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-6 col-md-3 mb-3">
+                                        <label for="gender" class="form-label">성별</label>
+                                        <select class="form-select" id="gender">
+                                            <option value="남자">남자</option>
+                                            <option value="여자">여자</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-6 col-md-3 mb-3">
+                                        <label for="nation" class="form-label">국적</label>
+                                        <select class="form-select" id="nation">
+                                            <option value="내국인">내국인</option>
+                                            <option value="외국인">외국인</option>
+                                            <option value="F4">F4</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="rrn" class="form-label">주민등록번호</label>
+                                        <input type="text" class="form-control" id="rrn">
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="phone" class="form-label">연락처</label>
+                                        <input type="text" class="form-control" id="phone">
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label">이메일</label>
+                                        <input type="text" class="form-control" id="email">
+                                    </div>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label for="address" class="form-label">주소</label>
+                                    <input type="text" class="form-control" id="address">
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label for="remark" class="form-label">특이사항</label>
+                                    <input type="text" class="form-control" id="remark">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">직원 관리 <i class="fa-solid fa-angle-right px-1"></i> 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <!-- 탭 네비게이션 -->
+                <ul class="nav nav-tabs" id="modalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="update_account-tab" data-bs-toggle="tab" data-bs-target="#update_account"
+                        type="button" role="tab" aria-controls="account" aria-selected="true">계정정보</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="update_hr-tab" data-bs-toggle="tab" data-bs-target="#update_hr"
+                        type="button" role="tab" aria-controls="hr" aria-selected="false">인사정보</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="update_personal-tab" data-bs-toggle="tab" data-bs-target="#update_personal"
+                        type="button" role="tab" aria-controls="personal" aria-selected="false">인적사항</button>
+                    </li>
+                </ul>
+
+                <!-- 탭 컨텐츠 -->
+                <div class="tab-content mt-3" id="modalTabsContent">
+
+                    <!-- 계정정보 탭 -->
+                    <div class="tab-pane fade show active" id="update_account" role="tabpanel" aria-labelledby="update_account-tab">
+                        <div class="row" id="menu_list">
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <div class="col-10 m-0">
+                                    <label for="employee_code" class="form-label fw-bold d-block">사번</label>
+                                    <input type="text" class="form-control div_required" id="employee_code" placeholder="자동 생성" disabled>
+                                </div>
+                                <div class="col-1 m-0 d-flex align-items-center ms-2">
+                                    <input class="form-check-input mb-2" style="width: 20px; height: 20px;" type="checkbox" id="auto_id_code" checked>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <div class="col-10 m-0">
+                                    <label for="user_id" class="form-label fw-bold d-block">접속 ID</label>
+                                    <input type="text" class="form-control div_required" id="user_id" placeholder="자동 생성" disabled>
+                                </div>
+                                <div class="col-1 m-0 d-flex align-items-center ms-2">
+                                    <input class="form-check-input mb-2" style="width: 20px; height: 20px;" type="checkbox" id="auto_user_id" checked>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="password" class="form-label fw-bold">비밀번호</label>
+                                <input type="password" class="form-control div_required" id="password">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="name" class="form-label fw-bold">이름</label>
+                                <input type="text" class="form-control div_required" id="name">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="join_date" class="form-label fw-bold">입사일</label>
+                                <input type="text" class="form-control date_flatpickr div_required" id="join_date">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="is_master" class="form-label">관리자 권한</label>
+                                <select class="form-select" id="is_master" {% if request.user.is_master != 1 %} disabled {% endif %}>
+                                    <option value="false" selected>해당없음</option>
+                                    <option value="true">관리자</option>
+                                </select>
+                            </div>
+                            <!--
+                            <div class="col-md-4 mb-3">
+                                <label for="leave_manage_access" class="form-label">연차관리 메뉴권한</label>
+                                <select class="form-select" id="leave_manage_access">
+                                    <option value="false" selected>해당없음</option>
+                                    <option value="true">권한있음</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="salary_manage_access" class="form-label">급여관리 메뉴권한</label>
+                                <select class="form-select" id="salary_manage_access">
+                                    <option value="false" selected>해당없음</option>
+                                    <option value="true">권한있음</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="company_card_access" class="form-label">광고경비 메뉴권한</label>
+                                <select class="form-select" id="company_card_access">
+                                    <option value="false" selected>해당없음</option>
+                                    <option value="true">권한있음</option>
+                                </select>
+                            </div>
+                            -->
+                        </div>
+                    </div>
+
+                    <!-- 인사정보 탭 -->
+                    <div class="tab-pane fade" id="update_hr" role="tabpanel" aria-labelledby="update_hr-tab">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="subsidiary" class="form-label">관리 법인
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="• 관리자: 팀(각종 통계처리에 중요)<br>• 정규/단기직: 해당없음"></i>
+                                    <button class="btn btn-sm px-1 py-0"
+                                            onclick="window.open('{% url 'factory_customer_list_page' %}', '_blank', 'width=1500,height=900,left=100,top=50,noopener,noreferrer')">
+                                        <i class="fa-solid fa-up-right-from-square"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control" id="subsidiary"></select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="team" class="form-label">부서
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="• 관리자: 팀(각종 통계처리에 중요)<br>• 정규/단기직: 해당없음(단순 분류용으로 사용가능)"></i>
+                                </label>
+                                <button class="btn btn-sm px-1 py-0" onclick="openCodePage('team', 'create')">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <select class="form-control" id="team"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="job_level" class="form-label">직급
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="• 관리자: 직급(이름 뒤에 표시되는 호칭, 중요하지 않음)<br>• 정규/단기직: 해당없음(단순 분류용으로 사용가능)"></i>
+                                </label>
+                                <button class="btn btn-sm px-1 py-0" onclick="openCodePage('job_level', 'create')">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <select class="form-control" id="job_level"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="job_title" class="form-label">직책/업무내용
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="• 관리자: 직책(단순 분류용으로 사용가능)<br>• 정규직: 근로계약서 업무내용에 표시됨(중요)<br>• 단기직: 해당없음(단순 분류용으로 사용가능)"></i>
+                                </label>
+                                <button class="btn btn-sm px-1 py-0" onclick="openCodePage('job_title', 'create')">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <select class="form-control" id="job_title"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="work_type" class="form-label">직군
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="매우 중요"></i>
+                                </label>
+                                <select class="form-select" id="work_type">
+                                    <option value="관리직">관리직</option>
+                                    <option value="정규직">정규직</option>
+                                    <option value="단기직">단기직</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="hire_type" class="form-label">근무형태
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="중요하지 않음, 단순 분류용으로 사용가능"></i>
+                                </label>
+                                <input type="text" class="form-control" id="hire_type">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="bank" class="form-label">은행</label>
+                                <button class="btn btn-sm px-1 py-0" onclick="openCodePage('bank', 'create')">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <select class="form-control" id="bank"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="account_code" class="form-label">계좌번호</label>
+                                <input type="text" class="form-control" id="account_code">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="account_name" class="form-label">예금주</label>
+                                <input type="text" class="form-control" id="account_name">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="company_card" class="form-label">법인카드</label>
+                                <select class="form-control" id="company_card"></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="is_staff" class="form-label">재직여부</label>
+                                <select class="form-select" id="is_staff">
+                                    <option value="true">재직</option>
+                                    <option value="false">퇴사</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="retire_date" class="form-label">퇴사일</label>
+                                <input type="text" class="form-control date_flatpickr" id="retire_date">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="insurance" class="form-label">4대보험 취득정보</label>
+                                <input type="text" class="form-control" id="insurance">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="monthly_leave" class="form-label">월차</label>
+                                <input type="text" class="form-control" id="monthly_leave" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 인적사항 탭 -->
+                    <div class="tab-pane fade" id="update_personal" role="tabpanel" aria-labelledby="update_personal-tab">
+                        <div class="row">
+                            <div class="col-md-4 d-flex flex-column mb-3">
+                                <label for="profile_image" class="form-label">프로필 사진
+                                    <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" onclick="event.stopPropagation();"
+                                       data-toggle="tooltip" data-placement="top" title="1:1 비율의 사진을 권장합니다."></i>
+                                </label>
+                                <img id="profile_image_preview" style="margin-bottom: 10px; display: none; width: 150px;
+                                height: 150px; object-fit: cover; border: 1px solid #ced4da; border-radius: 5px;">
+                                <div class="d-flex">
+                                    <input type="file" class="form-control" id="profile_image" accept="image/*">
+                                    <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="image_clear_btn('a_update_modal')">
+                                        <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">제거</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-6 col-md-3 mb-3">
+                                        <label for="gender" class="form-label">성별</label>
+                                        <select class="form-select" id="gender">
+                                            <option value="남자">남자</option>
+                                            <option value="여자">여자</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-6 col-md-3 mb-3">
+                                        <label for="nation" class="form-label">국적</label>
+                                        <select class="form-select" id="nation">
+                                            <option value="내국인">내국인</option>
+                                            <option value="외국인">외국인</option>
+                                            <option value="F4">F4</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="rrn" class="form-label">주민등록번호</label>
+                                        <input type="text" class="form-control" id="rrn">
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="phone" class="form-label">연락처</label>
+                                        <input type="text" class="form-control" id="phone">
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label">이메일</label>
+                                        <input type="text" class="form-control" id="email">
+                                    </div>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label for="address" class="form-label">주소</label>
+                                    <input type="text" class="form-control" id="address">
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label for="remark" class="form-label">특이사항</label>
+                                    <input type="text" class="form-control" id="remark">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_user_id;
+let a_click_name;
+let a_click_employee_code;
+let a_click_email;
+let a_click_phone;
+let a_click_address;
+let a_click_hire_type;
+let a_click_seq_order;
+let a_click_join_date;
+let a_click_retire_date;
+let a_click_work_type;
+let a_click_remark;
+let a_click_is_active;
+let a_click_is_staff;
+let a_click_is_master;
+let a_click_leave_manage_access;
+let a_click_salary_manage_access;
+let a_click_company_card_access;
+let a_click_is_delete;
+let a_click_profile_image;
+let a_click_team_id;
+let a_click_team_name;
+let a_click_job_title_id;
+let a_click_job_title_name;
+let a_click_job_level_id;
+let a_click_job_level_name;
+let a_click_gender;
+let a_click_rrn;
+let a_click_nation;
+let a_click_insurance;
+let a_click_bank_id;
+let a_click_bank_name;
+let a_click_account_code;
+let a_click_account_name;
+let a_click_company_card_id;
+let a_click_company_card_code;
+let a_click_subsidiary_id;
+let a_click_subsidiary_name;
+let a_click_monthly_leave;
+let image_clear_flag = false;  // a_update 이미지 제거 플래그
+
+let all_sch;
+let sch_work_type;
+let sch_team;
+let sch_job_title;
+let is_staff;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let menu_list = [];
+
+let user_list = [];
+
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('admin_employee_list_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('admin_employee_list_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    a_search_ready();
+
+    init_Select2('#sch_team', '부서(사업부) 선택', '/sel2_code_team/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_job_title', '직책(공정/직무) 선택', '/sel2_code_job_title/', {id: 'id', txt: item => `${item.text}`});
+}
+
+$(document).ready(function () {
+    $("#is_staff").change(function () {
+        if ($(this).is(":checked")) {
+            $(this).val("true");  // 체크됨 → 퇴사자 포함 true
+            a_search_ready();
+        } else {
+            $(this).val("false"); // 체크 해제 → 퇴사자 미포함 false
+            a_search_ready();
+        }
+    });
+
+    $('#a_create_modal #auto_id_code').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#a_create_modal #employee_code').prop('disabled', true).attr('placeholder', '자동 생성').val('');
+        } else {
+            $('#a_create_modal #employee_code').prop('disabled', false).attr('placeholder', '사번 입력');
+        }
+    });
+    
+    $('#a_update_modal #auto_id_code').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#a_update_modal #employee_code').prop('disabled', true).attr('placeholder', '자동 생성').val('');
+        } else {
+            $('#a_update_modal #employee_code').prop('disabled', false).val(a_click_employee_code);
+        }
+    });
+
+    $('#a_create_modal #auto_user_id').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#a_create_modal #user_id').prop('disabled', true).attr('placeholder', '자동 생성').val('');
+        } else {
+            $('#a_create_modal #user_id').prop('disabled', false).attr('placeholder', '접속 ID 입력');
+        }
+    });
+
+    $('#a_update_modal #auto_user_id').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#a_update_modal #user_id').prop('disabled', true).attr('placeholder', '자동 생성').val('');
+        } else {
+            $('#a_update_modal #user_id').prop('disabled', false).val(a_click_user_id);
+        }
+    });
+});
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+    all_sch = $('#all_sch').val();
+    sch_work_type = $('#sch_work_type').val();
+    sch_team = $('#sch_team').val();
+    sch_job_title = $('#sch_job_title').val();
+    is_staff = $('#is_staff').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_work_type) { query += "&sch_work_type=" + sch_work_type; }
+    if (sch_team) { query += "&sch_team=" + sch_team; }
+    if (sch_job_title) { query += "&sch_job_title=" + sch_job_title; }
+    if (is_staff) { query += "&is_staff=" + is_staff; }
+
+    fetch_gp("/sel2_code_menu/", 'GET', true, {}, (done) => {
+        menu_list = done.results;
+    });
+
+    fetch_gp("/admin_employee_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    user_list = done.results;
+    if (user_list.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < user_list.length; i++) {
+        let item = user_list[i];
+        let profileImage = item.profile_image ? `<img src="${item.profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">` : "";
+
+        let menu_access = JSON.stringify(item.menu_access);
+        let row = `
+        <tr idx='${i}' id='${item.id}' class='align-middle text-nowrap' style='cursor: pointer; ${!item.is_staff ? " background-color: #ffe5e5;" : ""}'>
+            <td >${num + i}</td>
+            <td>${profileImage} ${item.name || ""}</td>
+            <td name='job_level_name'>${item.job_level_name || ""}</td>
+            <td name='gender'>${item.gender || ""}</td>
+            <td name='rrn'>${item.rrn || ""}</td>
+            <td name='nation'>${item.nation || ""}</td>
+            <td name='address'>${item.address}</td>
+            <td name='phone'>${item.phone}</td>
+
+            <td name='work_type'>${item.work_type || ""}</td>
+            <td name='team_name'>${item.team_name || ""}</td>
+            <td name='job_title_name'>${item.job_title_name || ""}</td>
+            <td name='hire_type'>${item.hire_type}</td>
+            <td name='working_years'>${item.working_years}</td>
+            <td name='monthly_leave'>${item.monthly_leave}</td>
+            <td name='insurance'>${item.insurance}</td>
+
+            <td name='bank_name'>${item.bank_name || ""}</td>
+            <td name='account_code'>${item.account_code || ""}</td>
+            <td name='join_date'>${item.join_date || ""}</td>
+            <td name='retire_date'>${item.retire_date || ""}</td>
+            <td name='is_staff_value'>${item.is_staff ? "재직" : "퇴사"}</td>
+
+            <td name='user_id' class='d-none'>${item.user_id}</td>
+            <td name='employee_code' class='d-none'>${item.employee_code || ""}</td>
+            <td name='name' class='d-none'>${item.name}</td>
+            <td name='email' class='d-none'>${item.email}</td>
+            <td name='remark' class='d-none'>${item.remark || ""}</td>
+            <td name='seq_order' class='d-none'>${item.seq_order}</td>
+            <td name='is_active' class='d-none'>${item.is_active}</td>
+            <td name='is_staff' class='d-none'>${item.is_staff}</td>
+            <td name='is_master' class='d-none'>${item.is_master}</td>
+            <td name='leave_manage_access' class='d-none'>${item.leave_manage_access}</td>
+            <td name='salary_manage_access' class='d-none'>${item.salary_manage_access}</td>
+            <td name='company_card_access' class='d-none'>${item.company_card_access}</td>
+            <td name='is_delete' class='d-none'>${item.is_master}</td>
+            <td name='profile_image' class='d-none'>${item.profile_image}</td>
+            <td name='team_id' class='d-none'>${item.team_id}</td>
+            <td name='job_level_id' class='d-none'>${item.job_level_id}</td>
+            <td name='job_title_id' class='d-none'>${item.job_title_id}</td>
+            <td name='bank_id' class='d-none'>${item.bank_id}</td>
+            <td name='account_name' class='d-none'>${item.account_name}</td>
+            <td name='company_card_id' class='d-none'>${item.company_card_id}</td>
+            <td name='company_card_code' class='d-none'>${item.company_card_code}</td>
+            <td name='subsidiary_id' class='d-none'>${item.subsidiary_id || ""}</td>
+            <td name='subsidiary_name' class='d-none'>${item.subsidiary_name || ""}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+    applyColumnSettings();
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_user_id = $(this).find("[name='user_id']").text();
+        a_click_name = $(this).find("[name='name']").text();
+        a_click_employee_code = $(this).find("[name='employee_code']").text();
+        a_click_email = $(this).find("[name='email']").text();
+        a_click_phone = $(this).find("[name='phone']").text();
+        a_click_address = $(this).find("[name='address']").text();
+        
+        a_click_hire_type = $(this).find("[name='hire_type']").text();
+        a_click_seq_order = $(this).find("[name='seq_order']").text();
+        a_click_join_date = $(this).find("[name='join_date']").text();
+        a_click_retire_date = $(this).find("[name='retire_date']").text();
+        a_click_work_type = $(this).find("[name='work_type']").text();
+        a_click_remark = $(this).find("[name='remark']").text();
+        a_click_is_active = $(this).find("[name='is_active']").text();
+        a_click_is_staff = $(this).find("[name='is_staff']").text();
+        a_click_is_master = $(this).find("[name='is_master']").text();
+        a_click_leave_manage_access = $(this).find("[name='leave_manage_access']").text();
+        a_click_salary_manage_access = $(this).find("[name='salary_manage_access']").text();
+        a_click_company_card_access = $(this).find("[name='company_card_access']").text();
+        a_click_is_delete = $(this).find("[name='is_delete']").text();
+        a_click_profile_image = $(this).find("[name='profile_image']").text();
+        a_click_team_id = $(this).find("[name='team_id']").text();
+        a_click_team_name = $(this).find("[name='team_name']").text();
+        a_click_job_title_id = $(this).find("[name='job_title_id']").text();
+        a_click_job_title_name = $(this).find("[name='job_title_name']").text();
+        a_click_job_level_id = $(this).find("[name='job_level_id']").text();
+        a_click_job_level_name = $(this).find("[name='job_level_name']").text();
+
+        a_click_gender = $(this).find("[name='gender']").text();
+        a_click_rrn = $(this).find("[name='rrn']").text();
+        a_click_nation = $(this).find("[name='nation']").text();
+        a_click_insurance = $(this).find("[name='insurance']").text();
+        a_click_bank_id = $(this).find("[name='bank_id']").text();
+        a_click_bank_name = $(this).find("[name='bank_name']").text();
+        a_click_account_code = $(this).find("[name='account_code']").text();
+        a_click_account_name = $(this).find("[name='account_name']").text();
+        a_click_company_card_id = $(this).find("[name='company_card_id']").text();
+        a_click_company_card_code = $(this).find("[name='company_card_code']").text();
+        a_click_subsidiary_id = $(this).find("[name='subsidiary_id']").text();
+        a_click_subsidiary_name = $(this).find("[name='subsidiary_name']").text();
+        a_click_monthly_leave = $(this).find("[name='monthly_leave']").text();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_update_modal_in($(this).attr("idx"));
+    });
+}
+
+function a_create_modal_in() {
+    a_create_modal_reset('popup_off');
+
+    fetch_gp("/sel2_code_menu/", 'GET', true, {}, (done) => {
+        console.log("done:", done);
+        for (let i = 0; i < done.results.length; i++) {
+            let item = done.results[i];
+            if (item.desc1 && (item.desc2 || item.desc4)) {
+                $("#a_create_modal #menu_list").append(
+                    `
+                    <div class="col-md-4 mb-3 menu-item">
+                        <label for="menu_${item.id}_access" class="form-label">${item.text} 메뉴권한</label>
+                        <select class="form-select" id="menu_${item.id}_access" {% if request.user.is_master != 1 %} disabled {% endif %}>
+                            <option value="false" selected>해당없음</option>
+                            <option value="true">권한있음</option>
+                        </select>
+                    </div>
+                    `
+                );
+            }
+        }
+    });
+    
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    $('#a_create_modal #employee_code').prop('disabled', true).attr('placeholder', '자동 생성').val('');
+    $('#a_create_modal #auto_id_code').prop('checked', true);
+    $("#a_create_modal #name").val('');
+    $("#a_create_modal #user_id").prop('disabled', true).attr('placeholder', '자동 생성').val('');
+    $('#a_create_modal #auto_user_id').prop('checked', true);
+    $("#a_create_modal #password").val('');
+    $('#a_create_modal #retire_date').val('');
+    $("#a_create_modal #work_type").val('');
+    $("#a_create_modal #hire_type").val('');
+    $("#a_create_modal #seq_order").val('');
+    $("#a_create_modal #phone").val('');
+    $("#a_create_modal #email").val('');
+    $("#a_create_modal #address").val('');
+    $("#a_create_modal #remark").val('');
+    $("#a_create_modal #profile_image").val('');
+    $("#a_create_modal #is_staff").val('true');
+    $("#a_create_modal #is_master").val('false');
+    $("#a_create_modal #leave_manage_access").val('false');
+    $("#a_create_modal #salary_manage_access").val('false');
+    $("#a_create_modal #company_card_access").val('false');
+
+    $("#a_create_modal #gender").val('남자').trigger('change');
+    $("#a_create_modal #rrn").val('');
+    $("#a_create_modal #nation").val('내국인').trigger('change');
+    $("#a_create_modal #insurance").val('');
+    $("#a_create_modal #account_code").val('');
+    $("#a_create_modal #account_name").val('');
+    $("#a_create_modal #company_card").val('');
+
+    init_Select2_modal('#a_create_modal #team', '선택', '/sel2_code_team/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #job_level', '선택', '/sel2_code_job_level/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #job_title', '선택', '/sel2_code_job_title/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #bank', '선택', '/sel2_code_bank/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #company_card', '선택', '/sel2_company_card/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #subsidiary', '선택', '/sel2_hanwool_subsidiary/', {id: 'id', txt: item => `${item.text}`});
+    reset_date_flatpickr("#a_create_modal #join_date")
+    load_user_profile('a_create_modal');
+
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_submit() {
+    if (is_empty($('#a_create_modal #name').val()) === true) {
+        alert("[이름] 항목을 입력하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_create_modal #password').val()) === true) {
+        alert("[비밀번호] 항목을 입력하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_create_modal #join_date').val()) === true) {
+        alert("[입사일] 항목을 입력하세요.");
+        return;
+    }
+
+    let profileImage = $('#a_create_modal #profile_image')[0].files[0];
+
+    let api_data = new FormData();
+    api_data.append("employee_code", nullapply($('#a_create_modal #employee_code').val()));
+    api_data.append("name", nullapply($('#a_create_modal #name').val()));
+    api_data.append("user_id", nullapply($('#a_create_modal #user_id').val()));
+    api_data.append("password", nullapply($('#a_create_modal #password').val()));
+    api_data.append("join_date", nullapply($('#a_create_modal #join_date').val()));
+    api_data.append("retire_date", nullapply($('#a_create_modal #retire_date').val()));
+    api_data.append("team", nullapply($('#a_create_modal #team').val()));
+    api_data.append("job_level", nullapply($('#a_create_modal #job_level').val()));
+    api_data.append("job_title", nullapply($('#a_create_modal #job_title').val()));
+    api_data.append("work_type", nullapply($('#a_create_modal #work_type').val()));
+    api_data.append("hire_type", nullapply($('#a_create_modal #hire_type').val()));
+    api_data.append("seq_order", nullapply($('#a_create_modal #seq_order').val()));
+    api_data.append("is_staff", nullapply($('#a_create_modal #is_staff').val()));
+    api_data.append("phone", nullapply($('#a_create_modal #phone').val()));
+    api_data.append("email", nullapply($('#a_create_modal #email').val()));
+    api_data.append("address", nullapply($('#a_create_modal #address').val()));
+    api_data.append("is_master", nullapply($('#a_create_modal #is_master').val()));
+    api_data.append("leave_manage_access", nullapply($('#a_create_modal #leave_manage_access').val()));
+    api_data.append("salary_manage_access", nullapply($('#a_create_modal #salary_manage_access').val()));
+    api_data.append("company_card_access", nullapply($('#a_create_modal #company_card_access').val()));
+    api_data.append("remark", nullapply($('#a_create_modal #remark').val()));
+
+    api_data.append("gender", nullapply($('#a_create_modal #gender').val()));
+    api_data.append("rrn", nullapply($('#a_create_modal #rrn').val()));
+    api_data.append("nation", nullapply($('#a_create_modal #nation').val()));
+    api_data.append("insurance", nullapply($('#a_create_modal #insurance').val()));
+    api_data.append("account_code", nullapply($('#a_create_modal #account_code').val()));
+    api_data.append("account_name", nullapply($('#a_create_modal #account_name').val()));
+    api_data.append("company_card", nullapply($('#a_create_modal #company_card').val()));
+    api_data.append("bank", nullapply($('#a_create_modal #bank').val()));
+    api_data.append("subsidiary", nullapply($('#a_create_modal #subsidiary').val()));
+
+    if (profileImage) api_data.append("profile_image", profileImage);
+
+    let menu_access = [];
+    $("#a_create_modal .menu-item select").each(function(item) {
+        if ($(this).val() == "true") {
+            menu_access.push({
+                id: $(this).attr("id").replace("menu_", "").replace("_access", ""),
+            });
+        }
+    });
+    api_data.append("menu_access", JSON.stringify(menu_access));
+
+    fetch_gp('/admin_employee_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        a_search_ready();
+        alert(txt.create_ed);
+    });
+}
+
+function a_update_modal_in(idx) {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    let menu_access = [];
+    try {
+        if (user_list[idx].menu_access) {
+            menu_access = JSON.parse(user_list[idx].menu_access);
+        }
+    } catch (error) {
+        console.log("error:", error)
+    }
+    $("#a_update_modal #menu_list .menu-item").remove();
+    fetch_gp("/sel2_code_menu/", 'GET', true, {}, (done) => {
+        for (let i = 0; i < done.results.length; i++) {
+            let item = done.results[i];
+            if (item.desc1 && (item.desc2 || item.desc4)) {
+                let access_yn = "N";
+                for (let j = 0; j < menu_access.length; j++) {
+                    let user_menu_item = menu_access[j];
+                    if (parseInt(user_menu_item.id) == parseInt(item.id)) {
+                        access_yn = "Y";
+                    }
+                }
+                $("#a_update_modal #menu_list").append(
+                    `
+                    <div class="col-md-4 mb-3 menu-item">
+                        <label for="menu_${item.id}_access" class="form-label">${item.text} 메뉴권한</label>
+                        <select class="form-select" id="menu_${item.id}_access" {% if request.user.is_master != 1 %} disabled {% endif %}>
+                            <option value="false" ${access_yn != "Y" ? "selected" : ""}>해당없음</option>
+                            <option value="true" ${access_yn == "Y" ? "selected" : ""}>권한있음</option>
+                        </select>
+                    </div>
+                    `
+                );
+            }
+        }
+    });
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    $('#a_update_modal #employee_code').prop('disabled', false).val(a_click_employee_code);
+    $('#a_update_modal #auto_id_code').prop('checked', false);
+    $("#a_update_modal #name").val(a_click_name);
+    $("#a_update_modal #user_id").prop('disabled', false).val(a_click_user_id);
+    $('#a_update_modal #auto_user_id').prop('checked', false);
+    $("#a_update_modal #password").val('');
+    $('#a_update_modal #join_date').val(a_click_join_date);
+    $('#a_update_modal #retire_date').val(a_click_retire_date);
+    $("#a_update_modal #work_type").val(a_click_work_type);
+    $("#a_update_modal #hire_type").val(a_click_hire_type);
+    $("#a_update_modal #seq_order").val(a_click_seq_order);
+    $("#a_update_modal #is_staff").val(a_click_is_staff);
+    $("#a_update_modal #phone").val(a_click_phone);
+    $("#a_update_modal #email").val(a_click_email);
+    $("#a_update_modal #address").val(a_click_address);
+    $("#a_update_modal #is_master").val(a_click_is_master);
+    $("#a_update_modal #leave_manage_access").val(a_click_leave_manage_access);
+    $("#a_update_modal #salary_manage_access").val(a_click_salary_manage_access);
+    $("#a_update_modal #company_card_access").val(a_click_company_card_access);
+    $("#a_update_modal #remark").val(a_click_remark);
+
+    $("#a_update_modal #gender").val(a_click_gender);
+    $("#a_update_modal #rrn").val(a_click_rrn);
+    $("#a_update_modal #nation").val(a_click_nation);
+    $("#a_update_modal #insurance").val(a_click_insurance);
+    $("#a_update_modal #monthly_leave").val(a_click_monthly_leave);
+    $("#a_update_modal #account_code").val(a_click_account_code);
+    $("#a_update_modal #account_name").val(a_click_account_name);
+    
+    init_Select2_modal('#a_update_modal #team', '선택', '/sel2_code_team/', {id: 'id', txt: item => `${item.text}`}, a_click_team_id);
+    init_Select2_modal('#a_update_modal #job_level', '선택', '/sel2_code_job_level/', {id: 'id', txt: item => `${item.text}`}, a_click_job_level_id);
+    init_Select2_modal('#a_update_modal #job_title', '선택', '/sel2_code_job_title/', {id: 'id', txt: item => `${item.text}`}, a_click_job_title_id);
+    init_Select2_modal('#a_update_modal #bank', '선택', '/sel2_code_bank/', {id: 'id', txt: item => `${item.text}`}, a_click_bank_id);
+    init_Select2_modal('#a_update_modal #company_card', '선택', '/sel2_company_card/', {id: 'id', txt: item => `${item.text}`}, a_click_company_card_id);
+    init_Select2_modal('#a_update_modal #subsidiary', '선택', '/sel2_hanwool_subsidiary/', {id: 'id', txt: item => `${item.text}`}, a_click_subsidiary_id);
+    load_user_profile('a_update_modal');
+
+    image_clear_flag = false;  // 이미지 제거 플래그 초기화
+
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    if (is_empty($('#a_update_modal #name').val()) === true) {
+        alert("[이름] 항목을 입력하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_update_modal #join_date').val()) === true) {
+        alert("[입사일] 항목을 입력하세요.");
+        return;
+    }
+
+    let profileImage = $('#a_update_modal #profile_image')[0].files[0];
+
+    let api_data = new FormData();
+    api_data.append("pk", a_click_id);
+    api_data.append("employee_code", nullapply($('#a_update_modal #employee_code').val()));
+    api_data.append("name", nullapply($('#a_update_modal #name').val()));
+    api_data.append("user_id", nullapply($('#a_update_modal #user_id').val()));
+    api_data.append("password", nullapply($('#a_update_modal #password').val()));
+    api_data.append("join_date", nullapply($('#a_update_modal #join_date').val()));
+    api_data.append("retire_date", nullapply($('#a_update_modal #retire_date').val()));
+    api_data.append("team", nullapply($('#a_update_modal #team').val()));
+    api_data.append("job_level", nullapply($('#a_update_modal #job_level').val()));
+    api_data.append("job_title", nullapply($('#a_update_modal #job_title').val()));
+    api_data.append("work_type", nullapply($('#a_update_modal #work_type').val()));
+    api_data.append("hire_type", nullapply($('#a_update_modal #hire_type').val()));
+    api_data.append("seq_order", nullapply($('#a_update_modal #seq_order').val()));
+    api_data.append("is_staff", nullapply($('#a_update_modal #is_staff').val()));
+    api_data.append("phone", nullapply($('#a_update_modal #phone').val()));
+    api_data.append("email", nullapply($('#a_update_modal #email').val()));
+    api_data.append("address", nullapply($('#a_update_modal #address').val()));
+    api_data.append("is_master", nullapply($('#a_update_modal #is_master').val()));
+    api_data.append("leave_manage_access", nullapply($('#a_update_modal #leave_manage_access').val()));
+    api_data.append("salary_manage_access", nullapply($('#a_update_modal #salary_manage_access').val()));
+    api_data.append("company_card_access", nullapply($('#a_update_modal #company_card_access').val()));
+    api_data.append("remark", nullapply($('#a_update_modal #remark').val()));
+
+    api_data.append("gender", nullapply($('#a_update_modal #gender').val()));
+    api_data.append("rrn", nullapply($('#a_update_modal #rrn').val()));
+    api_data.append("nation", nullapply($('#a_update_modal #nation').val()));
+    api_data.append("insurance", nullapply($('#a_update_modal #insurance').val()));
+    api_data.append("account_code", nullapply($('#a_update_modal #account_code').val()));
+    api_data.append("account_name", nullapply($('#a_update_modal #account_name').val()));
+    api_data.append("company_card", nullapply($('#a_update_modal #company_card').val()));
+    api_data.append("bank", nullapply($('#a_update_modal #bank').val()));
+    api_data.append("subsidiary", nullapply($('#a_update_modal #subsidiary').val()));
+
+    api_data.append("image_clear", image_clear_flag ? "true" : "false");
+
+    if (profileImage) api_data.append("profile_image", profileImage);
+
+    let menu_access = [];
+    $("#a_update_modal .menu-item select").each(function(item) {
+        if ($(this).val() == "true") {
+            menu_access.push({
+                id: $(this).attr("id").replace("menu_", "").replace("_access", ""),
+            });
+        }
+    });
+    api_data.append("menu_access", JSON.stringify(menu_access));
+
+    fetch_gp('/admin_employee_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search_ready();
+        alert(txt.update_ed);
+        image_clear_flag = false;  // 이미지 제거 플래그 초기화
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt(txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/admin_employee_delete_fn/', 'post', true, api_data, (done) => {
+            a_nation.page = 1;
+            a_click_id = null;
+
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function load_user_profile(modalId) {
+    if (modalId === 'a_create_modal') {
+        $(`#${modalId} #profile_image_preview`).attr('src', '{% static "img/profile_default.png" %}').show();
+    } else {
+        $(`#${modalId} #profile_image_preview`).attr('src', a_click_profile_image).show();
+        $(`#${modalId} #profile_image`).val('');
+    }
+    $(`#${modalId} #profile_image`).on('change', function (event) {
+        let file = event.target.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                $(`#${modalId} #profile_image_preview`).attr('src', e.target.result).show();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+function image_clear_btn(modalId) {
+    let defaultImage = '{% static "img/profile_default.png" %}';
+    $(`#${modalId} #profile_image_preview`).attr('src', defaultImage).show();
+    $(`#${modalId} #profile_image`).val('');
+    image_clear_flag = true;  // 이미지 제거 플래그 활성화
+}
+
+function v_popup_open() {
+    if (!a_click_id) {
+        notiToast("직원목록에서 직원을 먼저 선택하세요.");
+        return
+    }
+    let url = `/admin/employee/cert/${a_click_id}`;
+    window.open(url, '_blank', 'width=1000,height=1000,scrollbars=yes,resizable=yes');
+}
+
+// a_tbody 항목 필터
+let columnList = [
+    { label: '직급', value: 'job_level_name', checked: true },
+    { label: '성별', value: 'gender', checked: true },
+    { label: '주민번호', value: 'rrn', checked: true },
+    { label: '국적', value: 'nation', checked: true },
+    { label: '주소', value: 'address', checked: true },
+    { label: '연락처', value: 'phone', checked: true },
+    { label: '직군', value: 'work_type', checked: true },
+    { label: '부서(사업부)', value: 'team_name', checked: true },
+    { label: '직책(공정/직무)', value: 'job_title_name', checked: true },
+    { label: '근무형태', value: 'hire_type', checked: true },
+    { label: '근속연수', value: 'working_years', checked: true },
+    { label: '월차', value: 'monthly_leave', checked: true },
+    { label: '4대보험 취득정보', value: 'insurance', checked: true },
+    { label: '은행', value: 'bank_name', checked: true },
+    { label: '계좌번호', value: 'account_code', checked: true },
+    { label: '입사일', value: 'join_date', checked: true },
+    { label: '퇴사일', value: 'retire_date', checked: true },
+    { label: '재직여부', value: 'is_staff_value', checked: true },
+];
+
+function renderColumnDropdown() {
+    const $menu = $('#columnDropdownMenu');
+    $menu.empty();
+
+    columnList.forEach(field => {
+        const id = 'col_' + field.value;
+        $menu.append(`
+            <li>
+                <div class="form-check d-flex align-items-center my-1 mx-3">
+                    <input class="form-check-input me-2 checkbox_filter column-toggle"
+                           type="checkbox" id="${id}" value="${field.value}" ${field.checked ? 'checked' : ''}>
+                    <label class="form-check-label text-nowrap" for="${id}">${field.label}</label>
+                </div>
+            </li>
+        `);
+    });
+}
+
+function applyColumnSettings() {
+    let checkedFields = $('.column-toggle:checked').map(function () {
+        return this.value;
+    }).get();
+    if (!checkedFields.includes("monthly_leave")) {
+        checkedFields.push("monthly_leave");
+    }
+
+    const allFields = Array.from(document.querySelectorAll('#a_tbody td'))
+        .map(td => td.getAttribute('name'))
+        .filter((name, i, self) => name && self.indexOf(name) === i);
+
+    allFields.forEach(field => {
+        const isVisible = checkedFields.includes(field);
+        $(`thead [name='${field}']`).toggleClass('d-none', !isVisible);
+        $(`#a_tbody [name='${field}']`).toggleClass('d-none', !isVisible);
+    });
+
+    // 저장
+    localStorage.setItem('employee_visible_columns', JSON.stringify(checkedFields));
+}
+
+$(document).ready(function () {
+    renderColumnDropdown();
+
+    // 저장된 설정 적용
+    const saved = JSON.parse(localStorage.getItem('employee_visible_columns') || '[]');
+    if (saved.length > 0) {
+        // 체크박스 체크 상태 반영
+        $('.column-toggle').each(function () {
+            const field = $(this).val();
+            $(this).prop('checked', saved.includes(field));
+        });
+        // 실제 테이블 컬럼 표시/숨김 적용
+        applyColumnSettings();
+    }
+
+    // 체크박스 클릭 시 즉시 반영
+    $(document).on('change', '.column-toggle', function () {
+        applyColumnSettings();
+    });
+});
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

@@ -1,0 +1,263 @@
+<!-- 조직관리 > 조직도 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.department-card {
+    display: flex;
+    width: 230px;
+    background: rgba(0, 71, 145, 0.2);
+    padding: 6px 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 6px solid #004791;
+}
+
+.employee-card {
+    display: flex;
+    align-items: center;
+    width: 230px;
+    background-color: #f8f9fa;
+    padding: 6px 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 6px solid #004791;
+}
+
+.employee-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 4px !important;
+    margin-left: 4px !important;
+}
+
+.employee-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.department-name {
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #004791;
+}
+
+.employee-name {
+    text-align: left;
+    font-weight: bold;
+    font-size: 12px;
+    color: #000;
+}
+
+.employee-position {
+    text-align: left;
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.google-visualization-orgchart-nodesel {
+    width: 200px !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+    
+/* 수직선 */
+.google-visualization-orgchart-linebottom {
+    border-color: #2a3041 !important; /* 원하는 색상으로 변경 */
+}
+
+/* 수평선 */
+.google-visualization-orgchart-lineleft,
+.google-visualization-orgchart-lineright,
+.google-visualization-orgchart-linecenter {
+    border-color: #2a3041 !important; /* 원하는 색상으로 변경 */
+}
+.google-visualization-orgchart-table {
+    margin: 0 !important;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-sitemap me-2"></i>조직도
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 조직도를 정상적으로 이용하기 위해서는 [직원관리]에서 '부서, 부서내 순서'를 설정해두어야 합니다. <br>• 기초설정 후에는 직원의 부서에 따라 자동으로 조직도가 생성됩니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div id="chart_div" class="p-2" style="overflow-x: auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/charts/loader.js"></script>
+<script>
+let add_list = [];
+let ceo_id = `{{ request.user.company.company_info.first.ceo.id }}`;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    add_list = [];  // 데이터 초기화
+    a_search();
+}
+
+function a_search() {
+    fetch_gp("/admin_employee_list_fn/?org_chart=true", 'GET', true, {}, (done) => {
+        // console.log("a_search: ", done);
+        let staff = done.results.filter(item => `${item.id}` !== ceo_id);
+        let ceo = done.results.filter(item => `${item.id}` == ceo_id);
+        
+        loadDepartmentData(ceo, staff);
+        loadUserData(staff);
+        drawChart();
+    });
+}
+
+function loadDepartmentData(ceo, staff) {
+    // ceo 배열에서 첫 명 가져오기 (한 명만 있다고 가정)
+    const ceoUser = ceo[0];
+
+    const ceoHtml = generateStyledName(
+        ceoUser?.name || '대표이사',
+        ceoUser?.job_level_name || '대표',
+        ceoUser?.job_title_name || 'CEO',
+        '',  // 부서 없음
+        ceoUser?.profile_image || '/data/profile_image/profile_default.png'
+    );
+
+    // ceo 노드 추가
+    add_list.push([
+        { v: 'ceo', f: ceoHtml },
+        '', ''
+    ]);
+
+    const addedTeams = new Set();
+
+    // staff 기준으로 부서 노드 생성
+    staff.forEach(({ team_id, team_name, job_level_name }) => {
+        if (!addedTeams.has(team_id)) {
+            add_list.push([
+                {
+                    v: `${team_id}`,
+                    f: generateStyledName(team_name, '', '', '', '', true)
+                },
+                'ceo', ''
+            ]);
+            addedTeams.add(team_id);
+        }
+    });
+}
+
+function loadUserData(data) {
+    const teamUsersMap = {};
+
+    data.forEach(user => {
+        const { team_id } = user;
+        if (!teamUsersMap[team_id]) teamUsersMap[team_id] = [];
+        teamUsersMap[team_id].push(user);
+    });
+
+    Object.entries(teamUsersMap).forEach(([teamId, users]) => {
+        let prevNode = null;
+
+        users.forEach(({ name, job_level_name, job_title_name, team_name, profile_image }, idx) => {
+            const userHtml = generateStyledName(
+                name,
+                job_level_name,
+                job_title_name,
+                team_name,
+                profile_image || '/static/img/no_profile.png'
+            );
+
+            const parent = idx === 0 ? `${teamId}` : prevNode;
+            add_list.push([userHtml, parent, '']);
+            prevNode = userHtml;
+        });
+    });
+}
+
+function drawChart() {
+    google.charts.load('current', { packages: ["orgchart"] });
+    google.charts.setOnLoadCallback(() => {
+        const data = new google.visualization.DataTable();
+        data.addColumn('string', 'Name');
+        data.addColumn('string', 'Manager');
+        data.addColumn('string', 'ToolTip');
+
+        data.addRows(add_list);
+
+        const chart = new google.visualization.OrgChart(document.getElementById('chart_div'));
+        chart.draw(data, {
+            allowHtml: true,
+            size: 'medium',
+            nodeClass: 'org-node'
+        });
+
+        // 스타일 초기화
+        document.querySelectorAll('.google-visualization-orgchart-nodesel')
+            .forEach(node => node.classList.remove('google-visualization-orgchart-nodesel'));
+    });
+}
+
+function generateStyledName(name, position, job_title, department, imgUrl, isDepartment = false) {
+    if (isDepartment) {
+        return `
+            <div class="department-card">
+                <div class="department-info">
+                    <div class="department-name">${name}</div>
+                </div>
+            </div>`;
+    } else {
+        return `
+            <div class="employee-card">
+                <img class="employee-img" src="${imgUrl}" alt="${name}">
+                <div class="employee-info">
+                    <div class="employee-name" style="padding-bottom: 0;">${name} ${position}</div>
+                    <div class="employee-position" style="padding-top: 0;">${job_title}</div>
+                </div>
+            </div>`;
+    }
+}
+    
+
+</script>
+</html>

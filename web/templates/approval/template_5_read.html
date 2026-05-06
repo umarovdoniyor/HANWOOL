@@ -1,0 +1,449 @@
+<!-- 전자결재 > 일반신청서 보기 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.note-editable[contenteditable="false"] {
+    background-color: #f6f6f9 !important;
+}
+
+@media (max-width: 768px) { /* md 이하 크기에서 적용 */
+    .approval_arrow {
+        transform: rotate(270deg);
+    }
+}
+</style>
+
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 영역 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="window.location.href = '{% url 'approval_list_page' %}'">
+                    <i class="fa-solid fa-envelope-circle-check me-2"></i>전자결재
+                </div>
+            </div>
+            
+            <!-- 본문 좌측 영역 -->
+            <div class="col-md-3 col-xl-2">
+                <div class="card border border-light">
+                    <div class="card-body">
+                        {% if apv_obj.status == "진행" %}
+                            <div class="btn btn-primary text-nowrap px-3 mb-3 mb-md-4 w-100">
+                                <i class="fa-solid fa-circle-notch fa-spin me-2"></i>결재 진행중
+                            </div>
+                        {% elif apv_obj.status == "완료" %}
+                            <div class="btn btn-success text-nowrap px-3 mb-3 mb-md-4 w-100">
+                                <i class="fa-regular fa-check-circle me-2"></i>결재 완료됨
+                            </div>
+                        {% elif apv_obj.status == "반려" %}
+                            <div class="btn btn-danger text-nowrap px-3 mb-3 mb-md-4 w-100">
+                                <i class="fa-regular fa-circle-xmark me-2"></i>결재 반려됨
+                            </div>
+                        {% endif %}
+
+                        <div class="text-muted font-size-12 mb-2">결재자</div>
+                        <div class="d-flex flex-md-column font-size-14 gap-1">
+                            <div class="d-flex flex-md-column gap-1" id="approval_flow" style="display: flex; width: 100%; overflow-x: auto; white-space: nowrap;"></div>
+                        </div>
+
+                        <div class="text-muted font-size-12 mb-2 mt-3 mt-md-4" style="cursor: pointer;" onclick="apv_cc_expand()">참조자
+                            <i class="fa-solid fa-chevron-down ms-2" style="cursor: pointer;" id="apv_cc_icon"></i></div>
+                        <div class="d-flex flex-md-column font-size-14 gap-1">
+                            <div class="d-flex justify-content-center w-100" id="apv_cc">
+                                <ul class="row gap-1" style="width: 100%; list-style-type: none; padding: 0 2px; max-height: 100px; overflow-y: auto;"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 우측 본문 -->
+            <div class="col-md-9 col-xl-10">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+
+                        <!-- 전자결재 본문 -->
+                        <div class="d-flex text-left p-2">
+                            <div class="flex-grow-1">
+                                <p class="text-success text-uppercase mb-2">{{ apv_obj.apv_no }}</p>
+                                <h4 class="text-dark fw-semibold mb-2">{{ apv_obj.title }}</h4>
+                                <span class="text-muted mb-4">
+                                    <i class="fa-regular fa-calendar-days me-1"></i>{{ apv_obj.request_date|date:"Y년 n월 j일 G시 i분" }}
+                                </span>
+                            </div>
+
+                            <div class="col-3 col-xxl-2 d-flex justify-content-end justify-content-md-center align-items-center">
+                                <div class="d-flex justify-content-start align-items-center flex-md-row flex-column">
+                                    <div class="flex-shrink-0 mb-1">
+                                         <img src="{{ apv_obj.created_by.profile_image.url }}" alt="{{ apv_obj.created_by }}" class="avatar-sm p-1" style="border-radius: 8px;">
+                                    </div>
+                                    <div class="d-inline text-start ms-1" style="font-size: 11px;">
+                                        <h6 class="fw-bold text-nowrap" style="margin-bottom: 2px;">{{ apv_obj.created_by.name }} {{ apv_obj.created_by.job_level.name|default_if_none:"" }}</h6>
+                                        <span class="text-nowrap">{{ apv_obj.created_by.team.name|default_if_none:"" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4 px-3">
+                            <div class="p-3 border border-light rounded">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="purpose" class="form-label text-secondary">신청서 목적</label>
+                                        <input type="text" class="form-control border border-none" id="purpose" disabled>
+                                    </div>
+                                </div>
+                                                                
+                                <div class="row">
+                                    <div class="col-12">
+                                        <label for="detail" class="form-label text-muted">상세 설명</label>
+                                        <textarea name="content" class="form-control border border-none" id="detail" disabled></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if apv_obj.apv_attach %}
+                        <div class="row mt-4 px-3">
+                            <div class="p-3 bg-success-subtle rounded">
+                                <i class="fa-solid fa-paperclip me-2"></i><strong>첨부파일</strong>
+                                <a href="{{ apv_obj.apv_attach.url }}" download class="text-dark ms-4">
+                                    {{ apv_obj.apv_attach.name|cut:"apv_attach/" }}
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- 코멘트 -->
+                        <div class="row mt-4 px-3">
+                            <div class="p-3 border border-secondary-subtle rounded">
+                                <div class="mb-3" id="comment_list"></div>
+                                <div class="d-flex align-items-center p-2 bg-white border rounded">
+                                    <img class="avatar-sm p-1 me-2" src="{{ request.user.profile_image.url }}" alt="프로필 사진"
+                                         style="border-radius: 8px; width: 40px; height: 40px; object-fit: cover;">
+
+                                    <textarea id="comment_input" class="form-control border-0 flex-grow-1"
+                                              placeholder="댓글을 입력하세요." rows="2" style="resize: none;"></textarea>
+
+                                    <button class="btn btn-dark text-nowrap mx-2 px-3" onclick="comment_create_submit('apv', apvId)">등록</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 전자결재 본문 버튼영역 -->
+                <div class="col-md-7 col-lg-6 col-xl-5 ms-auto">
+                    <div class="d-flex justify-content-center align-items-center gap-2">
+                        <button type="button" class="d-none btn btn-danger text-nowrap w-100 px-3" id="cancelBtn" onclick="a_return_temp_submit()">
+                            <i class="fa-solid fa-paper-plane fa-rotate-90 me-2"></i>기안취소
+                        </button>
+                        <button type="button" class="d-none btn btn-danger text-nowrap w-100 px-3" id="rejectBtn" onclick="a_reject_submit()">
+                            <i class="fa-regular fa-circle-xmark me-2"></i>반려
+                        </button>
+                        <button type="button" class="d-none btn btn-success text-nowrap w-100 px-3" id="approveBtn" onclick="a_approve_submit()">
+                            <i class="fa-regular fa-check-circle me-2"></i>승인
+                        </button>
+                        <button type="button" class="d-none btn btn-danger text-nowrap w-100 px-3" id="cancelApprovalBtn" onclick="a_cancel_approval_submit()">
+                            <i class="fa-solid fa-paper-plane fa-rotate-90 me-2"></i>승인취소
+                        </button>
+                        <button type="button" class="btn btn-warning text-nowrap w-100 px-3" onclick="window.location.href = '{% url 'approval_list_page' %}'">
+                            <i class="fa-solid fa-bars me-2"></i>목록
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let categoryId = {% if category_id %} {{ category_id }} {% else %} null {% endif %};
+let apvId = {% if apv_id %} {{ apv_id }} {% else %} null {% endif %};
+let currentUserId = {{ request.user.id }};
+let created_by_id;
+let next_approver;
+let last_approver;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    a_update_page_in();
+    comment_draw_table('apv', apvId);
+}
+
+function a_update_page_in() {
+    let query = "?apv_id=" + apvId;
+    fetch_gp("/approval_read_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results[0];
+    next_approver = done.next_approver;
+    last_approver = done.last_approver;
+    created_by_id = data.created_by.id;
+    
+    // 진행상태에서 기안승인/반려/취소 버튼 보이기
+    if (data.status === '진행') {
+        if (next_approver === currentUserId) {
+            $('#approveBtn').removeClass('d-none');
+            $('#rejectBtn').removeClass('d-none');
+        }
+        if (created_by_id === currentUserId) {
+            $('#cancelBtn').removeClass('d-none');
+        }
+    }
+    if (last_approver === currentUserId) {
+        $('#cancelApprovalBtn').removeClass('d-none');
+    }
+
+    let createDay = new Date(data.updated_at); // 문자열을 Date 객체로 변환
+    let days = ['일', '월', '화', '수', '목', '금', '토'];
+    let weekDay = days[createDay.getDay()]; // 날짜 객체에서 요일 가져오기
+    let formattedDate = `${data.updated_at} (${weekDay})`;
+
+    $('#doc_title').val(data.title);
+    $('#apv_no').val(data.apv_no);
+    $('#create_date').val(formattedDate);
+    $('#username_team').val(`${data.created_by.team}  |  ${data.created_by.name} ${data.created_by.job_level}`);
+    $('#purpose').val(data.purpose);
+    $('#detail').summernote('code', data.detail);
+    $('#detail').summernote('disable');
+
+    // 파일첨부 렌더링(첨부파일 div_id, api로 불러온 첨부파일 url)
+    renderFileAttachment('file_list', data.apv_attach, data.apv_attach_size);
+    $('#removeFileBtn').addClass('d-none');
+
+    {% comment %}init_Select2('#approver1', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver1_id);
+    init_Select2('#approver2', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver2_id);
+    init_Select2('#approver3', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver3_id);
+    init_Select2('#approver4', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver4_id);
+    let ccUserIds = (data.apv_cc || []).map(cc => cc.user_id); // 숫자를 문자열로 변환
+    init_Select2_multiple('#cc_list', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, ccUserIds);{% endcomment %}
+    
+    draw_apv_approval_flow(data);
+    draw_apv_cc_users(data);
+}
+
+function draw_apv_approval_flow(data) {
+    let approvalFlowDiv = document.getElementById('approval_flow');
+    approvalFlowDiv.innerHTML = ''; // 기존 내용을 비움
+
+    let getStatusColor = (status) => {
+        if (status === '승인' || status === '완료') return '#34C38F'; // success
+        if (status === '대기') return '#696CFF'; // primary
+        if (status === '반려') return '#FF3E1D'; // danger
+        return '#bbb'; // 기본 회색
+    };
+
+    let createApproverDiv = (title, name, date, status, imageSrc) => {
+        let statusBadge = status === '승인' || status === '완료' ? 'text-bg-success' :
+                          status === '반려' ? 'text-bg-danger' : 'text-bg-primary';
+
+        let imageStyle = `border: 4px solid ${getStatusColor(status)};`;
+
+        let checkIcon = status === '승인' || status === '완료' ? 'fa-solid fa-check' :
+                        status === '대기' ? 'fa-solid fa-circle-notch fa-spin' :
+                        'fa-solid fa-xmark';
+
+        return `
+        <div class="d-flex flex-md-row flex-column align-items-center px-1">
+            <div class="position-relative">
+                <img class="rounded-circle" src="${imageSrc}" alt="${name}"
+                     style="width: 60px; height: 60px; object-fit: cover; margin: 0 auto; ${imageStyle}">
+                <div class="position-absolute" style="bottom: 0; right: 0; background-color: ${getStatusColor(status)}; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                    <i class="${checkIcon}"></i>
+                </div>
+            </div>
+            <div class="ps-2 py-1" style="font-size: 12px;">
+                <div class="fw-bold text-muted">${title}</div>
+                <div class="fw-bold text-nowrap mb-1">${name}</div>
+                <div><span class="p-1 badge ${statusBadge}">${date}</span></div>
+            </div>
+        </div>
+    `;
+    };
+
+    let approvers = [
+        {
+            title: '작성자',
+            name: data.created_by.name + ' ' + data.created_by.job_level,
+            date: data.request_date,
+            status: '완료',
+            imageSrc: data.created_by.profile_image,
+        }
+    ];
+
+    for (let i = 1; i <= 4; i++) {
+        let approverName = data.approvers[0]?.[`approver${i}_name`];
+        let approverStatus = data.approvers[0]?.[`approver${i}_status`];
+        let approverImg = data.approvers[0]?.[`approver${i}_img`];
+        let approverDate = data.approvers[0]?.[`approver${i}_date`] || '결재 대기중';
+
+        if (approverName) {
+            approvers.push({
+                title: `승인자 ${i}`,
+                name: approverName,
+                date: approverDate,
+                status: approverStatus,
+                imageSrc: approverImg,
+            });
+        }
+    }
+
+    approvers.forEach((approver, index) => {
+        if (approver.name) {
+            approvalFlowDiv.innerHTML += createApproverDiv(approver.title, approver.name, approver.date, approver.status, approver.imageSrc);
+
+            // 전 단계의 status 기반으로 화살표 색상 적용
+            if (index < approvers.length - 1 && approvers[index + 1].name) {
+                let arrowColor = getStatusColor(approver.status);
+                approvalFlowDiv.innerHTML += `<div class="py-1 py-md-0 px-0 px-md-2 approval_arrow" style="font-size: 20px; color: ${arrowColor}; margin: auto 10px;">
+                                              <i class="fa-solid fa-arrow-right fa-xl fa-rotate-90"></i></div>`;
+            }
+        }
+    });
+}
+
+function draw_apv_cc_users(data) {
+    let apvCcDiv = document.getElementById('apv_cc');
+    let apvCcList = apvCcDiv.querySelector('ul');
+    apvCcList.innerHTML = ''; // 기존 내용을 비움
+
+    if (!data.apv_cc || data.apv_cc.length === 0) {
+        apvCcList.innerHTML = `
+        <li class="col-12 border border-none rounded px-1">
+            <div class="d-flex justify-content-center align-items-center p-1">
+                <div class="text-center text-muted p-2 font-size-12">참조자가 없습니다</div>
+            </div>
+        </li>
+        `;
+        return;
+    }
+
+    let createCcUserDiv = (name, job_level, team, profile_image) => {
+        return `
+        <li class="col-5 col-md-12 bg-warning-subtle-50 rounded px-1">
+            <div class="d-flex justify-content-start align-items-center p-1">
+                <div class="flex-shrink-0">
+                    <img src="${profile_image}" alt="profile_image" class="avatar-xs" style="padding: 2px; border-radius: 6px;">
+                </div>
+                <div class="d-inline text-start ms-1" style="font-size: 11px;">
+                    <div class="fw-bold text-nowrap">${name} ${job_level}</div>
+                    <div class="text-nowrap">${team}</div>
+                </div>
+            </div>
+        </li>
+        `;
+    };
+
+    data.apv_cc.forEach(cc => {
+        apvCcList.innerHTML += createCcUserDiv(cc.name, cc.job_level || '', cc.team || '', cc.profile_image);
+    });
+}
+    
+function a_return_temp_submit() {
+    if (confirm('기안을 취소하시겠습니까?\n전자결재가 임시상태로 변경되며 모든 승인이 초기화됩니다.')) {
+        let api_data = new FormData();
+        api_data.append("apv_id", apvId);
+        api_data.append("approver_action", 'return_temp');
+        
+        fetch_gp('/approval_read_fn/', 'post', true, api_data, (done) => {
+            window.location.href = '{% url 'approval_list_page' %}';
+            alert("기안 취소 후 임시저장 상태로 변경하였습니다.");
+        });
+        
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function a_approve_submit() {
+    if (confirm('결재를 승인하시겠습니까?')) {
+        let api_data = new FormData();
+        api_data.append("apv_id", apvId);
+        api_data.append("approver_action", 'approve');
+
+        fetch_gp('/approval_read_fn/', 'post', true, api_data, (done) => {
+            window.location.href = '{% url 'approval_list_page' %}';
+            alert("결재를 승인하였습니다.");
+        });
+
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function a_cancel_approval_submit() {
+    if (confirm('결재 승인을 취소하시겠습니까?')) {
+        let api_data = new FormData();
+        api_data.append("apv_id", apvId);
+        api_data.append("approver_action", 'cancel_approval');
+
+        fetch_gp('/approval_read_fn/', 'post', true, api_data, (done) => {
+            window.location.href = '{% url 'approval_list_page' %}';
+            alert("결재 승인을 취소하였습니다.");
+        });
+
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function a_reject_submit() {
+    if (confirm('결재를 반려하시겠습니까?')) {
+        let api_data = new FormData();
+        api_data.append("apv_id", apvId);
+        api_data.append("approver_action", 'reject');
+
+        fetch_gp('/approval_read_fn/', 'post', true, api_data, (done) => {
+            window.location.href = '{% url 'approval_list_page' %}';
+            alert("결재를 반려하였습니다.");
+        });
+
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+$(document).ready(function () {
+    $('#detail').summernote({
+        height: 'auto', // 에디터 높이
+        lang: 'ko-KR', // 한글 설정
+        tabDisable: true,
+        toolbar: [
+        ],
+    });
+});
+
+</script>

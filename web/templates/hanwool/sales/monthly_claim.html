@@ -1,0 +1,543 @@
+<!-- 매출/지출관리 > 매출관리 > 청구서 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% load humanize %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+@media print {
+    body {
+        zoom: 0.8; /* 전체 75% 축소 */
+    }
+
+    .no-print, .btn, .navbar, .footer {
+        display: none !important;
+    }
+
+    #print_area {
+        width: 100%;
+        height: auto;
+        margin: 0 auto;
+        padding: 0;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    body, html {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+    }
+}
+</style>
+
+<!-- Content Area -->
+<div class="row py-3 px-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12 no-print">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                        <i class="fa-solid fa-file-pdf me-2"></i>청구서 발급
+                    </div>
+                    <div class="d-flex">
+                        <button class="btn btn-sm btn-primary text-nowrap ms-1 px-2.5" onclick="save_pdf()">
+                            <i class="fa-solid fa-file-pdf me-2"></i>PDF 저장
+                        </button>
+                        
+                        {% comment %}<button class="btn btn-sm btn-success text-nowrap ms-1 px-2.5" onclick="exportToExcel()">
+                            <i class="fa-solid fa-file-excel me-2"></i>엑셀 다운로드
+                        </button>{% endcomment %}
+
+                        <button class="btn btn-sm btn-secondary text-nowrap ms-1 px-2.5" onclick="window.close()">
+                            <i class="fa-solid fa-xmark me-2"></i>닫기
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 본문 -->
+            <div class="col-12 p-2">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+
+                        <div id="print_area" class="p-3">
+
+                            <!-- 본문 -->
+                            <div class="row my-4">
+                                <div class="d-flex justify-content-end p-2">
+                                    <div class="col-8 text-center fw-bold">
+                                        <div style="color: #0065ca; font-size: 32px; letter-spacing: 3px;">거 래 명 세 서</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row px-3">
+                                <div class="col-12">
+                                    <table class="table">
+                                        <tbody>
+                                            <tr class="text-nowrap" style="text-align: start;">
+                                                <td rowspan="4" class="py-1 px-3" style="border: 2px solid #333; color: #333; font-size: 14px; font-weight: bold; width: 40%; vertical-align: middle;">
+                                                    {% if monthly_sales.customer.customer_class.name %}
+                                                    <input type="text" value="주식회사 {{ monthly_sales.customer.customer_class.name }}"
+                                                           class="form-control text-center fw-bold border-0 p-0" style="color: #333 !important; font-size: 20px;">
+                                                    {% else %}
+                                                    <input type="text" value="주식회사 {{ monthly_sales.customer.name }}"
+                                                           class="form-control text-center fw-bold border-0 p-0" style="color: #333 !important; font-size: 20px;">
+                                                    {% endif %}
+                                                </td>
+                                                <td class="py-1 px-3" style="border: none; color: #333; font-size: 14px; width: 50%;">
+                                                    <input type="text" value="주식회사 {{ monthly_sales.subsidiary.name }}"
+                                                           class="form-control fw-bold border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td rowspan="3" class="position-relative py-1 px-3" style="border: 1px solid #333; width: 10%; vertical-align: middle;">
+                                                    <div class="position-relative">
+                                                        {% if monthly_sales.subsidiary.image %}
+                                                            <img class="position-absolute" src="{{ monthly_sales.subsidiary.image.url }}"
+                                                                 alt="company_stamp" style="max-width: 70px; top: -40px; left: -13px;">
+                                                        {% else %}
+                                                            <img class="position-absolute" src="{% static 'img/stamp_approved.png' %}"
+                                                                 alt="company_stamp" style="max-width: 70px; top: -40px; left: -13px;">
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start;">
+                                                <td class="py-1 px-3" style="border: none; color: #333; font-size: 14px;">
+                                                    <input type="text" value="T E L : {{ monthly_sales.subsidiary.tel }}"
+                                                           class="form-control fw-bold border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start;">
+                                                <td class="py-1 px-3" style="border: none; color: #333; font-size: 14px;">
+                                                    <input type="text" value="F A X : {{ monthly_sales.subsidiary.fax }}"
+                                                           class="form-control fw-bold border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start;">
+                                                <td colspan="2" class="py-1 px-3" style="border: none; color: #333; font-size: 14px;">
+                                                    <input type="text" value="주 소 : {{ monthly_sales.subsidiary.address }}"
+                                                           class="form-control fw-bold border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="row px-3">
+                                <div class="col-12">
+                                    <table class="table border border-dark border-2">
+                                        <tbody>
+                                            <tr class="text-nowrap" style="text-align: center;">
+                                                <td class="py-2 px-3" style="border-right: 1px solid #333; background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 5%;">청구월</td>
+                                                <td class="py-2 px-3" style="border-right: 1px solid #333; background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 40%;">청구기간</td>
+                                                <td class="py-2 px-3" style="border-right: 1px solid #333; background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 15%;">사용금액</td>
+                                                <td class="py-2 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold; width: 20%;">
+                                                    <input type="text" value="{{ price_no_vat|floatformat:0|intcomma }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)"></td>
+                                                <td class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 15%;">VAT별도</td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: center;">
+                                                <td class="py-2 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ monthly_sales.month }}월"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;"></td>
+                                                <td class="py-2 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ start_date|date:"Y년 n월 j일" }} ~ {{ end_date|date:"Y년 n월 j일" }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-2 px-3" style="border-right: 1px solid #333; background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">청구금액</td>
+                                                <td class="py-2 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ monthly_sales.total_price|floatformat:0|intcomma }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)"></td>
+                                                <td class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">VAT포함</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="col-12 my-3">
+                                    <input type="text" value="귀 사의 무궁한 발전을 기원합니다."
+                                                       class="form-control text-start border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                    <input type="text" value="아래와 같이 용역비용을 청구합니다."
+                                                       class="form-control text-start border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                </div>
+
+                                <div class="col-12">
+                                    <table class="table border border-dark border-2">
+                                        <tbody>
+                                            <tr class="text-nowrap" style="text-align: center; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; background-color: #fde498; color: #333; font-size: 14px; font-weight: bold; width: 20%;">구 분</td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; background-color: #fde498; color: #333; font-size: 14px; font-weight: bold; width: 35%;">적 요</td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; background-color: #fde498; color: #333; font-size: 14px; font-weight: bold; width: 30%;">비 고</td>
+                                                <td class="py-1 px-3" style="background-color: #fde498; color: #333; font-size: 14px; font-weight: bold; width: 15%;">금 액</td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ start_date|date:"n월 j일" }} ~ {{ end_date|date:"n월 j일" }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ monthly_sales.customer.name }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{% if monthly_sales.daily_price %}{{ monthly_sales.month }}월 단기직{% else %}{% endif %}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{% if monthly_sales.daily_price %}{{ monthly_sales.daily_price|floatformat:0|intcomma }}{% else %}{% endif %}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{% if monthly_sales.general_price %}{{ monthly_sales.month }}월 파견정규직{% else %}{% endif %}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{% if monthly_sales.general_price %}{{ monthly_sales.general_price|floatformat:0|intcomma }}{% else %}{% endif %}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ monthly_sales.desc1|default_if_none:'' }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{% if monthly_sales.desc1_price %}{{ monthly_sales.desc1_price|floatformat:0|intcomma }}{% else %}{% endif %}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ monthly_sales.desc2|default_if_none:'' }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{% if monthly_sales.desc2_price %}{{ monthly_sales.desc2_price|floatformat:0|intcomma }}{% else %}{% endif %}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ monthly_sales.desc3|default_if_none:'' }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{% if monthly_sales.desc3_price %}{{ monthly_sales.desc3_price|floatformat:0|intcomma }}{% else %}{% endif %}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ monthly_sales.desc4|default_if_none:'' }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{% if monthly_sales.desc4_price %}{{ monthly_sales.desc4_price|floatformat:0|intcomma }}{% else %}{% endif %}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="공급가액"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ price_no_vat|floatformat:0|intcomma }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="부 가 세"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ monthly_sales.vat|floatformat:0|intcomma }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="합 &nbsp;&nbsp;&nbsp;&nbsp; 계"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" value="{{ monthly_sales.total_price|floatformat:0|intcomma }}"
+                                                           class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start; ">
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="border-right: 1px solid #333; color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                                </td>
+                                                <td class="py-1 px-3" style="color: #333; font-size: 14px; font-weight: bold;">
+                                                    <input type="text" class="form-control fw-bold text-center border-0 p-0" style="color: #333 !important; font-size: 14px;" onkeyup="checkNumber(this, 0)">
+                                                </td>
+                                            </tr>
+
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="col-12 my-3">
+                                    <input type="text" value="입금계좌 : {{ monthly_sales.subsidiary.desc1 }}"
+                                                       class="form-control text-start border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                    <input type="text" value="예금주 : (주){{ monthly_sales.subsidiary.name }}"
+                                                       class="form-control text-start border-0 p-0" style="color: #333 !important; font-size: 14px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script type="text/javascript" src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let a_cert_selected;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+}
+
+function save_pdf() {
+    let element = document.getElementById('print_area');
+
+    window.scrollTo(0, 0); // 스크롤이 PDF생성화면에 영향을 주기 때문에 반드시 최상단으로 이동
+
+    let options = {
+        filename: get_pdf_name(),
+        image: { type: 'jpeg', quality: 0.6 }, // 이미지 품질 100%
+        html2canvas: {
+            scale: 3, // 캔버스의 해상도를 높임
+            useCORS: true, // CORS 문제 방지
+        },
+        jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait',
+            precision: 16,
+        },
+        pagebreak: {
+            mode: ['avoid-all', 'css', 'legacy']
+        }
+    };
+
+    html2pdf().from(element).set(options).save();
+}
+
+function get_pdf_name() {
+    const pdf_title = "거래명세서";
+    const customerClass = "{{ monthly_sales.customer.customer_class.name }}";
+    const customer = "{{ monthly_sales.customer.name }}";
+    const date = "{{ monthly_sales.year }}년 {{ monthly_sales.month }}월"
+
+    const today = new Date();
+    const yy = String(today.getFullYear()).slice(2); // 년도 뒤 2자리
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yy}${mm}${dd}`; // 예: 250520
+
+    return `${pdf_title}_${customerClass}_${customer}_${date}.pdf`;
+}
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+
+function exportToExcel() {
+    const printArea = document.getElementById('print_area');
+    if (!printArea) return;
+
+    // 엑셀에 넣을 데이터 배열 만들기
+    let data = [];
+    const rows = printArea.querySelectorAll("table tr");
+    rows.forEach(row => {
+        let rowData = [];
+        row.querySelectorAll("td, th").forEach(cell => {
+            // input이 있으면 value를, 없으면 textContent를 가져옴
+            const input = cell.querySelector("input");
+            if (input) {
+                rowData.push(input.value || "");
+            } else {
+                rowData.push(cell.textContent.trim());
+            }
+        });
+        data.push(rowData);
+    });
+
+    // 워크북/시트 생성
+    let wb = XLSX.utils.book_new();
+    let ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, "청구서");
+
+    XLSX.writeFile(wb, `청구서_{{ year }}년{{ month }}월_{{ customer.name }}.xlsx`);
+}
+
+</script>
+
+{% if messages %}
+<script>
+    {% for message in messages %}
+        alert("{{ message }}");
+        window.close();
+    {% endfor %}
+</script>
+{% endif %}

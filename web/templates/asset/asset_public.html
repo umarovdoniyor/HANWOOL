@@ -1,0 +1,1493 @@
+<!-- 자산관리 > 시설관리 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+<style>
+/* select2 컨테이너 너비 지정 */
+#sch_owner + .select2-container {
+    width: 200px !important;
+}
+
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_owner + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+
+/* 선택된 항목 텍스트 정렬 */
+#sch_owner + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+
+/* 화살표 위치 조정 */
+#sch_owner + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+
+/* 클리어버튼 위치 조정 */
+#sch_owner + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-warehouse me-2"></i>설비관리
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 설비관리는 생산설비, 회의실TV 등 공용으로 사용되는 자산류에 대한 관리입니다.<br>• 설비와 설비이력을 등록, 수정, 삭제하며 관리할 수 있습니다.<br>• 수정하려는 항목에서 더블클릭하면 수정 팝업이 열립니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="취득일자로 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_is_valid"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="사용 여부로 검색">
+                                    <option value="">모두</option>
+                                    <option value="true" selected>사용</option>
+                                    <option value="false">미사용</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="현재 관리자로 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_owner"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1" data-toggle="tooltip" data-placement="top" title="설비명 / 등록번호 / 모델명 / 설비정보 / 기타사항 / 부서 / 취득처 등 검색">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            {% comment %}<div class="d-flex p-0">
+                                <button class="btn btn-info text-nowrap ms-1 px-2.5" onclick="">
+                                    <i class="fa-solid fa-desktop"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">통계</span>
+                                </button>
+                            </div>{% endcomment %}
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="d-flex flex-column flex-lg-row justify-content-between">
+                            <div class="col-12 col-lg-7">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <!-- 설비 목록 -->
+                                        <div class="d-flex justify-content-between align-items-center fw-bold mb-2" style="font-size: 16px; color: #2a3040;">설비 목록
+                                            <div class="d-flex p-0">
+                                                <button class="btn btn-sm btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-warning text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="custom_table table-responsive">
+                                            <table class="table">
+                                                <thead class="thead-light">
+                                                    <tr class="text-nowrap">
+                                                        <th>순번</th>
+                                                        <th>등록번호</th>
+                                                        <th>설비명</th>
+                                                        <th>모델명</th>
+                                                        <th>취득일</th>
+                                                        <th>현재 관리자</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="a_tbody"></tbody>
+                                            </table>
+                                        </div>
+                                        <div class="div_center mt-3" id="a_nation_id"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-lg-5 ps-0 ps-lg-2">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <!-- 설비 정보 -->
+                                        <div class="d-flex fw-bold mb-2" style="font-size: 16px; color: #2a3040;">설비 정보</div>
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <colgroup>
+                                                    <col style="width: 15%;">
+                                                    <col style="width: 15%;">
+                                                    <col style="width: 15%;">
+                                                    <col style="width: 15%;">
+                                                    <col style="width: 15%;">
+                                                    <col style="width: 15%;">
+                                                </colgroup>
+                                                <tbody class="text-nowrap">
+                                                    <tr class="border-top">
+                                                        <th class="p-2 ps-3" rowspan="5" style="background-color: #fafafa;">설비사진</th>
+                                                        <th class="p-2" rowspan="5" colspan="2" style="vertical-align: middle; text-align: center;">
+                                                            <img id="asset_image" src="{% static 'img/tost_icon_white_900.png' %}"
+                                                                 style="max-width: 165px; max-height: 165px; object-fit: contain;">
+                                                        </th>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">등록번호</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="code"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">설비종류</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="asset_category_name"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">설비명</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="name"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">모델명</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="model"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">사용여부</th>
+                                                        <td class="p-1 ps-3 align-middle" colspan="2"><span id="is_valid"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">취득일</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="acq_date"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">취득처</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="supplier"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">취득가격</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="price"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">보관장소</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="desc3"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa; width: 15%;">세부내용</th>
+                                                        <td class="p-2 ps-3" colspan="5"><div id="info" style="white-space: pre-wrap;"></div></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">설비정보1</th>
+                                                        <td class="p-2 ps-3" colspan="5"><span class="text-wrap" id="desc1"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">설비정보2</th>
+                                                        <td class="p-2 ps-3" colspan="5"><span class="text-wrap" id="desc2"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">최종 편집일</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="updated_at"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">최종 편집자</th>
+                                                        <td class="p-2 ps-3" colspan="2"><span id="updated_by_name"></span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <!-- 설비 이력 -->
+                                        <div class="d-flex justify-content-between align-items-center fw-bold mb-2" style="font-size: 16px; color: #2a3040;">설비 이력
+                                            <div class="d-flex p-0">
+                                                <button class="btn btn-sm btn-success text-nowrap ms-1 px-2.5" onclick="c_create_modal_in()">
+                                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-warning text-nowrap ms-1 px-2.5" onclick="c_update_modal_in()">
+                                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="c_delete_submit()">
+                                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="custom_table table-responsive">
+                                            <table class="table">
+                                                <thead class="thead-light">
+                                                    <tr class="text-nowrap">
+                                                        <th style="width: 5%;">순번</th>
+                                                        <th style="width: 5%;">발생 일자</th>
+                                                        <th style="width: 5%;">발생 종류</th>
+                                                        <th style="width: 15%;">발생 내용</th>
+                                                        <th style="width: 10%;">관리자</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="c_tbody">
+                                                    <tr><td colspan="99" class="text-center">설비 목록에서 조회하려는 설비를 선택하세요.</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="div_center mt-3" id="c_nation_id"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">설비 관리 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-md-4 d-flex flex-column mb-3">
+                        <label for="asset_image" class="form-label">설비 사진</label>
+                        <img id="asset_image_preview" style="margin-bottom: 10px; display: none; width: 150px;
+                        height: 150px; object-fit: cover; border: 1px solid #ced4da; border-radius: 5px;">
+                        <div class="d-flex">
+                            <input type="file" class="form-control" id="asset_image" accept="image/*">
+                            <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="image_clear_btn('a_create_modal')">
+                                <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">제거</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8 mb-3">
+                        <div class="row">
+                            <div class="col-6 col-md-4 mb-3 d-flex align-items-end">
+                                <div class="col-10 m-0">
+                                    <label for="code" class="form-label fw-bold d-block">등록번호</label>
+                                    <input type="text" class="form-control div_required" id="code" placeholder="자동 생성" disabled>
+                                </div>
+                                <div class="col-1 m-0 d-flex align-items-center ms-2">
+                                    <input class="form-check-input mb-2" style="width: 20px; height: 20px;" type="checkbox" id="auto_id_code" checked>
+                                </div>
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="name" class="form-label">설비명</label>
+                                <input type="text" class="form-control" id="name">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="model" class="form-label">모델명</label>
+                                <input type="text" class="form-control" id="model">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="acq_date" class="form-label">취득일자</label>
+                                <input type="text" class="form-control date_flatpickr" id="acq_date">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="supplier" class="form-label">취득처</label>
+                                <input type="text" class="form-control" id="supplier">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="price" class="form-label">취득가격</label>
+                                <input type="number" class="form-control" id="price">
+                            </div>
+
+                            <div class="col-12 col-md-4 mb-3">
+                                <label for="desc3" class="form-label">보관장소</label>
+                                <input type="text" class="form-control" id="desc3">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="asset_category" class="form-label">설비 종류
+                                    <button class="btn btn-sm px-1 py-0" onclick="openCodePage('asset_category', 'create')">
+                                        <i class="fa-solid fa-gear"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control" id="asset_category"></select>
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="is_valid" class="form-label">사용 여부</label>
+                                <select class="text-left form-select" id="is_valid">
+                                    <option value="true">사용</option>
+                                    <option value="false">미사용</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 d-flex flex-column mb-3">
+                        <div class="mb-3">
+                            <label for="desc1" class="form-label">참고사항1</label>
+                            <input type="text" class="form-control" id="desc1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="desc2" class="form-label">참고사항2</label>
+                            <input type="text" class="form-control" id="desc2">
+                        </div>
+
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label for="info" class="form-label">세부내용</label>
+                        <textarea class="form-control" id="info" rows="5"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">설비 관리 <i class="fa-solid fa-angle-right px-1"></i> 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-md-4 d-flex flex-column mb-3">
+                        <label for="asset_image" class="form-label">설비 사진</label>
+                        <img id="asset_image_preview" style="margin-bottom: 10px; display: none; width: 150px;
+                        height: 150px; object-fit: cover; border: 1px solid #ced4da; border-radius: 5px;">
+                        <div class="d-flex">
+                            <input type="file" class="form-control" id="asset_image" accept="image/*">
+                            <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="image_clear_btn('a_update_modal')">
+                                <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">제거</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8 mb-3">
+                        <div class="row">
+                            <div class="col-6 col-md-4 mb-3 d-flex align-items-end">
+                                <div class="col-10 m-0">
+                                    <label for="code" class="form-label fw-bold d-block">등록번호</label>
+                                    <input type="text" class="form-control div_required" id="code" placeholder="자동 생성" disabled>
+                                </div>
+                                <div class="col-1 m-0 d-flex align-items-center ms-2">
+                                    <input class="form-check-input mb-2" style="width: 20px; height: 20px;" type="checkbox" id="auto_id_code" checked>
+                                </div>
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="name" class="form-label">설비명</label>
+                                <input type="text" class="form-control" id="name">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="model" class="form-label">모델명</label>
+                                <input type="text" class="form-control" id="model">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="acq_date" class="form-label">취득일자</label>
+                                <input type="text" class="form-control date_flatpickr" id="acq_date">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="supplier" class="form-label">취득처</label>
+                                <input type="text" class="form-control" id="supplier">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="price" class="form-label">취득가격</label>
+                                <input type="number" class="form-control" id="price">
+                            </div>
+
+                            <div class="col-12 col-md-4 mb-3">
+                                <label for="desc3" class="form-label">보관장소</label>
+                                <input type="text" class="form-control" id="desc3">
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="asset_category" class="form-label">설비 종류
+                                    <button class="btn btn-sm px-1 py-0" onclick="openCodePage('asset_category', 'create')">
+                                        <i class="fa-solid fa-gear"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control" id="asset_category"></select>
+                            </div>
+
+                            <div class="col-6 col-md-4 mb-3">
+                                <label for="is_valid" class="form-label">사용 여부</label>
+                                <select class="text-left form-select" id="is_valid">
+                                    <option value="true">사용</option>
+                                    <option value="false">미사용</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 d-flex flex-column mb-3">
+                        <div class="mb-3">
+                            <label for="desc1" class="form-label">참고사항1</label>
+                            <input type="text" class="form-control" id="desc1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="desc2" class="form-label">참고사항2</label>
+                            <input type="text" class="form-control" id="desc2">
+                        </div>
+
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label for="info" class="form-label">세부내용</label>
+                        <textarea class="form-control" id="info" rows="5"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="created_at" class="form-label">등록일</label>
+                        <input type="text" class="form-control" id="created_at" disabled>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="created_by_name" class="form-label">등록자</label>
+                        <input type="text" class="form-control" id="created_by_name" disabled>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="updated_at" class="form-label">최종 편집일</label>
+                        <input type="text" class="form-control" id="updated_at" disabled>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="updated_by_name" class="form-label">최종 편집자</label>
+                        <input type="text" class="form-control" id="updated_by_name" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- c_create_modal -->
+<div class="modal fade" id="c_create_modal" tabindex="-1" role="dialog" aria-labelledby="c_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">설비 관리 <i class="fa-solid fa-angle-right px-1"></i> 설비 이력 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create_c"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="c_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label for="date" class="form-label">발생 일자</label>
+                        <input type="text" class="form-control date_flatpickr div_required" id="date">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="owner" class="form-label">관리자</label>
+                        <select class="form-select" id="owner"></select>
+                    </div>
+
+                    <div class="col-6 mb-3">
+                        <label for="change_type" class="form-label">발생 종류</label>
+                        <select class="form-select" id="change_type">
+                            <option value="지급">지급</option>
+                            <option value="반납">반납</option>
+                            <option value="정비">정비</option>
+                        </select>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="desc1" class="form-label">발생 내용</label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+
+                    <div class="col-6 mb-3">
+                        <label for="desc2" class="form-label">참고사항1</label>
+                        <input type="text" class="form-control" id="desc2">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="desc3" class="form-label">참고사항2</label>
+                        <input type="text" class="form-control" id="desc3">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="c_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="c_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- c_update_modal -->
+<div class="modal fade" id="c_update_modal" tabindex="-1" role="dialog" aria-labelledby="c_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">설비 관리 <i class="fa-solid fa-angle-right px-1"></i> 설비 이력 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update_c"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="c_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label for="date" class="form-label">발생 일자</label>
+                        <input type="text" class="form-control date_flatpickr div_required" id="date">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="owner" class="form-label">관리자</label>
+                        <select class="form-select" id="owner"></select>
+                    </div>
+
+                    <div class="col-6 mb-3">
+                        <label for="change_type" class="form-label">발생 종류</label>
+                        <select class="form-select" id="change_type">
+                            <option value="지급">지급</option>
+                            <option value="반납">반납</option>
+                            <option value="정비">정비</option>
+                        </select>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="desc1" class="form-label">발생 내용</label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+
+                    <div class="col-6 mb-3">
+                        <label for="desc2" class="form-label">참고사항1</label>
+                        <input type="text" class="form-control" id="desc2">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="desc3" class="form-label">참고사항2</label>
+                        <input type="text" class="form-control" id="desc3">
+                    </div>
+
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="created_at" class="form-label">등록일</label>
+                        <input type="text" class="form-control" id="created_at" disabled>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="created_by_name" class="form-label">등록자</label>
+                        <input type="text" class="form-control" id="created_by_name" disabled>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="updated_at" class="form-label">최종 편집일</label>
+                        <input type="text" class="form-control" id="updated_at" disabled>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <label for="updated_by_name" class="form-label">최종 편집자</label>
+                        <input type="text" class="form-control" id="updated_by_name" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="c_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="c_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let a_click_id;
+let a_click_name;
+let a_click_code;
+let a_click_model;
+let a_click_info;
+let a_click_desc1;
+let a_click_desc2;
+let a_click_desc3;
+let a_click_acq_date;
+let a_click_price;
+let a_click_supplier;
+let a_click_is_valid;
+let a_click_asset_image;
+let a_click_asset_category_id;
+let a_click_asset_category_name;
+let a_click_created_at;
+let a_click_updated_at;
+let a_click_created_by_id;
+let a_click_created_by_name;
+let a_click_updated_by_id;
+let a_click_updated_by_name;
+let a_click_current_owner;
+let image_clear_flag = false;  // a_update 이미지 제거 플래그
+
+let c_click_id;
+let c_click_date;
+let c_click_change_type;
+let c_click_desc1;
+let c_click_desc2;
+let c_click_desc3;
+let c_click_owner_id;
+let c_click_owner_name;
+let c_click_created_at;
+let c_click_created_by_name;
+let c_click_updated_at;
+let c_click_updated_by_name;
+
+let fr_date;
+let to_date;
+let all_sch;
+let sch_owner;
+let sch_is_valid;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+let c_nation_data = {
+    cname: 'c_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'c_nation_id',
+    range: 5,
+    page_size: 10,  // 세로 Row 수
+};
+let c_nation = new Nations(c_nation_data, c_search); // 인스턴스 명
+c_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('asset_public_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('asset_public_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_owner', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+}
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    all_sch = $('#all_sch').val();
+    sch_owner = $('#sch_owner').val();
+    sch_is_valid = $('#sch_is_valid').val();
+
+    a_search();
+}
+
+// 선택대상 유지 : 주로 update 후 호출
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&asset_type=" + "public";
+    if (fr_date) { query += "&fr_date=" + fr_date; }
+    if (to_date) { query += "&to_date=" + to_date; }
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_owner) { query += "&sch_owner=" + sch_owner; }
+    if (sch_is_valid) { query += "&sch_is_valid=" + sch_is_valid; }
+
+    fetch_gp("/asset_manage_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let currentOwner = item.current_owner || {};
+        let profileImage = currentOwner.profile_image
+        ? `<img src="${currentOwner.profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">`
+        : "";
+
+        let ownerProfile = currentOwner.name
+            ? `${profileImage} ${currentOwner.name} ${currentOwner.job_level || ""}`
+            : "-";
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td>${num + i}</td>
+            <td name='code'>${item.code || ""}</td>
+            <td name='name'>${item.name || ""}</td>
+            <td name='model'>${item.model || ""}</td>
+            <td name='acq_date'>${item.acq_date || ""}</td>
+            <td name='owner_profile' class="py-1">${ownerProfile}</td>
+
+            <td name='is_valid' class='d-none'>${item.is_valid || ""}</td>
+            <td name='supplier' class='d-none'>${item.supplier || ""}</td>
+            <td name='price' class='d-none'>${item.price || ""}</td>
+            <td name='desc1' class='d-none'>${item.desc1 || ""}</td>
+            <td name='desc2' class='d-none'>${item.desc2 || ""}</td>
+            <td name='desc3' class='d-none'>${item.desc3 || ""}</td>
+            <td name='info' class='d-none'>${item.info || ""}</td>
+            <td name='image' class='d-none'>${item.image || ""}</td>
+            <td name='asset_category_id' class='d-none'>${item.asset_category_id || ""}</td>
+            <td name='asset_category_name' class='d-none'>${item.asset_category_name || ""}</td>
+            <td name='current_owner' class='d-none'>${item.current_owner.name || ""}</td>
+
+            <td name='created_at' class='d-none'>${item.created_at}</td>
+            <td name='updated_at' class='d-none'>${item.updated_at}</td>
+            <td name='created_by_id' class='d-none'>${item.created_by.id}</td>
+            <td name='created_by_name' class='d-none'>${item.created_by.name}</td>
+            <td name='updated_by_id' class='d-none'>${item.updated_by.id}</td>
+            <td name='updated_by_name' class='d-none'>${item.updated_by.name}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_code = $(this).find("[name='code']").text();
+        a_click_name = $(this).find("[name='name']").text();
+        a_click_model = $(this).find("[name='model']").text();
+        a_click_info = $(this).find("[name='info']").text();
+        a_click_desc1 = $(this).find("[name='desc1']").text();
+        a_click_desc2 = $(this).find("[name='desc2']").text();
+        a_click_desc3 = $(this).find("[name='desc3']").text();
+        a_click_acq_date = $(this).find("[name='acq_date']").text();
+        a_click_price = $(this).find("[name='price']").text();
+        a_click_supplier = $(this).find("[name='supplier']").text();
+        a_click_is_valid = $(this).find("[name='is_valid']").text();
+        a_click_asset_image = $(this).find("[name='image']").text();
+        a_click_asset_category_id = $(this).find("[name='asset_category_id']").text();
+        a_click_asset_category_name = $(this).find("[name='asset_category_name']").text();
+        a_click_current_owner = $(this).find("[name='current_owner']").text();
+
+        a_click_created_at = $(this).find("[name='created_at']").text();
+        a_click_updated_at = $(this).find("[name='updated_at']").text();
+        a_click_created_by_id = $(this).find("[name='created_by_id']").text();
+        a_click_created_by_name = $(this).find("[name='created_by_name']").text();
+        a_click_updated_by_id = $(this).find("[name='updated_by_id']").text();
+        a_click_updated_by_name = $(this).find("[name='updated_by_name']").text();
+
+        b_draw_table();
+        c_search_ready();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_update_modal_in();
+    });
+}
+
+function a_create_modal_in() {
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    $('#a_create_modal #code').prop('disabled', true).attr('placeholder', '자동 생성').val('');
+    $('#a_create_modal #auto_id_code').prop('checked', true);
+    $("#a_create_modal #code").val('');
+    $("#a_create_modal #name").val('');
+    $("#a_create_modal #model").val('');
+    $("#a_create_modal #acq_date").val(date_today_str);
+    $("#a_create_modal #supplier").val('');
+    $("#a_create_modal #price").val('');
+    $("#a_create_modal #info").val('');
+    $("#a_create_modal #desc1").val('');
+    $("#a_create_modal #desc2").val('');
+    $("#a_create_modal #desc3").val('');
+    $("#a_create_modal #is_valid").val('true');
+    $("#a_create_modal #asset_image").val('');
+    load_asset_image('a_create_modal');
+    init_Select2_modal('#a_create_modal #asset_category', '선택', '/sel2_code_asset_category/', {id: 'id', txt: item => `${item.text}`});
+
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_submit() {
+    let Image = $('#a_create_modal #asset_image')[0].files[0];
+
+    let api_data = new FormData();
+        api_data.append("asset_type", "public");
+        api_data.append("code", nullapply($('#a_create_modal #code').val()));
+        api_data.append("name", nullapply($('#a_create_modal #name').val()));
+        api_data.append("model", nullapply($('#a_create_modal #model').val()));
+        api_data.append("acq_date", nullapply($('#a_create_modal #acq_date').val()));
+        api_data.append("supplier", nullapply($('#a_create_modal #supplier').val()));
+        api_data.append("price", nullapply($('#a_create_modal #price').val()));
+        api_data.append("asset_category", nullapply($('#a_create_modal #asset_category').val()));
+        api_data.append("is_valid", nullapply($('#a_create_modal #is_valid').val()));
+        api_data.append("info", nullapply($('#a_create_modal #info').val()));
+        api_data.append("desc1", nullapply($('#a_create_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#a_create_modal #desc2').val()));
+        api_data.append("desc3", nullapply($('#a_create_modal #desc3').val()));
+
+        if (Image) api_data.append("image", Image);
+
+    fetch_gp('/asset_manage_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        a_search_ready();
+        alert(txt.create_ed);
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    $('#a_update_modal #code').prop('disabled', false).val(a_click_code);
+    $('#a_update_modal #auto_id_code').prop('checked', false);
+    $("#a_update_modal #name").val(a_click_name);
+    $("#a_update_modal #model").val(a_click_model);
+    $("#a_update_modal #acq_date").val(a_click_acq_date);
+    $("#a_update_modal #supplier").val(a_click_supplier);
+    $("#a_update_modal #price").val(a_click_price);
+    $("#a_update_modal #info").val(a_click_info);
+    $("#a_update_modal #desc1").val(a_click_desc1);
+    $("#a_update_modal #desc2").val(a_click_desc2);
+    $("#a_update_modal #desc3").val(a_click_desc3);
+    $("#a_update_modal #is_valid").val(a_click_is_valid ? "true" : "false");
+    $("#a_update_modal #created_at").val(a_click_created_at);
+    $("#a_update_modal #created_by_name").val(a_click_created_by_name);
+    $("#a_update_modal #updated_at").val(a_click_updated_at);
+    $("#a_update_modal #updated_by_name").val(a_click_updated_by_name);
+    load_asset_image('a_update_modal');
+    init_Select2_modal('#a_update_modal #asset_category', '선택', '/sel2_code_asset_category/', {id: 'id', txt: item => `${item.text}`}, a_click_asset_category_id);
+    image_clear_flag = false;  // 이미지 제거 플래그 초기화
+
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    let Image = $('#a_update_modal #asset_image')[0].files[0];
+
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("asset_type", "public");
+        api_data.append("code", nullapply($('#a_update_modal #code').val()));
+        api_data.append("name", nullapply($('#a_update_modal #name').val()));
+        api_data.append("model", nullapply($('#a_update_modal #model').val()));
+        api_data.append("acq_date", nullapply($('#a_update_modal #acq_date').val()));
+        api_data.append("supplier", nullapply($('#a_update_modal #supplier').val()));
+        api_data.append("price", nullapply($('#a_update_modal #price').val()));
+        api_data.append("asset_category", nullapply($('#a_update_modal #asset_category').val()));
+        api_data.append("is_valid", nullapply($('#a_update_modal #is_valid').val()));
+        api_data.append("info", nullapply($('#a_update_modal #info').val()));
+        api_data.append("desc1", nullapply($('#a_update_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#a_update_modal #desc2').val()));
+        api_data.append("desc3", nullapply($('#a_update_modal #desc3').val()));
+        api_data.append("image_clear", image_clear_flag ? "true" : "false");
+        if (Image) api_data.append("image", Image);
+
+    fetch_gp('/asset_manage_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search();
+        alert(txt.update_ed);
+        image_clear_flag = false;  // 이미지 제거 플래그 초기화
+
+        b_draw_table(done);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt("설비를 삭제할 경우,\n설비 이력도 함께 삭제됩니다.\n\n" +
+        txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/asset_manage_delete_fn/', 'post', true, api_data, (done) => {
+            a_nation.page = 1;
+            a_click_id = null;
+
+            a_search_ready();
+            b_draw_table('none');
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+
+// B_MODAL_AREA --------------------------------------------------------------------------------------------------------
+function b_draw_table(done) {
+    // a_delete 직후 보여줄 데이터
+    if (done === 'none') {
+        $('#code').text('');
+        $('#name').text('');
+        $('#model').text('');
+        $('#asset_category_name').text('');
+        $('#acq_date').text('');
+        $('#supplier').text('');
+        $('#price').text("");
+        $('#is_valid').text('');
+        $('#info').text('');
+        $('#desc1').text('');
+        $('#desc2').text('');
+        $('#desc3').text('');
+        $('#updated_at').text('');
+        $('#updated_by_name').text('');
+        $('#asset_image').attr('src', '{% static "img/tost_icon_white_900.png" %}');
+    }
+
+    // a_update 직후 보여줄 데이터
+    if (done) {
+        $('#code').text(done.code);
+        $('#name').text(done.name);
+        $('#model').text(done.model);
+        $('#asset_category_name').text(done.asset_category_name);
+        $('#acq_date').text(done.acq_date);
+        $('#supplier').text(done.supplier);
+        $('#price').text(Number(done.price).toLocaleString() + " 원");
+        $('#is_valid').attr('class', `badge ${done.is_valid === true ? 'bg-success' : 'bg-danger'} font-size-12 px-2 py-1`).text(done.is_valid === true ? '사용' : '미사용');
+        $('#info').text(done.info);
+        $('#desc1').text(done.desc1);
+        $('#desc2').text(done.desc2);
+        $('#desc3').text(done.desc3);
+        $('#updated_at').text(done.updated_at);
+        $('#updated_by_name').text(done.updated_by_name);
+        $('#asset_image').attr('src', done.image).on('error', function () {
+            $(this).attr('src', '{% static 'img/tost_icon_white_900.png' %}');
+        });
+    }
+
+    // a_click 직후 보여줄 데이터
+    else {
+        $('#code').text(a_click_code);
+        $('#name').text(a_click_name);
+        $('#model').text(a_click_model);
+        $('#asset_category_name').text(a_click_asset_category_name);
+        $('#acq_date').text(a_click_acq_date);
+        $('#supplier').text(a_click_supplier);
+        $('#price').text(Number(a_click_price).toLocaleString() + " 원");
+        $('#is_valid').attr('class', `badge ${a_click_is_valid === 'true' ? 'bg-success' : 'bg-danger'} font-size-12 px-2 py-1`).text(a_click_is_valid === 'true' ? '사용' : '미사용');
+        $('#info').text(a_click_info);
+        $('#desc1').text(a_click_desc1);
+        $('#desc2').text(a_click_desc2);
+        $('#desc3').text(a_click_desc3);
+        $('#updated_at').text(a_click_updated_at);
+        $('#updated_by_name').text(a_click_updated_by_name);
+        $('#asset_image').attr('src', a_click_asset_image).on('error', function () {
+            $(this).attr('src', '{% static 'img/tost_icon_white_900.png' %}');
+        });
+    }
+}
+
+
+// C_MODAL_AREA --------------------------------------------------------------------------------------------------------
+function c_search_ready() {
+    c_click_id = null;
+    c_nation.page = 1;
+    c_nation_data.page_size = 10;
+
+    c_search();
+}
+
+function c_search() {
+    let query = "?page=" + c_nation.page + "&page_size=" + c_nation_data.page_size;
+    query += "&asset_pk=" + a_click_id;
+
+    fetch_gp("/asset_history_list_fn/" + query, 'GET', true, {}, (done) => {
+        c_draw_table(done);
+    });
+}
+
+function c_draw_table(done) {
+    // console.log("c_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#c_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((c_nation.page - 1) * c_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let currentOwner = item.owner || {};
+        let profileImage = currentOwner.profile_image
+        ? `<img src="${currentOwner.profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">`
+        : "";
+
+        let ownerProfile = currentOwner.name
+            ? `${profileImage} ${currentOwner.name} ${currentOwner.job_level || ""}`
+            : "-";
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td>${num + i}</td>
+            <td name='date'>${item.date || ""}</td>
+            <td name='change_type_badge' class="align-middle py-1">
+                <span class="badge ${item.change_type === '지급' ? 'bg-success' : item.change_type === '반납' ? 'bg-danger' : 'bg-warning'} font-size-12 px-2 py-1">
+                    ${item.change_type || ""}
+                </span>
+            </td>
+            <td name='change_type' class='d-none'>${item.change_type || ""}</td>
+            <td name='desc1'>${item.desc1 || ""}</td>
+            <td name='desc2' class='d-none'>${item.desc2 || ""}</td>
+            <td name='desc3' class='d-none'>${item.desc3 || ""}</td>
+            <td name='owner_id' class='d-none'>${item.owner.id || ""}</td>
+            <td name='owner_profile' class="py-1">${ownerProfile}</td>
+
+            <td name='created_at' class='d-none'>${item.created_at}</td>
+            <td name='updated_at' class='d-none'>${item.updated_at}</td>
+            <td name='created_by_id' class='d-none'>${item.created_by.id}</td>
+            <td name='created_by_name' class='d-none'>${item.created_by.name}</td>
+            <td name='updated_by_id' class='d-none'>${item.updated_by.id}</td>
+            <td name='updated_by_name' class='d-none'>${item.updated_by.name}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    c_nation.nation_display(done);
+    $('#c_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (c_click_id != null) {
+        $("#c_tbody #" + c_click_id).addClass('clicked');
+    }
+
+    $('#c_tbody > tr').on('click', function () {
+        $('#c_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        c_click_id = $(this).attr("id");
+        c_click_date = $(this).find("[name='date']").text();
+        c_click_change_type = $(this).find("[name='change_type']").text();
+        c_click_desc1 = $(this).find("[name='desc1']").text();
+        c_click_desc2 = $(this).find("[name='desc2']").text();
+        c_click_desc3 = $(this).find("[name='desc3']").text();
+        c_click_owner_id = $(this).find("[name='owner_id']").text();
+        c_click_created_at = $(this).find("[name='created_at']").text();
+        c_click_created_by_name = $(this).find("[name='created_by_name']").text();
+        c_click_updated_at = $(this).find("[name='updated_at']").text();
+        c_click_updated_by_name = $(this).find("[name='updated_by_name']").text();
+    });
+
+    $('#c_tbody > tr').on('dblclick', function () {
+        c_update_modal_in();
+    });
+}
+
+function c_create_modal_in() {
+    if (a_click_id == null) {
+        alert("설비 목록에서 등록하려는 설비를 선택하세요.");
+        return;
+    }
+
+    c_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create_c').trigger('click');
+    }
+
+    $('#c_create_modal').modal("show");
+}
+
+function c_create_modal_reset(popup_off) {
+    $("#c_create_modal #date").val(date_today_str);
+    $("#c_create_modal #change_type").val('지급');
+    $("#c_create_modal #desc1").val('');
+    $("#c_create_modal #desc2").val('');
+    $("#c_create_modal #desc3").val('');
+    init_Select2_modal('#c_create_modal #owner', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`});
+
+    if ($('#c_create_modal #change_type').val() === '반납') {
+        $('#c_create_modal #owner').prop('disabled', true);
+    } else {
+        $('#c_create_modal #owner').prop('disabled', false);
+    }
+
+    modal_toast(popup_off, '#c_create_modal');
+}
+
+function c_create_submit() {
+    let date = $('#c_create_modal #date').val();
+    let changeType = $("#c_create_modal #change_type").val();
+    let owner = $("#c_create_modal #owner").val();
+
+    if (!date) {
+        alert("[발생 일자] 항목을 입력하세요.");
+        return;
+    }
+
+    if (changeType === "지급" && (!owner || owner.trim() === "")) {
+        alert("[발생 종류] 항목이 '지급'일 경우 [관리자]를 반드시 선택해야 합니다.");
+        $("#owner").focus();
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("asset_pk", a_click_id);
+        api_data.append("date", nullapply($('#c_create_modal #date').val()));
+        api_data.append("change_type", nullapply($('#c_create_modal #change_type').val()));
+        api_data.append("desc1", nullapply($('#c_create_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#c_create_modal #desc2').val()));
+        api_data.append("desc3", nullapply($('#c_create_modal #desc3').val()));
+        api_data.append("owner", nullapply($('#c_create_modal #owner').val()));
+
+    fetch_gp('/asset_history_create_fn/', 'post', true, api_data, (done) => {
+        $('#c_create_modal').modal("hide");
+        c_search_ready();
+        a_search();
+        alert(txt.create_ed);
+    });
+}
+
+function c_update_modal_in() {
+    if (c_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    c_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update_c').trigger('click');
+    }
+
+    $('#c_update_modal').modal("show");
+}
+
+function c_update_modal_reset(popup_off) {
+    $("#c_update_modal #date").val(c_click_date);
+    $("#c_update_modal #change_type").val(c_click_change_type);
+    $("#c_update_modal #desc1").val(c_click_desc1);
+    $("#c_update_modal #desc2").val(c_click_desc2);
+    $("#c_update_modal #desc3").val(c_click_desc3);
+    $("#c_update_modal #created_at").val(c_click_created_at);
+    $("#c_update_modal #created_by_name").val(c_click_created_by_name);
+    $("#c_update_modal #updated_at").val(c_click_updated_at);
+    $("#c_update_modal #updated_by_name").val(c_click_updated_by_name);
+    init_Select2_modal('#c_update_modal #owner', '선택', '/sel2_user/?me=true', {id: 'id', txt: item => `${item.text}`}, c_click_owner_id);
+
+    if ($('#c_update_modal #change_type').val() === '반납') {
+        $('#c_update_modal #owner').prop('disabled', true);
+    } else {
+        $('#c_update_modal #owner').prop('disabled', false);
+    }
+
+    modal_toast(popup_off, '#c_update_modal');
+}
+
+function c_update_submit() {
+    let date = $('#c_update_modal #date').val();
+    let changeType = $("#c_update_modal #change_type").val();
+    let owner = $("#c_update_modal #owner").val();
+
+    if (!date) {
+        alert("[발생 일자] 항목을 입력하세요.");
+        return;
+    }
+
+    if (changeType === "지급" && (!owner || owner.trim() === "")) {
+        alert("[발생 종류] 항목이 '지급'일 경우 [관리자]를 반드시 선택해야 합니다.");
+        $("#owner").focus();
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("pk", c_click_id);
+        api_data.append("date", nullapply($('#c_update_modal #date').val()));
+        api_data.append("change_type", nullapply($('#c_update_modal #change_type').val()));
+        api_data.append("desc1", nullapply($('#c_update_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#c_update_modal #desc2').val()));
+        api_data.append("desc3", nullapply($('#c_update_modal #desc3').val()));
+        api_data.append("owner", nullapply($('#c_update_modal #owner').val()));
+
+    fetch_gp('/asset_history_update_fn/', 'post', true, api_data, (done) => {
+        $('#c_update_modal').modal("hide");
+        c_search();
+        a_search();
+        alert(txt.update_ed);
+    });
+}
+
+function c_delete_submit() {
+    if (c_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt("설비 이력을 삭제하시겠습니까?\n" +
+        txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", c_click_id);
+
+        fetch_gp('/asset_history_delete_fn/', 'post', true, api_data, (done) => {
+            c_nation.page = 1;
+            c_click_id = null;
+
+            c_search_ready();
+            a_search();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function load_asset_image(modalId) {
+    if (modalId === 'a_create_modal') {
+        $(`#${modalId} #asset_image_preview`).attr('src', '{% static 'img/tost_icon_white_900.png' %}').show();
+    } else {
+        $(`#${modalId} #asset_image_preview`).attr('src', a_click_asset_image || '{% static "img/tost_icon_white_900.png" %}').show();
+        $(`#${modalId} #asset_image`).val('');
+    }
+
+    $(`#${modalId} #asset_image`).on('change', function (event) {
+        let file = event.target.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                $(`#${modalId} #asset_image_preview`).attr('src', e.target.result).show();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+function image_clear_btn(modalId) {
+    let defaultImage = '{% static "img/tost_icon_white_900.png" %}';
+    $(`#${modalId} #asset_image_preview`).attr('src', defaultImage).show();
+    $(`#${modalId} #asset_image`).val('');
+    image_clear_flag = true;  // 이미지 제거 플래그 활성화
+}
+
+$(document).ready(function () {
+    $('#a_create_modal #auto_id_code').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#a_create_modal #code').prop('disabled', true).attr('placeholder', '자동 생성').val('');
+        } else {
+            $('#a_create_modal #code').prop('disabled', false).attr('placeholder', '등록번호 입력');
+        }
+    });
+
+    $('#a_update_modal #auto_id_code').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#a_update_modal #code').prop('disabled', true).attr('placeholder', '자동 생성').val('');
+        } else {
+            $('#a_update_modal #code').prop('disabled', false).val(a_click_code);
+        }
+    });
+
+    $('#c_create_modal #change_type').on('change', function () {
+        if ($(this).val() === '반납') {
+            $('#c_create_modal #owner').val(null).trigger('change')
+            $('#c_create_modal #owner').prop('disabled', true);
+        } else {
+            $('#c_create_modal #owner').prop('disabled', false);
+        }
+    });
+
+    $('#c_update_modal #change_type').on('change', function () {
+        if ($(this).val() === '반납') {
+            $('#c_update_modal #owner').val(null).trigger('change')
+            $('#c_update_modal #owner').prop('disabled', true);
+        } else {
+            $('#c_update_modal #owner').prop('disabled', false);
+        }
+    });
+});
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+    { modalId: 'c_create_modal', iconId: 'md_fullscreen_create_c' },
+    { modalId: 'c_update_modal', iconId: 'md_fullscreen_update_c' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

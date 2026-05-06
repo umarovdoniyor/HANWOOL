@@ -1,0 +1,458 @@
+<!-- 거래처/현장관리 > 정규파견관리(제조직/물류직) > 급여정산 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+/* 테이블 입력 필드 최적화 */
+.table input.form-control {
+    height: 26px;                  /* 세로 높이 살짝 키움 */
+    padding: 0 4px !important;     /* 좌우 여백 축소, 세로 패딩 제거 */
+    border: none !important;       /* 기본 border 제거 */
+    border-radius: 0 !important;   /* 둥근 모서리 제거 */
+    box-shadow: none !important;   /* 포커스 그림자 제거 */
+    background-color: transparent; /* 배경 투명하게 */
+    font-size: 12px;               /* 글자 크기 통일 */
+    text-align: right;             /* 숫자 정렬 */
+}
+
+/* focus 시에도 border 유지하지 않도록 */
+.table input.form-control:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background-color: #f8f9fa !important; /* 살짝 배경 강조 (선택감) */
+}
+
+/* td 패딩 축소로 행 높이 최적화 */
+.table td {
+    padding: 4px 6px !important;
+    vertical-align: middle;
+}
+
+/* 테이블 헤더도 약간 높이 조정 */
+.table thead th {
+    padding: 6px 6px !important;
+    font-size: 12px;
+    background-color: #f9f9f9;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-users me-2"></i>정규파견관리 <i class="fa-solid fa-angle-right px-1"></i> 급여정산
+                    <i class="fa-solid fa-angle-right px-1"></i> [{{ work_order.subsidiary.name }}] {{ work_order.date }} {{ work_order.customer.name }}
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <div class="d-flex align-items-center me-1">
+                                    <input type="number" class="form-control rounded border-secondary me-1" id="year" style="width: 90px" onchange="a_search_ready()">
+                                    <span class="me-1" style="font-size: 16px;">년</span>
+                                    <input type="number" class="form-control rounded border-secondary me-1" id="month" min="1" max="12" style="width: 70px" onchange="a_search_ready()">
+                                    <span class="me-1" style="font-size: 16px;">월</span>
+                                </div>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1" data-toggle="tooltip" data-placement="top" title="이름 텍스트 검색">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="save_salary()">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">급여정산 저장</span>
+                                </button>
+                                <button class="btn btn-secondary text-nowrap ms-1 px-2.5" onclick="window.close()">
+                                    <i class="fa-solid fa-xmark"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">창닫기</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap text-center">
+                                            <th>순번</th>
+                                            <th>근무자</th>
+                                            <th>직접비</th>
+                                            <th>기타 직접비1</th>
+                                            <th style="border-right: 1px solid #dee2e6;">기타 직접비2</th>
+                                            <th>최종 지급액</th>
+                                            <th>관리비%</th>
+                                            <th>관리비</th>
+                                            <th>국민연금%</th>
+                                            <th>국민연금</th>
+                                            <th>건강보험%</th>
+                                            <th>건강보험</th>
+                                            <th>고용보험%</th>
+                                            <th>고용보험</th>
+                                            <th>산재보험%</th>
+                                            <th>산재보험</th>
+                                            <th>장기요양%</th>
+                                            <th>장기요양</th>
+                                            <th>퇴직적립금%</th>
+                                            <th style="border-right: 1px solid #dee2e6;">퇴직적립금</th>
+                                            <th>기타 간접비1</th>
+                                            <th>기타 간접비2</th>
+                                            <th>최종 청구액</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let work_order_id = {% if work_order %} {{ work_order.id }} {% else %} null {% endif %};
+let customer_id = {% if customer_id %} {{ customer_id }} {% else %} null {% endif %};
+const DEFAULT_DATE_STR = new Date().toISOString().slice(0, 10);
+const today = DEFAULT_DATE_STR ? new Date(DEFAULT_DATE_STR) : new Date();
+
+let all_sch;
+let sch_year;
+let sch_month;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    $('#year').val(today.getFullYear());
+    $('#month').val(today.getMonth() + 1);
+
+    a_search_ready();
+}
+
+function a_search_ready() {
+    all_sch = $('#all_sch').val();
+    sch_year = $('#year').val();
+    sch_month = $('#month').val();
+
+    let work_start_date = "{{worker.start_date|date:"Y-m"}}".split("-");
+    let work_end_date = "{{worker.end_date|date:"Y-m"}}".split("-");
+    /*
+    if ((work_start_date[0] < sch_year || work_start_date[0] == sch_year && parseInt(work_start_date[1], 10) <= sch_month)
+        && (work_end_date[0] > sch_year || work_end_date[0] == sch_year && parseInt(work_end_date[1], 10) >= sch_month)) {
+        a_search();
+    } else {
+        alert("{{worker.start_date|date:"Y년 m월"}} ~ {{worker.end_date|date:"Y년 m월"}} 까지 입력가능 합니다.");
+        
+        $('#year').val(today.getFullYear());
+        $('#month').val(today.getMonth() + 1);
+    }
+    */
+    a_search();
+}
+
+function a_search() {
+    let query = "?sch_year=" + sch_year;
+    query += "&sch_month=" + sch_month;
+    if (work_order_id) { query += "&work_order=" + work_order_id; }
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+
+    fetch_gp("/general_worker_salary_read_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+
+function a_draw_table(done) {
+     console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="background-color: white; text-align: center;"><br>등록된 근무인원이 없습니다.<br>[정규파견관리]에서 근무인원을 편성해주세요.<br>&nbsp;</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = 1;
+    let rows = "";
+
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        const insMap = {};
+        if (item.insurance_data) {
+            item.insurance_data.forEach(ins => insMap[ins.k] = ins);
+        }
+        if (!insMap['retire']) {
+            insMap['retire'] = item.default_insurance.find(x => x.k === "retire");
+        }
+
+        const base = (item.sum_price || 0) + (item.extra_price || 0) + (item.extra_price2 || 0);
+
+        const rateVal = (key) => insMap[key] ? (insMap[key].rate * 100).toFixed(3) : '0.000';
+        const calcAmount = (key) => Math.round(base * (insMap[key]?.rate || 0));
+
+        // 건강보험 금액 먼저 계산
+        const health_amount = calcAmount('health');
+        const ltc_rate = insMap['ltc'] ? insMap['ltc'].rate : 0; // 0.1295(12.95%)
+        const ltc_amount = Math.round(health_amount * ltc_rate);
+
+        rows += `
+        <tr id="row_${item.worker_id}" class="align-middle text-nowrap">
+            <td>${num + i}</td>
+            <td>${item.user ? item.user.name : ''}</td>
+
+            <!-- 직접비 항목 -->
+            <td><input type="text" class="form-control form-control-sm bg-light text-end sum_price" value="${formatNumber(item.sum_price || 0)}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td><input type="text" class="form-control form-control-sm bg-light text-end extra_price" value="${formatNumber(item.extra_price || 0)}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td style="border-right: 1px solid #dee2e6;"><input type="text" class="form-control form-control-sm bg-light text-end extra_price2" value="${formatNumber(item.extra_price2 || 0)}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td style="border-right: 1px solid #dee2e6;"><input type="text" class="form-control form-control-sm bg-light text-end result_price" readonly value="${formatNumber(item.sum_price + item.extra_price + item.extra_price2 || 0)}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+
+            <!-- 관리비 -->
+            <td><input type="text" class="form-control form-control-sm bg-light text-end rate" data-key="mgmt" value="${rateVal('mgmt')}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 3)"></td>
+            <td><input type="text" class="form-control form-control-sm text-end amount" data-key="mgmt" value="${formatNumber(calcAmount('mgmt'))}" readonly></td>
+
+            <!-- 국민연금 -->
+            <td><input type="text" class="form-control form-control-sm bg-light text-end rate" data-key="pension" value="${rateVal('pension')}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 3)"></td>
+            <td><input type="text" class="form-control form-control-sm text-end amount" data-key="pension" value="${formatNumber(calcAmount('pension'))}" readonly></td>
+
+            <!-- 건강보험 -->
+            <td><input type="text" class="form-control form-control-sm bg-light text-end rate" data-key="health" value="${rateVal('health')}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 3)"></td>
+            <td><input type="text" class="form-control form-control-sm text-end amount" data-key="health" value="${formatNumber(health_amount)}" readonly></td>
+
+            <!-- 고용보험 -->
+            <td><input type="text" class="form-control form-control-sm bg-light text-end rate" data-key="emp" value="${rateVal('emp')}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 3)"></td>
+            <td><input type="text" class="form-control form-control-sm text-end amount" data-key="emp" value="${formatNumber(calcAmount('emp'))}" readonly></td>
+
+            <!-- 산재보험 -->
+            <td><input type="text" class="form-control form-control-sm bg-light text-end rate" data-key="acc" value="${rateVal('acc')}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 3)"></td>
+            <td><input type="text" class="form-control form-control-sm text-end amount" data-key="acc" value="${formatNumber(calcAmount('acc'))}" readonly></td>
+
+            <!-- 장기요양 (건강보험 × 장기요양률) -->
+            <td><input type="text" class="form-control form-control-sm bg-light text-end rate" data-key="ltc" value="${(ltc_rate * 100).toFixed(3)}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 3)"></td>
+            <td><input type="text" class="form-control form-control-sm text-end amount" data-key="ltc" value="${formatNumber(ltc_amount)}" readonly></td>
+
+            <!-- 퇴직적립금 -->
+            <td><input type="text" class="form-control form-control-sm bg-light text-end rate" data-key="retire" value="${rateVal('retire')}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 3)"></td>
+            <td style="border-right: 1px solid #dee2e6;"><input type="text" class="form-control form-control-sm text-end amount" data-key="retire" value="${formatNumber(calcAmount('retire'))}" readonly></td>
+
+            <!-- 기타 간접비 및 최종 청구액 -->
+            <td><input type="text" class="form-control form-control-sm bg-light text-end extra_indirect_price" value="${formatNumber(item.extra_indirect_price || 0)}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td><input type="text" class="form-control form-control-sm bg-light text-end extra_indirect_price2" value="${formatNumber(item.extra_indirect_price2 || 0)}"
+                       oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td><input type="text" class="form-control form-control-sm text-end final_price" value="${formatNumber(item.final_price || 0)}"
+                       onkeyup="checkNumber(this, 2)" readonly></td>
+        </tr>`;
+    }
+
+    $('#a_tbody').html(rows);
+}
+
+function calc_row(obj) {
+    const tr = $(obj).closest('tr');
+
+    const sum_price = Number(del_comma(tr.find('.sum_price').val())) || 0;
+    const extra_price = Number(del_comma(tr.find('.extra_price').val())) || 0;
+    const extra_price2 = Number(del_comma(tr.find('.extra_price2').val())) || 0;
+    const base = sum_price + extra_price + extra_price2;
+    tr.find('.result_price').val(formatNumber(base));
+    let total_insurance = 0;
+    let health_amount = 0;
+
+    tr.find('.rate').each(function () {
+        const key = $(this).data('key');
+        const rate = Number($(this).val()) / 100;
+
+        let amount = 0;
+        if (key != 'ltc') { // 장기요양은 뒤에서 별도 계산
+            amount = Math.round(base * rate);
+            if (key === 'health') health_amount = amount;
+
+            tr.find(`.amount[data-key='${key}']`).val(formatNumber(amount));
+            total_insurance += amount;
+        }
+    });
+
+    // 장기요양보험은 건강보험금액 × 장기요양률
+    const ltc_rate = Number(tr.find(".rate[data-key='ltc']").val()) / 100;
+    const ltc_amount = Math.round(health_amount * ltc_rate);
+    tr.find(".amount[data-key='ltc']").val(formatNumber(ltc_amount));
+    total_insurance += ltc_amount;
+
+    // 간접비 항목
+    const extra_indirect_price = Number(del_comma(tr.find('input').eq(-3).val())) || 0;
+    const extra_indirect_price2 = Number(del_comma(tr.find('input').eq(-2).val())) || 0;
+
+    // 최종 청구액
+    const final_price = Math.round(base + total_insurance + extra_indirect_price + extra_indirect_price2);
+    tr.find('.final_price').val(formatNumber(final_price));
+}
+
+
+function save_salary() {
+    let salaryData = [];
+
+    $("#a_tbody tr").each(function () {
+        const tr = $(this);
+        const worker_id = tr.attr("id").replace("row_", "");
+
+        const sum_price = Number(del_comma(tr.find(".sum_price").val())) || 0;
+        const extra_price = Number(del_comma(tr.find(".extra_price").val())) || 0;
+        const extra_price2 = Number(del_comma(tr.find(".extra_price2").val())) || 0;
+        const extra_indirect_price = Number(del_comma(tr.find("input").eq(-3).val())) || 0;
+        const extra_indirect_price2 = Number(del_comma(tr.find("input").eq(-2).val())) || 0;
+        const final_price = Number(del_comma(tr.find(".final_price").val())) || 0;
+
+        // 보험 데이터 수집 (name 포함)
+        const insurance_data = [];
+        const insuranceNames = {
+            mgmt: "관리비",
+            pension: "국민연금",
+            health: "건강보험",
+            emp: "고용보험",
+            acc: "산재보험",
+            ltc: "장기요양",
+            retire: "퇴직적립금"
+        };
+
+        tr.find(".rate").each(function () {
+            const key = $(this).data("key");
+            const rate = Number($(this).val()) / 100;
+            const amount = Number(del_comma(tr.find(`.amount[data-key='${key}']`).val())) || 0;
+            insurance_data.push({
+                k: key,
+                name: insuranceNames[key] || "",
+                rate: rate,
+                amount: amount
+            });
+        });
+
+        salaryData.push({
+            worker_id: worker_id,
+            work_order_id: work_order_id,
+            sum_price: sum_price,
+            extra_price: extra_price,
+            extra_price2: extra_price2,
+            insurance_data: insurance_data,
+            mgmt_price: insurance_data.find(x => x.k === "mgmt")?.amount || 0,
+            extra_indirect_price: extra_indirect_price,
+            extra_indirect_price2: extra_indirect_price2,
+            final_price: final_price,
+            year: sch_year,
+            month: sch_month
+        });
+    });
+
+    if (!salaryData.length) {
+        alert("저장할 데이터가 없습니다.");
+        return;
+    }
+
+    let api_data = new FormData();
+    api_data.append("salary_data", JSON.stringify(salaryData));
+
+    fetch_gp("/general_worker_salary_update_fn/", "POST", true, api_data, (done) => {
+        alert("급여정산이 저장되었습니다.");
+        a_search();
+    });
+}
+
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+</script>

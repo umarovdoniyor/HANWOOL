@@ -1,0 +1,833 @@
+<!-- 설정관리 > 코드관리 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-sliders me-2"></i>코드관리
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 사용자의 필요에 따라 코드를 등록하고 수정, 삭제할 수 있는 페이지 입니다.<br>• 중복된 코드 이름은 사용할 수 없으며, 일부 기본코드는 편집이 제한됩니다.<br>• 코드 그룹을 먼저 필터링하면 관리가 더 편리합니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+                                
+                                <select class="page_size form-select form-select-sm me-1" style="width: 130px !important;" id="group_filter"
+                                     onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="코드 그룹으로 필터링">
+                                    <option value="">코드 그룹 필터</option>
+                                    <option value="team">팀</option>
+                                    <option value="job_title">직책</option>
+                                    <option value="job_level">직급</option>
+                                    <option value="bank">은행</option>
+                                    <option value="cost_account">비용 계정과목</option>
+                                    <option value="card_account">카드 계정과목</option>
+                                    <option value="customer_class">거래처 대분류</option>
+                                    <option value="recruit_site">공고 사이트</option>
+                                    <option value="daily_wage">일급 종류</option>
+                                    <option value="daily_worktime">근무 시간</option>
+                                    {% comment %}<option value="board_category">게시판 카테고리</option>
+                                    <option value="event_category">이벤트 카테고리</option>
+                                    <option value="project_category">프로젝트 카테고리</option>
+                                    <option value="asset_category">자산 종류</option>
+                                    <option value="ip_address">IP 주소</option>{% endcomment %}
+                                </select>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                </button>
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 건별 게시물 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th>순번</th>
+                                            <th>코드 그룹</th>
+                                            <th>코드 이름</th>
+                                            <th>코드 설명</th>
+                                            <th>최근 수정자</th>
+                                            <th>최근 수정일</th>
+                                            {% if request.user.is_superuser %}
+                                            <th>사용 업체</th>
+                                            {% endif %}
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">코드 관리 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="group" class="form-label fw-bold">코드 그룹</label>
+                        <select class="form-select div_required" id="group" onchange="change_desc('#a_create_modal')">
+                            <option value="">코드 그룹 선택</option>
+                            <option value="team">팀</option>
+                            <option value="job_title">직책</option>
+                            <option value="job_level">직급</option>
+                            <option value="bank">은행</option>
+                            <option value="cost_account">비용 계정과목</option>
+                            <option value="card_account">카드 계정과목</option>
+                            <option value="customer_class">거래처 대분류</option>
+                            <option value="recruit_site">공고 사이트</option>
+                            <option value="daily_wage">일급 종류</option>
+                            <option value="daily_worktime">근무 시간</option>
+                            {% comment %}<option value="board_category">게시판 카테고리</option>
+                            <option value="event_category">이벤트 카테고리</option>
+                            <option value="project_category">프로젝트 카테고리</option>
+                            <option value="asset_category">자산 종류</option>
+                            <option value="ip_address">IP 주소</option>{% endcomment %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row d-none">
+                    <div class="col-12 mb-3">
+                        <label for="prj_cat" class="form-label fw-bold">프로젝트 분류</label>
+                        <select class="form-select div_required" id="prj_cat">
+                            <option value="cat1">대분류</option>
+                            <option value="cat2">중분류</option>
+                            <option value="cat3">소분류</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="name" class="form-label fw-bold" id="name_text">코드 이름</label>
+                        <input type="text" class="form-control div_required" id="name">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="desc1" class="form-label" id="desc1_text">코드 설명</label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+                </div>
+
+                <div class="row d-none">
+                    <div class="col-12 mb-3">
+                        <label for="price" class="form-label" id="price_text">일급 단가</label>
+                        <input type="text" class="form-control" id="price" onkeyup="checkNumber(this, 2)">
+                    </div>
+                </div>
+                
+                {% comment %}<div class="row d-none">
+                    <div class="col-12 mb-3">
+                        <label for="desc3" class="form-label">표시 색상</label>
+                        <div class="d-flex">
+                            <input type="text" class="form-control w-50 me-1" id="desc3_code" placeholder="#556ee6">
+                            <input type="color" class="form-control form-control-color w-50" id="desc3" value="#556ee6"
+                            title="캘린더에서 표시될 색상을 선택하세요">
+                        </div>
+                    </div>
+                </div>{% endcomment %}
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_close()">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">코드 관리 <i class="fa-solid fa-angle-right px-1"></i> 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="group" class="form-label fw-bold">코드 그룹</label>
+                        <select class="form-select div_required" id="group" onchange="change_desc('#a_update_modal')">
+                            <option value="">코드 그룹 선택</option>
+                            <option value="team">팀</option>
+                            <option value="job_title">직책</option>
+                            <option value="job_level">직급</option>
+                            <option value="bank">은행</option>
+                            <option value="cost_account">비용 계정과목</option>
+                            <option value="card_account">카드 계정과목</option>
+                            <option value="customer_class">거래처 대분류</option>
+                            <option value="recruit_site">공고 사이트</option>
+                            <option value="daily_wage">일급 종류</option>
+                            <option value="daily_worktime">근무 시간</option>
+                            {% comment %}<option value="board_category">게시판 카테고리</option>
+                            <option value="event_category">이벤트 카테고리</option>
+                            <option value="project_category">프로젝트 카테고리</option>
+                            <option value="asset_category">자산 종류</option>
+                            <option value="ip_address">IP 주소</option>{% endcomment %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row d-none">
+                    <div class="col-12 mb-3">
+                        <label for="prj_cat" class="form-label fw-bold">프로젝트 분류</label>
+                        <select class="form-select div_required" id="prj_cat">
+                            <option value="cat1">대분류</option>
+                            <option value="cat2">중분류</option>
+                            <option value="cat3">소분류</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="name" class="form-label fw-bold" id="name_text">코드 이름</label>
+                        <input type="text" class="form-control div_required" id="name">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="desc1" class="form-label" id="desc1_text">코드 설명</label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+                </div>
+
+                <div class="row d-none">
+                    <div class="col-12 mb-3">
+                        <label for="price" class="form-label" id="price_text">일급 단가</label>
+                        <input type="text" class="form-control" id="price" onkeyup="checkNumber(this, 2)">
+                    </div>
+                </div>
+                
+                {% comment %}<div class="row d-none">
+                    <div class="col-12 mb-3">
+                        <label for="desc3" class="form-label">표시 색상</label>
+                        <div class="d-flex">
+                            <input type="text" class="form-control w-50 me-1" id="desc3_code" placeholder="#556ee6">
+                            <input type="color" class="form-control form-control-color w-50" id="desc3" value="#556ee6"
+                            title="캘린더에서 표시될 색상을 선택하세요">
+                        </div>
+                    </div>
+                </div>{% endcomment %}
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_group_label;
+let a_click_group_value;
+let a_click_name;
+let a_click_desc1;
+let a_click_desc2;
+let a_click_desc3;
+let a_click_prj_cat;
+let a_click_price;
+
+let all_sch;
+let group_filter;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('admin_code_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('admin_code_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    a_search_ready();
+}
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+
+    a_nation_data.page_size = $("#a_page_size").val();
+    all_sch = $('#all_sch').val();
+    group_filter = $('#group_filter').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&all_sch=" + all_sch;
+    query += "&group_filter=" + group_filter;
+
+    fetch_gp("/admin_code_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td>${num + i}</td>
+            <td name='group_label'>${item.group_label}</td>
+            <td name='group_value' class='d-none'>${item.group_value}</td>
+            <td name='name'>${item.name || ""}</td>
+            <td name='desc1' class="text-truncate" style="max-width: 200px;">${item.desc1 || ""}</td>
+            <td name='desc2' class="d-none text-truncate" style="max-width: 200px;">${item.desc2 || ""}</td>
+            <td name='desc3' class="d-none text-truncate" style="max-width: 200px;">${item.desc3 || ""}</td>
+            <td name='prj_cat' class="d-none text-truncate" style="max-width: 200px;">${item.prj_cat || ""}</td>
+            <td name='price' class='d-none'>${formatNumber(item.price, 2) || ""}</td>
+
+            <td name='updated_by_name'>${item.updated_by_name || ""}</td>
+            <td name='updated_at'>${item.updated_at || ""}</td>
+            {% if request.user.is_superuser %}
+            <td name='company_name'>${item.company_name || ""}</td>
+            {% endif %}
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_group_label = $(this).find("[name='group_label']").text();
+        a_click_group_value = $(this).find("[name='group_value']").text();
+        a_click_name = $(this).find("[name='name']").text();
+        a_click_desc1 = $(this).find("[name='desc1']").text();
+        a_click_desc2 = $(this).find("[name='desc2']").text();
+        a_click_desc3 = $(this).find("[name='desc3']").text();
+        a_click_prj_cat = $(this).find("[name='prj_cat']").text();
+        a_click_price = $(this).find("[name='price']").text();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_update_modal_in();
+    });
+}
+
+function a_create_modal_in() {
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $("#a_create_modal #group").val(group_filter);
+    change_desc('#a_create_modal');
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    $("#a_create_modal #group").val('');
+    $("#a_create_modal #name").val('');
+    $("#a_create_modal #desc1").val('');
+    $("#a_create_modal #desc3").val('#556ee6');
+    $("#a_create_modal #desc3_code").val('#556ee6');
+    $("#a_create_modal #prj_cat").val('cat1');
+    $("#a_create_modal #price").val('');
+    
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_submit() {
+    if (is_empty($('#a_create_modal #group').val()) === true) {
+        alert("[코드 그룹] 항목을 입력하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_create_modal #name').val()) === true) {
+        alert("[코드 이름] 항목을 입력하세요.");
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("group", nullapply($('#a_create_modal #group').val()));
+        api_data.append("name", nullapply($('#a_create_modal #name').val()));
+        api_data.append("desc1", nullapply($('#a_create_modal #desc1').val()));
+        api_data.append("desc3", nullapply($('#a_create_modal #desc3').val()));
+        api_data.append("prj_cat", nullapply($('#a_create_modal #prj_cat').val()));
+        api_data.append("price", nullapply(del_comma($('#a_create_modal #price').val())));
+
+    fetch_gp('/admin_code_create_fn/', 'post', true, api_data, (done) => {
+        if (window.opener) { window.close(); }  // 코드생성팝업은 창닫기 처리
+        else {
+            a_search_ready();
+            $('#a_create_modal').modal("hide");
+        }
+        alert(txt.create_ed);
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    a_update_modal_reset('popup_off');
+    change_desc('#a_update_modal');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    $("#a_update_modal #group").val(a_click_group_value);
+    $("#a_update_modal #name").val(a_click_name);
+    $("#a_update_modal #desc1").val(a_click_desc1);
+    $("#a_update_modal #desc3").val(a_click_desc3);
+    $("#a_update_modal #desc3_code").val(a_click_desc3);
+    $("#a_update_modal #prj_cat").val(a_click_prj_cat);
+    $("#a_update_modal #price").val(a_click_price);
+
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    if (is_empty($('#a_update_modal #group').val()) === true) {
+        alert("[코드 그룹] 항목을 입력하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_update_modal #name').val()) === true) {
+        alert("[코드 이름] 항목을 입력하세요.");
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("group", nullapply($('#a_update_modal #group').val()));
+        api_data.append("name", nullapply($('#a_update_modal #name').val()));
+        api_data.append("desc1", nullapply($('#a_update_modal #desc1').val()));
+        api_data.append("desc3", nullapply($('#a_update_modal #desc3').val()));
+        api_data.append("prj_cat", nullapply($('#a_update_modal #prj_cat').val()));
+        api_data.append("price", nullapply(del_comma($('#a_update_modal #price').val())));
+
+    fetch_gp('/admin_code_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search_ready();
+        alert(txt.update_ed);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt(txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/admin_code_delete_fn/', 'post', true, api_data, (done) => {
+            a_nation.page = 1;
+            a_click_id = null;
+
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function change_desc(modal_type) {
+    let group = $(`${modal_type} #group`).val();
+    let colorRow = $(`${modal_type} #desc3`).closest('.row');
+    let prj_cat_row = $(`${modal_type} #prj_cat`).closest('.row');
+    let price_row = $(`${modal_type} #price`).closest('.row');
+
+    if (group === 'event_category') {
+        $(`${modal_type} #name_text`).text('일정 종류');
+        $(`${modal_type} #name`).attr('placeholder', '예시) 회의, 세미나, 회식 등');
+        $(`${modal_type} #desc1_text`).text('코드 설명');
+        $(`${modal_type} #desc1`).removeAttr('placeholder');
+        colorRow.removeClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.addClass('d-none');
+    }
+    
+    else if (group === 'board_category') {
+        $(`${modal_type} #name_text`).text('공지사항 종류');
+        $(`${modal_type} #name`).attr('placeholder', '예시) 인사공지, 총무공지, 행사공지 등');
+        $(`${modal_type} #desc1_text`).text('코드 설명');
+        $(`${modal_type} #desc1`).removeAttr('placeholder');
+        colorRow.addClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.addClass('d-none');
+    }
+
+    else if (group === 'asset_category') {
+        $(`${modal_type} #name_text`).text('자산 종류');
+        $(`${modal_type} #name`).attr('placeholder', '예시) 생산장비, 연구장비, 사무장비 등');
+        $(`${modal_type} #desc1_text`).text('코드 설명');
+        $(`${modal_type} #desc1`).removeAttr('placeholder');
+        colorRow.addClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.addClass('d-none');
+    }
+
+    else if (group === 'project_category') {
+        $(`${modal_type} #name_text`).text('분류명');
+        $(`${modal_type} #name`).attr('placeholder', '대분류, 중분류, 소분류에 맞게 등록하세요.');
+        $(`${modal_type} #desc1_text`).text('코드 설명');
+        $(`${modal_type} #desc1`).removeAttr('placeholder');
+        colorRow.addClass('d-none');
+        prj_cat_row.removeClass('d-none');
+        price_row.addClass('d-none');
+    }
+        
+    else if (group === 'team') {
+        $(`${modal_type} #name_text`).text('부서 이름');
+        $(`${modal_type} #name`).attr('placeholder', '예시) 영업팀, 개발팀, 생산팀 등');
+        $(`${modal_type} #desc1_text`).text('코드 설명');
+        $(`${modal_type} #desc1`).removeAttr('placeholder');
+        colorRow.addClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.addClass('d-none');
+    }
+    
+    else if (group === 'job_level') {
+        $(`${modal_type} #name_text`).text('직급 이름');
+        $(`${modal_type} #name`).attr('placeholder', '예시) 사원, 대리, 과장, 차장, 부장 등');
+        $(`${modal_type} #desc1_text`).text('코드 설명');
+        $(`${modal_type} #desc1`).removeAttr('placeholder');
+        colorRow.addClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.addClass('d-none');
+    }
+    
+    else if (group === 'job_title') {
+        $(`${modal_type} #name_text`).text('직책 이름');
+        $(`${modal_type} #name`).attr('placeholder', '예시) 팀장, 본부장, Manager, Design Engineer 등');
+        $(`${modal_type} #desc1_text`).text('코드 설명');
+        $(`${modal_type} #desc1`).removeAttr('placeholder');
+        colorRow.addClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.addClass('d-none');
+    }
+    
+    else if (group === 'ip_address') {
+        $(`${modal_type} #name_text`).text('위치(장소) 이름');
+        $(`${modal_type} #name`).attr('placeholder', '예시) 본사, 공장, 창고 등');
+        $(`${modal_type} #desc1_text`).text('IP 주소');
+        $(`${modal_type} #desc1`).attr('placeholder', '예시) 192.168.0.2');
+        colorRow.addClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.addClass('d-none');
+    }
+
+    else if (group === 'daily_wage') {
+        $(`${modal_type} #name_text`).text('일급 명칭');
+        $(`${modal_type} #name`).attr('placeholder', '예시) 109,000원 혹은 일반, 주간 등');
+        $(`${modal_type} #desc1_text`).text('일급 설명');
+        $(`${modal_type} #desc1`).attr('placeholder', '예시) 기본급 80,240원 + 주휴수당 16,048원 + 고정연장근로수당 12,712원');
+        colorRow.addClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.removeClass('d-none');
+    }
+
+    else if (group === 'daily_worktime') {
+        $(`${modal_type} #name_text`).text('일용직 근무 시간');
+        $(`${modal_type} #name`).attr('placeholder', '예시) 09:00~18:00 (8시간)');
+        $(`${modal_type} #desc1_text`).text('추가 설명');
+        $(`${modal_type} #desc1`).attr('placeholder', '예시) 현장 물량에 따라 연장근로가 발생할 수 있음');
+        colorRow.addClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.addClass('d-none');
+    }
+    
+    else {
+        $(`${modal_type} #name_text`).text('코드 이름*');
+        $(`${modal_type} #name`).removeAttr('placeholder');
+        $(`${modal_type} #desc1_text`).text('코드 설명');
+        $(`${modal_type} #desc1`).removeAttr('placeholder');
+        colorRow.addClass('d-none');
+        prj_cat_row.addClass('d-none');
+        price_row.addClass('d-none');
+    }
+}
+
+$(document).ready(function () {
+    ['#a_create_modal', '#a_update_modal'].forEach(function(modalId) {
+        // desc3 → desc3_code 연동
+        $(`${modalId} #desc3`).on('input', function () {
+            const val = $(this).val();
+            $(`${modalId} #desc3_code`).val(val);
+        });
+
+        // desc3_code → desc3 연동
+        $(`${modalId} #desc3_code`).on('input', function () {
+            const val = $(this).val();
+            if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(val)) {
+                $(`${modalId} #desc3`).val(val);
+            }
+        });
+    });
+});
+
+
+function a_create_modal_close() {
+    if (window.opener) { window.close(); }  // 코드생성팝업은 팝업창닫기 처리
+    else { $('#a_create_modal').modal("hide"); } // 일반적으로는 모달닫기 처리
+}
+
+
+// 외부에서 코드생성 팝업띄울때 옵션
+window.onload = function () {
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' || event.keyCode === 27) {
+            window.close();
+        }
+        if (event.key === 'Enter' || event.keyCode === 13) {
+            if ($('#a_create_modal').is(':visible')) {
+                a_create_submit();
+            } else if ($('#a_update_modal').is(':visible')) {
+                a_update_submit();
+            }
+        }
+    });
+    
+    let urlParams = new URLSearchParams(window.location.search);
+    let group_filter = urlParams.get('group_filter');
+    let create = urlParams.get('create');
+    if (create === 'true') {
+        $("html, body").css("overflow-y", "hidden");
+        $('#a_create_modal .modal-dialog').addClass('fullscreen');
+        a_create_modal_in();
+        setTimeout(() => {
+            if (!$('#a_create_modal .modal-dialog').hasClass('fullscreen')) {
+                $('#md_fullscreen_create').trigger('click');
+            }
+            $('#group_filter').val(group_filter).change();
+            a_search_ready();
+            $('#a_create_modal #group').val(group_filter);
+            change_desc('#a_create_modal');
+            $('#a_create_modal #name').attr('placeholder', '코드 입력 후 엔터키로 등록').focus();
+        }, 600);  // 모달 열리는 시간 고려
+    }
+};
+
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

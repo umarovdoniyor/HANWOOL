@@ -1,0 +1,483 @@
+<!-- 손익관리 > 관리법인별 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.sub_title {
+    color: rgba(42,48,64,0.4);
+    font-size: 20px;
+    cursor: pointer;
+    font-weight: 1000;
+    transition: color 0.2s;
+}
+.sub_title:hover {
+    color: #2a3040;
+}
+
+/* 테이블 헤더 색상 */
+.table thead th {
+    background-color: #f1f3f5;  /* 연한 회색 */
+    border: 1px solid #dee2e6;
+    text-align: center;
+    vertical-align: middle;
+    padding: 6px;
+    font-size: 12px;
+}
+
+/* tbody 셀 스타일 */
+.table tbody td {
+    border: 1px solid #dee2e6;
+    vertical-align: middle;
+    padding: 6px;
+    font-size: 12px;
+}
+
+/* 법인별 그룹 구분선 */
+.table thead .subsidiary-group {
+    border-right: 1px solid #2a3041; /* 굵은 구분선 */
+}
+.table tbody .subsidiary-group {
+    border-right: 1px solid #2a3041; /* 굵은 구분선 */
+}
+
+/* 합계 행 마우스오버 차단 */
+#tr_total_price_amount td {
+    pointer-events: none;  /* 셀에 hover 효과 차단 */
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-12">
+                <div class="d-flex justify-content-between">
+                    <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                        <i class="fa-solid fa-chart-line me-2"></i>손익관리 <i class="fa-solid fa-angle-right px-1"></i> 관리법인별
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3 sub_title gap-3">
+                        <div onclick="window.location.href='{% url 'kpi_customer_page' %}'">거래처별</div>
+                        <div class="ms-5" onclick="window.location.href='{% url 'kpi_center_page' %}'">센터별</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_year_filter" onchange="a_search_ready()">
+                                    {% for year in year_range %}
+                                        <option value="{{ year }}" {% if year == default_year %}selected{% endif %}>{{ year }}년</option>
+                                    {% endfor %}
+                                </select>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+                            
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="exportToExcel()">
+                                    <i class="fa-solid fa-file-excel"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">엑셀 다운로드</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-12">
+                            <!-- 그래프 영역 -->
+                            <div class="card border border-light">
+                                <div class="card-body">
+                                    <div class="" id="a_graph" style="height: 330px; max-height: 330px; margin-left: -10px;"></div>
+                                </div>
+                            </div>
+                            <!-- 테이블 영역 -->
+                            <div class="custom_table table-responsive text-nowrap">
+                                <div id="data-list" class="row"></div>
+                                <div class="div_center mt-3" id="a_nation_id"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let a_year_filter;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    let baseUrl = window.location.origin + window.location.pathname;
+    window.location.href = baseUrl;
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+
+    a_search_ready();
+}
+
+function select_this_year() {
+    let selectElement = document.getElementById("a_year_filter");
+    let currentYear = new Date().getFullYear();
+
+    for (let i = 0; i < selectElement.options.length; i++) {
+        if (selectElement.options[i].value == currentYear) {
+            selectElement.selectedIndex = i;
+            break;
+        }
+    }
+}
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+    a_year_filter = $("#a_year_filter").val();
+
+    a_search();
+}
+
+// 선택대상 유지 : 주로 update 후 호출
+function a_search() {
+    let query = "?";
+    if (a_year_filter) { query += "&a_year_filter=" + a_year_filter; }
+
+    fetch_gp("/kpi_subsidiary_summary_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_graph(done);
+        a_draw_table(done);
+    });
+}
+
+
+function a_draw_table(done) {
+    if (!done || done.rows.length === 0) {
+        $('#data-list').html(`
+            <tr class="empty-row">
+                <td colspan="99" style="text-align: center;">월별 통계 데이터가 없습니다.</td>
+            </tr>
+        `);
+        return;
+    }
+    let rowsHtml = [];
+    let monthly_total = calc_monthli_total(done);
+    
+    for (let i = 0; i < monthly_total.length; i++) {
+        let margin = Math.round(monthly_total[i].sales == 0 ? 0 : monthly_total[i].netprofit / monthly_total[i].sales * 100);
+        rowsHtml.push(getTableRow(i + 1, monthly_total[i].sales, monthly_total[i].profit, monthly_total[i].cost, monthly_total[i].netprofit, margin));
+    }
+
+    let html = `
+        <div class="col-12 col-lg-6 col-xl-4 col-xxl-3">
+            <table class="table">
+                ${getTableHeader("전체 법인")}
+                <tbody>
+                ${rowsHtml.join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+    for (let i = 0; i < done.rows.length; i++) {
+        let item = done.rows[i];
+        
+        rowsHtml = [];
+        for (let j = 0; j < item.monthly_summary.length; j++) {
+            let sub = item.monthly_summary[j];
+            let sales = sub.sum_total;
+            let profit = sub.sum_total - sub.sum_pre_result_price;
+            let cost = sub.sum_pension + sub.sum_health + sub.sum_emp + sub.sum_acc + sub.sum_recruit;
+            let netProfit = profit - cost;
+            let margin = Math.round(sales == 0 ? 0 : netProfit / sales * 100);
+            rowsHtml.push(getTableRow(sub.created_at_month, sales, profit, cost, netProfit, margin));
+        }
+
+        html += `
+            <div class="col-12 col-lg-6 col-xl-4 col-xxl-3">
+                <table class="table">
+                    ${getTableHeader(item.name)}
+                    <tbody>
+                    ${rowsHtml.join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    $('#data-list').html(html);
+}
+
+function calc_monthli_total(done) {
+    let monthly_total = [];
+    for (let i = 0; i < 12; i++) {
+        monthly_total.push({
+            sales: 0,
+            profit: 0,
+            cost: 0,
+            netprofit: 0
+        })
+    }
+    for (let i = 0; i < done.rows.length; i++) {
+        let item = done.rows[i];
+        for (let j = 0; j < item.monthly_summary.length; j++) {
+            let sub = item.monthly_summary[j];
+            monthly_total[j].sales += sub.sum_total;
+            monthly_total[j].profit += (sub.sum_total - sub.sum_pre_result_price);
+            monthly_total[j].cost += (sub.sum_pension + sub.sum_health + sub.sum_emp + sub.sum_acc + sub.sum_recruit);
+            monthly_total[j].netprofit += (monthly_total[j].profit - monthly_total[j].cost);
+        }
+    }
+    return monthly_total;
+}
+
+function getTableHeader(name) {
+    return `
+        <thead class="thead-light">
+            <tr>
+                <th rowspan="2" class="text-nowrap subsidiary-group">월</th>
+                <th colspan="5" class="text-center subsidiary-group">${name}</th>
+            </tr>
+            <tr class="text-nowrap">
+                <th>매출</th>
+                <th>영업이익</th>
+                <th>비용</th>
+                <th>순이익</th>
+                <th class="subsidiary-group">이익률%</th>
+            </tr>
+        </thead>
+    `;
+}
+
+function getTableRow(month, sales, profit, cost, netProfit, margin) {
+    return `
+        <tr>
+            <td class="text-center subsidiary-group">${month}월</td>
+            <td class="text-dark text-end">${formatNumber(sales)}</td>
+            <td class="text-primary text-end">${formatNumber(profit)}</td>
+            <td class="text-danger text-end">${formatNumber(cost)}</td>
+            <td class="text-success fw-bold text-end">${formatNumber(netProfit)}</td>
+            <td class="text-success text-end subsidiary-group">${margin}%</td>
+        </tr>
+    `;
+}
+
+function a_draw_graph(done) {
+    const container = document.querySelector("#a_graph");
+    if (!container) return;
+
+    if (!done || done.rows.length === 0) {
+        container.innerHTML = `
+            <div class='d-flex justify-content-center align-items-center text-muted' style='height:100%; min-height:200px;'>
+                등록된 데이터가 없습니다.
+            </div>`;
+        return;
+    }
+
+    let monthly_total = calc_monthli_total(done);
+
+    const categories = monthly_total.map((item, index) => {
+        return `${index + 1}월`;
+    });
+
+    const profitData = monthly_total.map(item => item.netprofit || 0);
+    const marginData = monthly_total.map(item => parseFloat(Math.round(item.sales == 0 ? 0 : item.netProfit / item.sales * 100) || 0));
+
+    container.innerHTML = `<div id="a_graph_chart"></div>`;
+    const chartEl = document.querySelector("#a_graph_chart");
+
+    if (window.approval_cost_chart instanceof ApexCharts) {
+        window.approval_cost_chart.destroy();
+    }
+
+    // y축 범위 동적 계산
+    const minMargin = Math.min(...marginData);
+    const maxMargin = Math.max(...marginData);
+
+    const chartOptions = {
+        series: [
+            { name: '순이익', type: 'column', data: profitData },
+            { name: '이익률%', type: 'line', data: marginData }
+        ],
+        chart: {
+            height: 330,
+            type: 'line',
+            stacked: false,
+            toolbar: { show: false }
+        },
+        stroke: {
+            width: [0, 2],
+            curve: "smooth"
+        },
+        dataLabels: { enabled: false },
+        xaxis: { categories },
+        yaxis: [
+            {
+                title: { text: "순이익 (원)" },
+                labels: {
+                    formatter: val => {
+                        if (val >= 1e8) return `${add_comma((val / 1e8).toFixed(1))} 억`;
+                        if (val >= 1e4) return `${add_comma((val / 1e4).toFixed(1))} 만`;
+                        return add_comma(val.toFixed(0));
+                    }
+                }
+            },
+            {
+                opposite: true,
+                title: { text: "이익률 (%)" },
+                labels: { formatter: val => `${val.toFixed(1)}%` },
+                min: Math.floor(minMargin / 10) * 10,  // 최소값을 실제 데이터 기준으로
+                max: Math.ceil(maxMargin / 10) * 10    // 최대값도 실제 데이터 기준으로
+            }
+        ],
+        tooltip: {
+            shared: true,
+            intersect: false,
+            y: {
+                formatter: (val, { seriesIndex }) => {
+                    if (seriesIndex === 1) {
+                        return `${parseFloat(val).toFixed(1)}%`;
+                    } else {
+                        if (val >= 1e8) return `${add_comma((val / 1e8).toFixed(1))} 억 원`;
+                        if (val >= 1e4) return `${add_comma((val / 1e4).toFixed(1))} 만 원`;
+                        return add_comma(val.toFixed(0)) + " 원";
+                    }
+                }
+            }
+        },
+        legend: { position: "top" }
+    };
+
+    window.approval_cost_chart = new ApexCharts(chartEl, chartOptions);
+    window.approval_cost_chart.render();
+}
+
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function add_comma(val) {
+    const num = Number(val);
+    return isNaN(num) ? val : num.toLocaleString();
+}
+
+function exportToExcel() {
+    const tbody = document.querySelector('#a_tbody');
+    if (!tbody) return;
+
+    let wb = XLSX.utils.book_new();
+    let ws_data = [];
+
+    // -------------------------------
+    // 헤더 2줄 (법인 그룹, 항목들)
+    // -------------------------------
+    const table = document.querySelector('.table');
+    const thead = table.querySelector('thead');
+    const headRows = thead.querySelectorAll('tr');
+
+    headRows.forEach(tr => {
+        let rowData = [];
+        tr.querySelectorAll('th').forEach(th => {
+            // 병합(colspan, rowspan) 반영
+            const colspan = th.getAttribute("colspan");
+            const rowspan = th.getAttribute("rowspan");
+            let text = th.innerText.trim();
+
+            if (colspan && colspan > 1) {
+                rowData.push(text);
+                for (let i = 1; i < colspan; i++) {
+                    rowData.push(""); // 병합된 칸은 빈 문자열
+                }
+            } else {
+                rowData.push(text);
+            }
+        });
+        ws_data.push(rowData);
+    });
+
+    // -------------------------------
+    // 본문 데이터
+    // -------------------------------
+    tbody.querySelectorAll('tr').forEach(tr => {
+        let rowData = [];
+        tr.querySelectorAll('td').forEach(td => {
+            rowData.push(td.innerText.trim());
+        });
+        if (rowData.length > 0) ws_data.push(rowData);
+    });
+
+    // -------------------------------
+    // 시트 생성 & 다운로드
+    // -------------------------------
+    let ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+    // 스타일 병합 (colspan/rowspan 지원)
+    // thead 병합 처리
+    let merge = [];
+    let colIndex = 0;
+    headRows.forEach((tr, rIdx) => {
+        colIndex = 0;
+        tr.querySelectorAll('th').forEach(th => {
+            const colspan = parseInt(th.getAttribute("colspan") || "1");
+            const rowspan = parseInt(th.getAttribute("rowspan") || "1");
+
+            if (colspan > 1 || rowspan > 1) {
+                merge.push({
+                    s: { r: rIdx, c: colIndex },
+                    e: { r: rIdx + rowspan - 1, c: colIndex + colspan - 1 }
+                });
+            }
+            colIndex += colspan;
+        });
+    });
+    ws['!merges'] = merge;
+
+    XLSX.utils.book_append_sheet(wb, ws, "손익관리_관리법인별");
+    XLSX.writeFile(wb, "손익관리_관리법인별.xlsx");
+}
+
+</script>

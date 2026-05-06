@@ -1,0 +1,398 @@
+<!-- 급여명세서 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Password Check Area -->
+<div id="pw_check_area" class="row p-5">
+    <div class="border border-light rounded p-5">
+        <img src="{% static 'img/logo_hanwool_color.png' %}" width="150">
+        <h5 class="my-3">안전한 급여정보 관리를 위해<br>사용자 계정의 로그인 비밀번호를 입력해주세요.</h5>
+        <input type="password" id="salaryPassword" class="form-control mb-3" placeholder="비밀번호 입력" style="width: 200px;">
+        <button type="button" class="btn btn-primary me-1" onclick="submit_salary_password()">확인</button>
+        <button type="button" class="btn btn-secondary" onclick="if (window.opener) { window.close(); }">닫기</button>
+    </div>
+</div>
+
+
+<!-- Content Area -->
+<div class="row py-3 px-4 d-none" id="print_area">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="window.location.href = '{% url 'my_salary_page' %}'">
+                        <i class="fa-solid fa-wallet me-2"></i>급여명세서
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-primary text-nowrap ms-1 px-2.5" onclick="save_pdf()">
+                            <i class="fa-solid fa-print me-2"></i>PDF 저장
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 좌측 메뉴 -->
+            <div class="col-md-3 col-xl-2">
+                <div class="card border border-light">
+                    <div class="card-body">
+                        <label for="salary_list" class="form-label">급여명세서 선택</label>
+                        <select class="form-control" id="salary_list" onchange="a_update_page_in(this.value)"></select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 우측 본문 -->
+            <div class="col-md-9 col-xl-10">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+
+                        <!-- 전자결재 본문 -->
+                        <div class="d-flex text-left p-2">
+                            <div class="flex-grow-1">
+                                <p class="text-success text-uppercase mb-2">&nbsp;</p>
+                                <h4 class="text-dark fw-semibold mb-2">[{{ request.user.company.company_info.first.company_name }}] 급여명세서</h4>
+                                <span class="text-muted mb-4">&nbsp;</span>
+                            </div>
+
+                            <div class="col-3 col-xxl-2 d-flex justify-content-end justify-content-md-center align-items-center">
+                                <div class="d-flex justify-content-start align-items-center flex-md-row flex-column">
+                                    <div class="flex-shrink-0 mb-1">
+                                         <img src="{{ request.user.profile_image.url }}" alt="{{ request.user }}" class="avatar-sm p-1" style="border-radius: 8px;">
+                                    </div>
+                                    <div class="d-inline text-start ms-1" style="font-size: 11px;">
+                                        <h6 class="fw-bold text-nowrap" style="margin-bottom: 2px;">{{ request.user.name }} {{ request.user.job_level.name|default_if_none:"" }}</h6>
+                                        <span class="text-nowrap">{{ request.user.team.name|default_if_none:"" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-2 px-3" id="default_area">
+                            <div class="row mb-3 px-2">
+                                <div class="d-flex justify-content-center align-items-center my-5 py-5">
+                                    '급여명세서 선택' 목록에서 조회할 급여명세서를 선택하세요.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-2 px-3 d-none" id="detail_area">
+                            <div class="p-3 border border-light rounded">
+                                <div class="row mb-2 px-2">
+                                    <div class="d-flex justify-content-between align-items-center bg-info text-white rounded p-2 mb-3">
+                                        <h5 class="fw-bold m-0">지급 내역</h5>
+                                        <h5 class="fw-bold m-0" id="total_salary"></h5>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="base_salary" class="form-label text-muted mb-0">월 기본급</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="base_salary" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="extend_salary" class="form-label text-muted mb-0">연장근로수당</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="extend_salary" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="night_salary" class="form-label text-muted mb-0">야간근로수당</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="night_salary" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="holiday_salary" class="form-label text-muted mb-0">휴일근로수당</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="holiday_salary" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="meal_salary" class="<dform-label text-muted mb-0">식대</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="meal_salary" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="drive_salary" class="<dform-label text-muted mb-0">자가운전수당</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="drive_salary" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="bonus" class="<dform-label text-muted mb-0">상여금</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="bonus" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="incentive" class="<dform-label text-muted mb-0">성과급</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="incentive" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_p1v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_p1t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_p1v" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_p2v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_p2t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_p2v" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_p3v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_p3t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_p3v" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_p4v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_p4t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_p4v" disabled>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-2 px-2">
+                                    <div class="d-flex justify-content-between align-items-center bg-danger text-white rounded p-2 mb-3">
+                                        <h5 class="fw-bold m-0">공제 내역</h5>
+                                        <h5 class="fw-bold m-0" id="total_deduction"></h5>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="pension" class="<dform-label text-muted mb-0">국민연금</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="pension" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="health" class="<dform-label text-muted mb-0">건강보험</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="health" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="care" class="<dform-label text-muted mb-0">장기요양보험</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="care" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="unemployment" class="<dform-label text-muted mb-0">고용보험</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="unemployment" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="income_tax" class="<dform-label text-muted mb-0">소득세</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="income_tax" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="local_tax" class="<dform-label text-muted mb-0">지방소득세</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="local_tax" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_m1v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_m1t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_m1v" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_m2v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_m2t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_m2v" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_m3v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_m3t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_m3v" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_m4v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_m4t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_m4v" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_m5v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_m5t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_m5v" disabled>
+                                    </div>
+
+                                    <div class="col-4 col-md-3 mb-2">
+                                        <label for="etc_m6v" class="<dform-label text-muted mb-0">{{ request.user.company.company_info.first.etc_m6t }}</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="etc_m6v" disabled>
+                                    </div>
+                                </div>
+
+                                <div class="row px-2">
+                                    <div class="d-flex justify-content-between align-items-center bg-success text-white rounded p-2 mb-3">
+                                        <h5 class="fw-bold m-0">실 지급액</h5>
+                                        <h5 class="fw-bold m-0" id="real_salary"></h5>
+                                    </div>
+                                    
+                                    <div class="col-12 mb-3">
+                                        <label for="desc1" class="<dform-label text-muted mb-0">안내사항1</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="desc1" disabled>
+                                    </div>
+                                    
+                                    <div class="col-12 mb-3">
+                                        <label for="desc2" class="<dform-label text-muted mb-0">안내사항2</label>
+                                        <input type="text" class="form-control bg-white fw-bold p-0" style="border: none;" id="desc2" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script type="text/javascript" src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+let a_click_user_name;
+let a_click_year;
+let a_click_month;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+}
+
+function submit_salary_password() {
+    const password = $('#salaryPassword').val();
+    if (!password) return;
+
+    fetch('/my_salary_check_fn/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken(),
+        },
+        body: JSON.stringify({ password: password }),
+    })
+    .then(response => {
+        if (response.status === 200) {
+            $('#pw_check_area').addClass('d-none');
+            $('#print_area').removeClass('d-none');
+
+            init_Select2('#salary_list', '선택', '/sel2_my_salary/', {id: 'id', txt: item => `${item.text}`});
+        } else {
+            alert('비밀번호가 일치하지 않습니다.');
+        }
+    })
+    .catch(() => {
+        alert('서버 요청 오류가 발생했습니다.');
+    });
+}
+
+function a_update_page_in(data) {
+    let user = '{{ request.user.id }}';
+    let query = "?user=" + user + "&data=" + data;
+    fetch_gp("/my_salary_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+        $('#default_area').addClass('d-none');
+        $('#detail_area').removeClass('d-none');
+    });
+}
+
+function a_draw_table(done) {
+    let data = done.results[0];
+    // console.log("a_draw_table_data: ", data);
+    a_click_user_name = data.user.name;
+    a_click_year = data.salary_year;
+    a_click_month = data.salary_month;
+
+    let created_at = data.created_at;  // 예: "2025-04-29 00:15"
+    let date = new Date(created_at.replace(/-/g, '/'));  // Safari 대응용
+    let year = date.getFullYear();
+    let month = date.getMonth() + 1;
+    let day = date.getDate();
+    let hour = date.getHours();
+    let minute = date.getMinutes();
+
+    $('.text-uppercase').text(`${data.salary_year}년 ${data.salary_month}월`);
+    $('.text-muted.mb-4').html(
+        `<i class="fa-regular fa-calendar-days me-1"></i>${year}년 ${month}월 ${day}일 ${hour}시 ${minute}분`
+    );
+    $('#desc1').val(data.salary_desc1);
+    $('#desc2').val(data.salary_desc2);
+    $('#real_salary').text(add_comma(data.real_salary));
+
+    $('#total_salary').text(add_comma(data.total_salary));
+    $('#base_salary').val(add_comma(data.base_salary));
+    $('#extend_salary').val(add_comma(data.extend_salary));
+    $('#night_salary').val(add_comma(data.night_salary));
+    $('#holiday_salary').val(add_comma(data.holiday_salary));
+    $('#meal_salary').val(add_comma(data.meal_salary));
+    $('#drive_salary').val(add_comma(data.drive_salary));
+    $('#bonus').val(add_comma(data.bonus));
+    $('#incentive').val(add_comma(data.incentive));
+    $('#etc_p1v').val(add_comma(data.etc_p1v));
+    $('#etc_p2v').val(add_comma(data.etc_p2v));
+    $('#etc_p3v').val(add_comma(data.etc_p3v));
+    $('#etc_p4v').val(add_comma(data.etc_p4v));
+    $('#etc_p5v').val(add_comma(data.etc_p5v));
+
+    $('#total_deduction').text(add_comma(data.total_deduction));
+    $('#pension').val(add_comma(data.pension));
+    $('#health').val(add_comma(data.health));
+    $('#care').val(add_comma(data.care));
+    $('#unemployment').val(add_comma(data.unemployment));
+    $('#income_tax').val(add_comma(data.income_tax));
+    $('#local_tax').val(add_comma(data.local_tax));
+    $('#etc_m1v').val(add_comma(data.etc_m1v));
+    $('#etc_m2v').val(add_comma(data.etc_m2v));
+    $('#etc_m3v').val(add_comma(data.etc_m3v));
+    $('#etc_m4v').val(add_comma(data.etc_m4v));
+    $('#etc_m5v').val(add_comma(data.etc_m5v));
+    $('#etc_m6v').val(add_comma(data.etc_m6v));
+}
+
+function add_comma(val) {
+    const num = Number(val);
+    return isNaN(num) ? val : num.toLocaleString();
+}
+
+function save_pdf() {
+    const element = document.getElementById('print_area');
+    window.scrollTo(0, 0); // 스크롤이 PDF생성화면에 영향을 주기 때문에 반드시 최상단으로 이동
+
+    // 0.6 & 3은 약 250~300kb 용량으로 pdf 저장됨
+    const options = {
+        filename: get_pdf_name(),
+        image: { type: 'jpeg', quality: 0.6 }, // 이미지 품질 100%
+        html2canvas: {
+            scale: 3, // 캔버스의 해상도를 높임
+            useCORS: true, // CORS 문제 방지
+        },
+        jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait',
+        }
+    };
+
+    html2pdf().from(element).set(options).save();
+}
+
+function get_pdf_name() {
+    return a_click_year + "년 " + a_click_month + "월 " + "급여명세서_" + a_click_user_name + ".pdf";
+}
+
+</script>

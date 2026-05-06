@@ -1,0 +1,440 @@
+<!-- 회원가입 > 2차 페이지 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+    body {
+        background: url('{% static 'img/login_office.jpg' %}') no-repeat center center/cover;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    body::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        opacity: 0.1;
+        z-index: 0;
+    }
+
+    .loginbox {
+        background-color: rgba(245, 245, 245, 0.8);
+        border: 20px double #fff;
+        z-index: 1;
+    }
+
+</style>
+
+<div class="container-fluid">
+    <div class="box-margin row no-gutters justify-content-center align-items-start align-items-md-center flex-column">
+        <div class="loginbox card col-11 col-md-8 col-lg-6 col-xl-4 align-self-center my-4">
+
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center">
+                    <img class="mb-4 img-fluid" src="{% static '/img/tost_office_color_1200px.png' %}"
+                         onclick="refresh()" style="cursor: pointer; max-width: 200px;">
+                </div>
+
+                <div class="col-12">
+                    <div class="">
+                        <div>
+                            <div class="container mt-5">
+                                <form method="post" onsubmit="return validatePasswords()">
+                                    {% csrf_token %}
+                                    <div class="col-12 mb-3">
+                                        <label for="company_name" class="form-label text-dark fw-bold">회사 이름</label>
+                                        <input type="text" class="form-control" id="company_name" name="company_name" required>
+                                    </div>
+
+                                    <div class="col-12 mb-3">
+                                        <label for="user_id" class="form-label fw-bold">회사 관리자계정 접속 ID
+                                            <i class="fa-regular fa-circle-question fa-xs"
+                                               style="vertical-align: super;"
+                                               data-toggle="tooltip" data-placement="top"
+                                               title="접속시 로그인하는 사용자 ID입니다.<br>사용자 ID는 'gildong.hong'처럼 사용할 수 있지만<br>
+                                               다른 이용자와 중복이 될 경우를 생각하면<br>'gildong.hong@company.com'과 같은<br>회사 이메일 주소를 사용하는 것을 권장합니다."></i></label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="user_id" name="user_id" required>
+                                            <button type="button" class="btn btn-success" onclick="checkDuplicate()">중복 확인</button>
+                                        </div>
+                                        <div id="check-result" class="mt-1 small text-danger"></div>
+                                    </div>
+
+                                    <div class="col-12 mb-3">
+                                        <label for="password" class="form-label text-dark fw-bold">비밀번호</label>
+                                        <input type="password" class="form-control" id="password" name="password"
+                                               required>
+                                    </div>
+
+                                    <div class="col-12 mb-3">
+                                        <label for="password_confirm" class="form-label text-dark fw-bold">비밀번호 확인</label>
+                                        <input type="password" class="form-control" id="password_confirm"
+                                               name="password_confirm" required>
+                                    </div>
+
+                                    <!-- 회원가입 약관 -->
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label text-dark fw-bold">회원가입 약관</label>
+                                        <div class="border rounded p-2"
+                                             style="height: 150px; overflow-y: auto; background-color: #f8f9fa;">
+                                            <p><strong>제 1 장. 총 칙</strong></p>
+
+                                            <p><strong>제 1 조 (목적)</strong><br>
+                                                이 약관은 토스트 오피스가 제공하는 토스트 오피스 그룹웨어 서비스(이하 ‘서비스’라 합니다)에 대하여 회사와
+                                                사용고객간의 이용조건 및 절차에 관한 사항과 기타 필요한 사항을 규정함을 목적으로 합니다.</p>
+
+                                            <p><strong>제 2 조 (약관의 효력 및 변경)</strong><br>
+                                                1. 이 약관은 회사가 운영하는 홈페이지(www.tostoffice.com)에 게시하는 방법으로 공시합니다.<br>
+                                                2. 회사는 필요에 따라 약관을 변경할 수 있으며, 약관 변경 시 위 1항과 같은 방법으로 공시합니다.</p>
+
+                                            <p><strong>제 3 조 (용어의 정의)</strong><br>
+                                                이 약관에서 사용하는 용어의 정의는 다음과 같습니다.<br>
+                                                1. 사용고객: 회사와 서비스 이용에 대한 계약을 체결한 업체 관리자 및 사용자<br>
+                                                2. 아이디(ID): 그룹웨어 사용자 식별과 서비스 이용을 위하여 고객사의 사용자가 선정하고 고객사의 관리자가 승인하는 문자와
+                                                숫자의 조합<br>
+                                                3. 비밀번호: 사용고객이 자신의 아이디(ID)에 대한 배타적 이용을 위하여 선정하는 문자와 숫자의 조합</p>
+
+                                            <p><strong>제 4 조 (약관 외 준칙)</strong><br>
+                                                이 약관에 명시되지 아니한 사항에 대해서는 관계법령 및 이 약관의 취지에 따라 적용합니다.</p><br>
+
+
+                                            <p><strong>제 2 장. 서비스 이용 계약</strong></p>
+
+                                            <p><strong>제 5 조 (계약기간)</strong><br>
+                                                계약기간은 고객사와의 계약을 따르기로 하고, 계약 중일 때만 서비스를 합니다.</p><br>
+
+
+                                            <p><strong>제 3 장. 서비스의 제공, 이용 및 중지</strong></p>
+
+                                            <p><strong>제 6 조 (서비스의 내용)</strong><br>
+                                                회사가 사용고객에게 제공하는 서비스는 다음과 같이 하기로 합니다.<br>
+                                                1. 공지사항, 일정관리, 전자결재, 근태관리, 휴가관리, 조직관리, 설정관리 등<br>
+                                                2. 추가 서비스는 별도의 계약조건을 따르기로 합니다.</p>
+
+                                            <p><strong>제 7 조 (서비스의 운영)</strong><br>
+                                                1. 서비스는 회사의 업무상 또는 기술상 장애, 기타 특별한 사유가 없는한 연중무휴, 1일 24시간 제공을 원칙으로 합니다. 단,
+                                                설비의 점검 등 당사가 필요한 경우 또는 시스템 장애, 서비스 이용의 폭주 등 불가항력으로 인하여 서비스 이용에 지장이 있는
+                                                때에는
+                                                예외적으로 서비스 이용의 전부 또는 일부를 제한 할 수 있습니다.<br>
+                                                2. 천재지변 또는 기타 불가피한 상황으로 인하여 회사가 서비스를 제공할 수 없는 경우에 서비스 제공에 대한 책임이
+                                                면제됩니다.<br>
+                                                3. 회사는 사용고객의 귀책사유로 인한 서비스 이용 장애에 대해서는 책임을 지지 않습니다.</p>
+
+                                            <p><strong>제 8 조 (이용의 제한 및 정지)</strong><br>
+                                                1. 회사는 다음 각호의 1에 해당하는 사유가 발생한 경우에는 사용고객의 서비스 이용을 제한하거나 중지할 수 있습니다.<br>
+                                                (1) 사용고객이 서비스의 운영을 고의 또는 과실로 방해하는 경우<br>
+                                                (2) 서비스용 설비 점검, 보수 또는 공사로 인한 부득이한 경우(이 경우 당사는 사전고지를 한 후 서비스를 중지합니다.)<br>
+                                                (3) 전기통신사업법에 규정된 기간통신사업자가 전기통신 서비스를 중지했을 경우<br>
+                                                (4) 천재지변, 국가비상사태, 서비스 설비의 장애 또는 서비스 이용의 폭주 등으로 서비스 이용에 지장이 있는 때<br>
+                                                (5) 회원이 제10조에 정해진 회원의 의무를 위반한 경우<br>
+                                                (6) 기타 중대한 사유로 인하여 서비스 제공을 지속하는 것이 부적당하다고 판단되는 경우<br>
+                                                2. 서비스 해지 후 1달 이후에는 모든 데이터를 삭제 합니다.<br>
+                                                3. 회사는 이용 고객의 서비스 이용을 정지하는 경우 그 사유, 일시 및 기간을 이용 고객에게 이용정지 7일전까지 통지하여야
+                                                합니다. 단, 이용 고객 측의 사유로 통지할 수 없을 경우는 그러하지 않습니다.<br>
+                                                4. 회사는 이용정지의 사유가 해소된 때에는 지체없이 이용정지를 해제합니다.</p>
+
+                                            <p><strong>제 9 조 (회사의 의무)</strong><br>
+                                                1. 회사는 특별한 사정이 없는 한 이 약관에서 정한 바에 따라 계속적, 안정적으로 서비스를 제공할 의무가 있습니다.<br>
+                                                2. 회사는 사용고객이 안전하게 서비스를 이용할 수 있도록 사용고객의 개인정보 보호를 위해 보안시스템을 갖추어야 하며
+                                                개인정보취급방침을 공시하고 준수합니다.<br>
+                                                3. 회사 서비스를 통해 발생된 데이터를 외부에 유출할 수 없습니다.<br>
+                                                4. 회사는 이용계약의 체결, 계약사항의 변경 및 해지 등 사용고객과의 계약관련 절차 및 내용 등에 있어 사용고객에게 편의를
+                                                제공하도록 노력합니다.<br>
+                                                5. 회사는 개시 희망일에 서비스 개시가 불가능할 경우 희망일 이전에 그 사실을 전화 ,팩스,E-Mail,우편 등의 방법으로
+                                                사용고객에게 통보합니다. 단, 고객이 개시 희망일을 연장할 경우는 예외로 합니다.</p>
+
+                                            <p><strong>제 10 조 (사용고객의 의무)</strong><br>
+                                                1. 사용고객은 본 약관 및 관계법령에서 규정하는 사항과 서비스 이용안내 등을 통하여 공지되는 사항을 준수하여야 합니다.<br>
+                                                2. 사용고객이 다음 각 호에 해당하는 경우에는 게시물을 삭제하거나 서비스의 전부 또는 일부의 이용을 제한할 수 있습니다.<br>
+                                                (1) 다량의 정보를 전송하거나 수신자의 의사에 반하여 서비스의 안정적 운영을 저해한 경우<br>
+                                                (2) 서비스의 오동작이나 정보 등의 파괴를 유발시키는 컴퓨터 바이러스 프로그램등을 유포하는 경우<br>
+                                                (3) 정보통신윤리위원회의 시정요구가 있거나 불법선거운동과 관련하여 선거관리위원회의 유권해석을 받은 경우<br>
+                                                (4) 타인의 사용자 ID를 부정하게 사용하는 경우<br>
+                                                (5) 서비스를 이용하여 얻은 정보를 회사의 사전 승낙 없이 복제 또는 유통시키거나 상업적으로 이용하는 경우<br>
+                                                (6) 전기통신관련법령 등에 위배되는 경우<br>
+                                                3. 사용고객은 서비스 가입신청 시 실제 사용자 정보를 기재하여야 합니다. 만일, 실명이나 실제정보를 기재하지 않은 경우
+                                                사용고객은 법적인 보호를 받을 수 없으며, 서비스 사용에 제한을 받을 수 있습니다.<br>
+                                                4. 사용고객은 주소 및 연락처, 사업자등록번호 등 이용계약사항이 변경된 경우에는 이를 회사에 즉시 알려야 하며, 이를 소홀히
+                                                하여 발생된 불이익은 사용고객의 책임으로 합니다.</p>
+
+                                            <p><strong>제 11 조 (서비스 이용자료의 보관)</strong><br>
+                                                1. 회사는 사용고객의 정보를 용량 정책에 맞게 보관합니다.<br>
+                                                2. 이용 해지된 사용고객의 정보는 본 서비스를 이용하여 조회할 수 없으므로 사용고객은 계약해지 전에 사용고객의 자료를 PC 또는
+                                                기타 매체로 다운로드 받아 보관 하여야 합니다.<br>
+                                                3. 회사는 이용계약이 해지된 사용고객의 정보에 대해 보관의무를 가지지 않습니다.</p>
+
+                                            <p><strong>제 12 조 (고객정보 보호 및 활용)</strong><br>
+                                                1. 회사는 서비스 제공에 필요한 최소한의 정보를 수집합니다.<br>
+                                                2. 회사는 서비스 제공과 관련하여 취득한 사용고객의 정보를 본인의 사전 승낙없이 타인에게 누설 또는 배포할 수 없으며
+                                                서비스 관련 업무 이외의 목적으로 사용할 수 없습니다.<br>
+                                                3. 회사는 서비스를 이용하기 위하여 필요하다고 인정되는 다양한 정보를 그룹웨어 관리자에게 유무선 등 통신수단 등의 방법으로
+                                                사용고객에게 제공 할 수 있습니다.</p><br>
+
+
+                                            <p><strong>제 4 장. 계약의 해지 등</strong></p>
+
+                                            <p><strong>제 13 조 (양도 금지 및 지위승계)</strong><br>
+                                                1. 사용고객이 서비스를 받을 권리는 다음 제2항 사용고객의 지위승계에 해당하는 사유가 발생하는 경우를 제외하고는 이를 양도하거나
+                                                증여 등을 할 수 없으며, 또한 질권의 목적으로도 사용할 수 없습니다.<br>
+                                                2. 다음 각 호의 1에 해당하는 사유가 발생한 때에는 이용자의 지위를 승계합니다.<br>
+                                                (1) 사용고객이 다른 법인을 흡수 합병하여 존속하는 법인이 그 사용권을 인수한 때<br>
+                                                (2) 둘 이상의 법인이 하나의 법인으로 합병하여 새로운 법인이 그 사용권을 인수한 때<br>
+                                                (3) 하나의 법인이 2개 이상의 법인으로 분할하는 경우로써 그 분할된 법인들 가운데 1인이 그 사용권을 인수한 때<br>
+                                                (4) 그밖에 3호와 유사한 사유로써 회사가 필요하다고 인정한 때</p>
+
+                                            <p><strong>제 14 조 (사용고객의 이용계약 해지)</strong><br>
+                                                사용고객이 서비스 이용계약을 해지하고자 할 때에는 사용고객 본인이 직접 온라인,전화, 팩스,메일 등의 방법으로 회사에 해지신청을
+                                                하여야 하며, 사용고객이 서비스 이용계약 해지 시 회사는 사용고객의 자료를 1개월 경과 후 삭제합니다.</p>
+
+                                            <p><strong>제 15 조 (회사의 이용계약의 해지)</strong><br>
+                                                1. 회사는 다음과 같은 사유 발생시 이용계약 해지를 할 수 있습니다.<br>
+                                                (1) 시스템 운용에 심각한 장애를 초래하거나 서비스 운용을 고의로 방해한 경우<br>
+                                                (2) 타인의 회원ID 및 비밀번호를 도용하여 부당하게 서비스를 이용한 경우<br>
+                                                (3) 타인의 계좌번호 및 신용카드번호를 도용한 경우<br>
+                                                (4) 회사의 사전 동의 없이 서비스를 이용하여 얻은 정보를 영리적 목적으로 복제, 출판, 방송 등에 사용하거나 제3자에게 제공한
+                                                경우<br>
+                                                (5) 회사의 서비스를 이용하여 타인의 명예 등 권리를 침해한 경우<br>
+                                                (6) 사용고객이 파산, 화의신청, 부도처리, 회사정리절차개시 등의 사유로 채무의 이행이 곤란하다고 인정될 경우<br>
+                                                (7) 선량한 풍속 기타 사회질서에 반하는 행위를 한 경우<br>
+                                                (8) 정당한 사유 없이 이용실태 확인을 거부 또는 방해하여 위약사항을 은폐한 경우<br>
+                                                (9) 기타 관련 법령이나 당사가 정한 이용조건에 위배되는 경우<br>
+                                                2. 회사는 사용고객이 약관의 내용을 위반하고, 당사가 그 시정을 통지한 소정의 기간 이내에 이를 해소하지 아니하는 경우 서비스
+                                                이용계약을 해지할 수 있습니다.</p>
+
+                                            <p><strong>제 16 조 (게시물의 관리)</strong><br>
+                                                그룹웨어 관리자는 그룹웨어 사용자가 게시하거나 등록한 내용에 대한 관리를 하여야 합니다.</p><br>
+
+                                            <p><strong>제 5 장. 손해배상 등</strong></p>
+
+                                            <p><strong>제 17 조 (면책조항)</strong><br>
+                                                본 서비스는 아무런 보증 없이 “있는 그대로” 제공됩니다.<br>
+                                                서비스 이용 중 발생한 어떠한 손해에 대해서도 책임지지 않으며, 사용에 따른 책임은 사용자 본인에게 있습니다.</p>
+
+                                            <p><strong>제 18 조 (분쟁의 해결 및 관할법원)</strong><br>
+                                                1. 회사와 사용고객은 서비스와 관련하여 발생한 분쟁을 원만하게 해결하기 위하여 필요한 모든 노력을 하여야 합니다.<br>
+                                                2. 모든 노력에도 불구하고 소송이 제기될 경우, 소송은 회사 소재지를 관할하는 법원을 관할법원으로 합니다.<br><br>
+                                                (시행일) 이 약관은 2025년 4월 1일부터 시행합니다.</p>
+                                        </div>
+                                        <div class="form-check mt-1">
+                                            <input class="form-check-input" type="checkbox" id="terms" required>
+                                            <label class="form-check-label" for="terms">
+                                                회원가입 약관에 동의합니다.
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- 개인정보 이용 동의 -->
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label text-dark fw-bold">개인정보 수집 및 이용 동의</label>
+                                        <div class="border rounded p-2"
+                                             style="height: 150px; overflow-y: auto; background-color: #f8f9fa;">
+                                            <p><strong>토스트 오피스 개인정보 처리방침</strong></p>
+
+                                            <p><strong>1. 개인정보처리방침의 의의</strong><br>
+                                                토스트 오피스(이하 “회사”)는 이용자의 동의를 기반으로 개인정보를 수집 · 이용 및 제공하고 있습니다. 회사는 본 방침을
+                                                통해 이용자의 개인정보자기결정권을 보장합니다. 본 방침은 개인정보보호법을 기준으로 개인정보보호이원회의 작성지침을 준수하여
+                                                작성되었습니다. 본 방침은 회사가 제공하는 일련의 서비스에 적용됩니다.</p>
+
+                                            <p><strong>2. 수집하는 개인정보</strong><br>
+                                                회사는 회원가입 및 서비스 이용시에 홈페이지, 개별 애플리케이션, 프로그램 등을 통해 서비스 제공을 위해 필수적인 최소한의
+                                                정보만을 수집합니다.<br>
+                                                회사가 회원가입 시점에 이용자로부터 수집하는 개인정보는 아래와 같습니다.<br>
+                                                가. 회사명<br>
+                                                나. 이용자의 이메일 주소<br>
+                                                또한, 직접 회원가입하지 않더라도 관리자에 의해 이용자 계정이 생성되어 이를 사용하는 경우에도<br>
+                                                개인정보이용에 동의한 것으로 간주합니다.<br>
+                                                서비스 이용 과정에서 IP주소, 쿠키, 서비스 이용기록이 생성되어 수집될 수 있습니다.</p>
+
+                                            <p><strong>3. 개인정보의 이용</strong><br>
+                                                회사는 수집된 개인정보를 회원관리, 서비스 개발 · 제공 및 개선 등을 위해 아래와 같은 목적으로 개인정보를 이용합니다.<br>
+                                                - 회원가입 의사, 연령의 확인<br>
+                                                - 만 14세 미만 아동의 개인정보를 수집하는 경우 법정 대리인의 본인 여부 및 동의여부 확인<br>
+                                                - 새로운 서비스의 개발, 각종 서비스의 제공, 공지사항 알림, 민원 등 문의사항 처리<br>
+                                                - 서비스 이용기록 등에 따른 맞춤 서비스 제공 및 홍보, 신규기능개발<br>
+                                                - 보안, 프라이버시, 정보 보호 등 개인정보 보안 환경의 구축 및 향상</p>
+
+                                            <p><strong>4. 개인정보의 제공</strong><br>
+                                                회사는 원칙적으로 이용자의 개인정보를 제3자에게 제공하지 않습니다. 단, 개인정보의 처리 및 관리를 위한 경우, 이용자의 별도의
+                                                동의가 있는 경우, 법령에 규정된 경우 등에는 예외적으로 개인정보를 제공하고 있습니다.</p>
+
+                                            <p><strong>5. 개인정보의 제3자 위탁</strong><br>
+                                                회사는 개인정보의 처리 및 관리를 위해 특정한 회사에 위탁할 수 있습니다.</p>
+
+                                            <p><strong>6. 개인정보의 파기</strong><br>
+                                                회사는 원칙적으로 이용자가 탈퇴하는 경우 개인정보를 지체없이 파기합니다. 단, 이용자에게 별도의 동의를 받거나 법령 등에 의해
+                                                일정기간 개인정보를 보관해야 하는 경우 등에는 다음과 같이 일정한 기간동안 개인정보를 보관 후 파기합니다.<br>
+                                                - 부정한 가입 및 이용 방지<br>
+                                                - 법령 등에 의해 일정기간 개인정보를 보관해야 하는 경우<br>
+                                                - 계약 또는 청약철회 등에 관한 기록 (전자상거래 등에서의소비자 보호에 관한 법률) : 5년<br>
+                                                - 대금결제 및 재화 등의 공급에 관한 기록 (전자상거래 등에서의소비자 보호에 관한 법률) : 5년<br>
+                                                - 소비자의 불만 또는 분쟁처리에 관한 기록 (전자상거래 등에서의소비자 보호에 관한 법률) : 3년<br>
+                                                - 표시/광고에 관한 기록 (전자상거래 등에서의소비자 보호에 관한 법률) : 6개월<br>
+                                                - 세법이 규정하는 모든 거래에 관한 장부 및 증빙서류 (국세기본법) : 5년<br>
+
+                                                - 전자금융 거래에 관한 기록 (전자금융거래법) : 5년<br>
+                                                - 서비스 방문 기록 (통신비밀보호법) : 3개월<br>
+                                                - 공인전자주소를 통한 전자문서 유통에 관한 기록 (전자문서 및 전자거래 기본법) : 10년<br>
+
+                                                회사는 이용자가 탈퇴하거나, 서비스를 종료하거나, 이용자에게 동의받은 개인정보 보유 기간이 종료된 경우와 같이 개인정보의 수집 및
+                                                이용목적이 달성된 개인정보는 재생이 불가능한 방법으로 파기하고 있습니다. 법령 등에서 보존의무를 부과한 경우에도 해당 기간이
+                                                경과하면 지체없이 재생이 불가능한 방법으로 파기합니다.<br>
+                                                전자적 파일 형태의 경우 복구 및 재생이 되지 않도록 안전하게 삭제하고, 서면 등의 경우에는 분쇄하거나 소각하여 파기합니다.<br>
+                                            </p>
+
+                                            <p><strong>7. 이용자 및 법정대리인의 권리와 행사 방법</strong><br>
+                                                - 이용자는 언제든지 회사 홈페이지에서 자신의 개인정보를 조회 · 수정 및 삭제할 수 있으며, 자신의 개인정보에 대한 열람을 요청할 수 있습니다.<br>
+                                                - 이용자는 언제든지 개인정보 처리의 정지를 요청할 수 있습니다. 단, 법률에 특별한 규정이 있는 경우, 회사는 처리정지 요청을 거부할 수 있습니다.<br>
+                                                - 이용자는 언제든지 회원탈퇴 등을 통해 개인정보의 수집 · 이용 동의를 철회할 수 있습니다.<br>
+                                                - 이용자가 만 14세 미만인 경우, 법정대리인은 이용자의 개인정보를 조회하거나 수정 및 삭제, 처리정지, 수집 및 이용, 제공 동의를 철회할 권리를 가집니다.</p>
+
+                                            <p><strong>8. 개인정보보호를 위한 회사의 노력</strong><br>
+                                                회사는 이용자의 개인정보를 안전하게 보호하기 위해서 다음과 같은 노력을 하고 있습니다.<br>
+                                                - 이용자의 개인정보를 암호화하고 있습니다.<br>
+                                                - 개인정보에 대한 접근 통제 및 접근 권한 제한조치를 하고 있습니다.<br>
+                                                - 해킹이나 컴퓨터 바이러스로부터 보호하기 위하여 노력하고 있습니다.<br>
+                                                - 임직원에게 이용자의 개인정보 보호에 대한 정기적인 교육을 실시하고 있습니다.<br>
+                                                - 이용자 정보의 보호 활동 및 체계에 대해 국내 및 국제 인증 규격을 충족하기 위해 노력하고 있습니다.</p>
+
+                                            <p><strong>9. 개인정보보호를 위한 회사의 노력</strong><br>
+                                                회사는 이용자의 개인정보 관련 문의사항 및 불만 처리 등을 위해 개인정보 보호 책임자 및 담당자를 지정하고 있습니다.</p>
+
+                                            <p><strong>10. 개인정보의 제공</strong><br>
+                                                법률이나 서비스의 변경사항 반영을 위한 목적 등으로 개인정보처리방침이 수정될 수 있습니다. 이 경우, 회사는 변경 사항을 게시하며, 변경된 방침은 게시한 날로부터 7일 후부터 효력이 발생합니다.<br>
+                                                - 단, 수집하는 개인정보의 항목 등과 같이 이용자의 권리에 중대한 변경이 발생할 때에는 최소 30일 전에 미리 알려드릴 것입니다.<br>
+                                                - 공고일자: 2025년 4월 1일<br>
+                                                - 시행일자: 2025년 4월 1일<br>
+                                                - 회사는 이용자의 개인정보를 소중히 생각하고, 이용자가 안심할 수 있는 서비스 제공 환경을 만들도록 노력하겠습니다.</p>
+                                        </div>
+                                        <div class="form-check mt-1">
+                                            <input class="form-check-input" type="checkbox" id="privacy" required>
+                                            <label class="form-check-label" for="privacy">
+                                                개인정보 이용에 동의합니다.
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-center">
+                                        <button id="submit-btn" class="btn btn-dark w-75 p-2 mt-3 text-nowrap" type="submit" disabled>
+                                            토스트 오피스 가입 완료
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="check-result2" class="mt-2 text-danger text-center">
+                                        "회사 관리자계정 접속 ID" 중복 확인 후에 가입할 수 있습니다.
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row no-gutters justify-content-center align-items-center m-0 p-2 w-100" style="z-index: 1;">
+            <div class="d-flex flex-nowrap justify-content-center align-items-center text-white text-center text-nowrap">
+                <a href="{% url 'brand_page' %}" class="text-decoration-none text-white">토스트 오피스</a>
+                <span class="mx-2">|</span>
+                <span>문의 : tost.korea@gmail.com</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+}
+
+function refresh() {
+    window.location.href = "/index/"
+}
+
+setTimeout(function () {
+    let alert = document.querySelector('.alert');
+    if (alert) {
+        let bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+        bsAlert.close();
+    }
+}, 5000);  // 5초 후 사라짐
+
+function checkDuplicate() {
+    const userId = document.getElementById("user_id").value;
+    const result = document.getElementById("check-result");
+    const result2 = document.getElementById("check-result2");
+    const submitBtn = document.getElementById("submit-btn");
+
+    if (!userId) {
+        result.innerText = "ID를 입력해주세요.";
+        result.classList.remove("text-success");
+        result.classList.add("text-danger");
+        submitBtn.disabled = true;
+        result2.style.display = "block";
+        return;
+    }
+
+    fetch(`/check-user-id/?user_id=${encodeURIComponent(userId)}`)
+        .then(response => {
+            if (!response.ok) throw new Error("서버 오류");
+            return response.json();
+        })
+        .then(data => {
+            if (data.exists) {
+                result.innerText = "이미 사용 중인 ID입니다.";
+                result.classList.remove("text-success");
+                result.classList.add("text-danger");
+                submitBtn.disabled = true;
+                result2.style.display = "block";
+            } else {
+                result.innerText = "사용 가능한 ID입니다.";
+                result.classList.remove("text-danger");
+                result.classList.add("text-success");
+                submitBtn.disabled = false;
+                result2.style.display = "none";
+            }
+        })
+        .catch(() => {
+            result.innerText = "확인 중 오류가 발생했습니다.";
+            result.classList.remove("text-success");
+            result.classList.add("text-danger");
+            submitBtn.disabled = true;
+            result2.style.display = "block";
+        });
+}
+
+document.getElementById("user_id").addEventListener("input", function() {
+    document.getElementById("submit-btn").disabled = true;
+    document.getElementById("check-result").innerText = "";
+    document.getElementById("check-result2").style.display = "block";
+});
+
+function validatePasswords() {
+    const pw = document.getElementById("password").value;
+    const pwConfirm = document.getElementById("password_confirm").value;
+
+    if (pw !== pwConfirm) {
+        alert("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+        return false;
+    }
+    return true;
+}
+
+</script>

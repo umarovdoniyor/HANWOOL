@@ -1,0 +1,1358 @@
+<style>
+body {
+    background-color: white !important;
+    color: #000;
+}
+.page-content {
+    padding: 70px 0 0 0;
+}
+.text-middle {
+  display: flex;
+  align-items: center; /* 세로 중앙 정렬 */
+}
+.div_center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: 100%;
+}
+.div_required {
+    border: 2px solid #343a3f !important;
+}
+.fa-circle-question {
+    cursor: help;
+}
+.p-2\.5 {
+    padding: 0.625rem !important;
+}
+.px-2\.5 {
+    padding-left: 0.625rem !important;
+    padding-right: 0.625rem !important;
+}
+.bg-primary-subtle-50 {
+    background-color: #e9edfc;
+}
+.bg-primary-subtle-25, .hover-primary:hover {
+    background-color: #f4f6fd;
+}
+.bg-success-subtle-50 {
+    background-color: #e5f7f1;
+}
+.bg-success-subtle-25, .hover-success:hover {
+    background-color: #f2fbf8;
+}
+.bg-info-subtle-50 {
+    background-color: #e9f4fd;
+}
+.bg-info-subtle-25, .hover-info:hover {
+    background-color: #f4f9fe;
+}
+.bg-warning-subtle-50 {
+    background-color: #fdf5e8;
+}
+.bg-warning-subtle-25, .hover-warning:hover {
+    background-color: #fefaf3;
+}
+.bg-danger-subtle-50 {
+    background-color: #fdecec;
+}
+.bg-danger-subtle-25, .hover-danger:hover {
+    background-color: #fef5f5;
+}
+.bg-secondary-subtle-50 {
+    background-color: #edeef0;
+}
+.bg-secondary-subtle-25, .hover-secondary:hover {
+    background-color: #f6f6f7;
+}
+
+.page_size {
+    width: 75px;
+    border: 1px solid #74788d; /* secondary */
+    cursor: pointer;
+}
+.dropdown-item {
+    cursor: pointer;
+}
+
+.checkbox_md {
+    width: 16px;
+    height: 16px;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.checkbox_lg {
+    width: 18px;
+    height: 18px;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.checkbox_filter {
+    width: 16px;
+    height: 16px;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    margin: auto;
+}
+
+/* 페이지내이션 */
+.page-item a {
+    color: #2b2d30;
+    font-size: 12px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+.page-item.active .page-link {
+    background-color: #2b2d30;
+    border: none;
+    border-radius: 4px;
+    cursor: default;
+}
+.page-item.disabled .page-link {
+    color: #ccc;
+    background-color: transparent;
+    border: none;
+}
+.page-item.disabled .page-link.page-ellipsis {
+    color: #2b2d30;
+}
+.page-item .page-link:focus {
+    background-color: transparent;
+    outline: none;
+    box-shadow: none;
+}
+.page-item .page-link:hover {
+    color: #2b2d30;
+}
+.page-item.active .page-link:hover {
+    color: white;
+}
+.pagination {
+    white-space: nowrap;
+}
+@media (max-width: 576px) {
+    .page-link {
+        padding-left : 8px;
+        padding-right : 8px;
+    }
+}
+
+/* 게시판 카테고리 부분 */
+.category_item {
+    color: #6c757d;
+    text-decoration: none;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    padding-left: 4px;
+}
+.category_item.active {
+    background-color: #edf0f5;
+    border-radius: 4px;
+}
+{% comment %}.category_item.active .badge {
+    background-color: #caeee1;
+    color: #34c38f;
+}{% endcomment %}
+
+
+/* 모달 부분 */
+.modal {
+    padding: 0 !important;
+}
+.modal-content {
+    border: none;
+    overflow: auto;
+    max-height: 100vh;
+}
+.modal-header {
+    color: white;
+    background-color: #2a3040;
+    height: 40px;
+}
+.modal-title {
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+}
+.modal-body {
+    {% comment %}margin-top: 20px;
+    margin-bottom: 20px;{% endcomment %}
+}
+.modal-footer {
+    background: #f6f7f8 !important;
+}
+.modal-dialog.fullscreen {
+    width: 100%;
+    margin: 0;
+    max-width: 100%;
+    max-height: 100%;
+}
+.modal-dialog.fullscreen .modal-content {
+    height: 100vh;
+    border-radius: 0 !important;
+}
+.modal-dialog.fullscreen .modal-header {
+    border-radius: 0 !important;
+}
+.ui-draggable-handle {
+    cursor: move;
+}
+.modal-xxl {
+  max-width: 1400px;
+}
+
+
+/* select2 스타일 */
+.select2-container--bootstrap-5 .select2-selection {
+    font-size: .8125rem !important;
+}
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__options .select2-results__option {
+    font-size: .8125rem !important;
+}
+.select2-container .select2-selection__placeholder {
+    font-size: .8125rem !important;
+}
+.select2-container--bootstrap-5 .select2-dropdown .select2-search .select2-search__field {
+    font-size: .8125rem !important;
+}
+.select2-container--bootstrap-5 .select2-selection {
+    padding-right: 2.25rem; /* 선택박스 내부에 클리어 버튼 공간 확보 */
+}
+.select2-container--bootstrap-5 .select2-selection__clear {
+    margin-left: 4px;
+    right: 10px !important; /* X 버튼을 선택박스 안으로 이동 */
+}
+/* 단일 선택(`single`)에서는 말줄임표(...) 적용 */
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+/* 다중 선택(`multiple`)에서는 자동 줄바꿈 적용 */
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered {
+    display: flex;
+    flex-wrap: wrap; /* 넘칠 경우 다음 줄로 이동 */
+    gap: 1px; /* 선택된 값 간격 추가 */
+}
+/* 다중 선택(`multiple`) disabled 스타일 */
+.select2-container--bootstrap-5.select2-container--disabled .select2-selection, .select2-container--bootstrap-5.select2-container--disabled.select2-container--focus .select2-selection {
+    background-color: #f8f8fb !important;
+    border-color: #eff2f7 !important;
+}
+/* 멀티플에서 이미지와 이름을 둘러싼 영역 */
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice {
+    padding: .25em !important;
+}
+/* 멀티플 select div 영역 */
+.select2-container .select2-selection--multiple .select2-selection__rendered {
+    padding-left: 0 !important;
+}
+.select2-container .select2-selection--multiple .select2-selection__choice {
+    background-color: var(--bs-info-bg-subtle) !important;
+    border-color: var(--bs-info-bg-subtle) !important;
+}
+/* 멀티플 select div 영역 */
+.select2-container--bootstrap-5 .select2-selection {
+    padding: .4rem !important;
+}
+
+/* select2를 sch 필터로 사용할때 스타일 적용 */
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+.sch_sel2 + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+/* 선택된 항목 텍스트 정렬 */
+.sch_sel2 + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+/* 화살표 위치 조정 */
+.sch_sel2 + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+/* 클리어버튼 위치 조정 */
+.sch_sel2 + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+
+/* 셀렉트 필드 높이를 최대로 맞추기 */
+.select2-container--bootstrap-5 .select2-selection {
+    height: 100% !important;
+}
+
+/* 공용 테이블 */
+.custom_table thead tr:first-child th {
+    background-color: #fafafa !important;
+    border-top: 1px solid #d9dee3 !important;
+    border-bottom: 1px solid #d9dee3 !important;
+}
+.custom_table tbody tr {
+    border-bottom: 1px solid #d9dee3 !important;
+}
+.custom_table tbody tr:hover {
+    background-color: white;
+    filter: brightness(97%) !important;
+}
+.custom_table tbody tr.clicked {
+    background-color: white;
+    filter: brightness(97%) !important;
+}
+.custom_table tbody tr.clicked td {
+    background-color: inherit !important;
+}
+.custom_table tbody tr td {
+    background-color: inherit !important;
+}
+th.min_width, td.min_width {
+    width: 1%; /* 가능한 최소 크기 */
+    white-space: nowrap; /* 텍스트 줄 바꿈 방지 */
+}
+
+/* flatpickr 커스텀 */
+.flatpickr-calendar {
+    font-size: 12px;
+    padding: 12px;
+    width: 235px !important;
+}
+.flatpickr-days, .dayContainer {
+    width: 210px !important;
+    max-width: 210px !important;
+    min-width: 210px !important;
+    display: flex;
+    flex-wrap: wrap;
+}
+.flatpickr-day {
+    border-radius: 6px;
+    width: 25px !important;
+    height: 25px !important;
+    line-height: 25px !important;
+    font-size: 12px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;  /* 너비와 높이를 항상 같게 유지 */
+    flex-grow: 0; /* 크기 자동 조정 방지 */
+    flex-shrink: 0;
+}
+.flatpickr-day.selected {
+    width: 25px !important;
+    height: 25px !important;
+    line-height: 25px !important;
+    aspect-ratio: 1 / 1;
+}
+.flatpickr-day:nth-child(7n + 1) { /* 첫 번째 칸이 일요일이면 적용 */
+    color: indianred;
+}
+.flatpickr-day:nth-child(7n) { /* 마지막 칸이 토요일이면 적용 */
+    color: dodgerblue;
+}
+.flatpickr-current-month, .flatpickr-time {
+    padding: 0;
+    font-size: 14px;
+}
+.numInputWrapper {
+    margin-left: 10px;
+}
+
+/* nav tab 버튼 커스텀 */
+.custom_tab {
+    font-weight: bold !important;
+    background-color: transparent !important;
+    color: #2a3041 !important;
+    border-radius: 5px;
+    padding: 8px 16px;
+    text-align: center;
+    display: inline-block;
+    margin-left: 10px;
+}
+.custom_tab.active {
+    background-color: #2a3041 !important;
+    color: white !important;
+}
+
+.tooltip-inner {
+    max-width: 1000px !important; /* 기본값(200px)보다 넓게 설정 */
+    white-space: normal; /* 줄바꿈 허용 */
+    text-align: start;
+}
+
+/* 첨부파일 드랍존 오버레이 영역 */
+#drop_overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    transition: opacity 0.3s ease-in-out;
+}
+#drop_overlay i {
+    font-size: 5rem;
+}
+
+/* notiToast 슬라이드 다운 애니메이션 */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+}
+
+.animate-slide-in {
+    animation: slideDown 0.5s ease-out forwards;
+}
+
+.animate-slide-out {
+    animation: slideUp 0.5s ease-in forwards;
+}
+
+/* 스크롤바 커스텀 */
+body {
+    scrollbar-width: thin; /* Firefox용 얇은 스크롤바 */
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+body::-webkit-scrollbar {
+    width: 2px; /* 얇은 세로 스크롤바 */
+    height: 2px; /* 얇은 가로 스크롤바 */
+}
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1); /* 스크롤바 색상 */
+    border-radius: 2px;
+}
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+    background-color: transparent; /* 트랙 배경 */
+}
+
+</style>
+
+<!-- 프로필 아래에 알림 토스트 -->
+<div id="noti_toast_area"></div>
+
+<!-- iframe영역 로딩 스피너 : 대시보드에서는 사용 불가 -->
+<div id="fullscreenLoader" class="d-none"
+     style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); z-index: 9999; display: flex;
+            justify-content: center; align-items: center;">
+    <div class="spinner-border text-dark" role="status" style="width: 3rem; height: 3rem;">
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+
+<script>
+let new_today = new Date();
+let offset_today = new Date(new_today.getTime() - new_today.getTimezoneOffset() * 60000);
+let date_today_str = offset_today.toISOString().slice(0, 10);  // yyyy-mm-dd
+let datetime_today_str = offset_today.toISOString().slice(0, 19).replace('T', ' ');  // yyyy-mm-dd hh:mm:ss
+
+// 미리 정의된 뱃지색상 목록 ----------
+let badge_colors = [
+    'rgb(52, 193, 142)',
+    'rgb(239, 179, 75)',
+    'rgb(242, 105, 105)',
+    'rgb(79, 164, 239)',
+    'rgb(84, 109, 228)',
+    'rgb(82, 176, 196)',
+    'rgb(255, 140, 60)',
+    'rgb(115, 119, 140)',
+    'rgb(255, 160, 122)',
+    'rgb(144, 106, 196)'
+];
+
+let categoryColorMap = {};
+let colorIndex = 0;
+
+function getBadgeColor(categoryName) {
+    if (!categoryColorMap[categoryName]) {
+        categoryColorMap[categoryName] = badge_colors[colorIndex % badge_colors.length];
+        colorIndex++;
+    }
+    return categoryColorMap[categoryName];
+}
+
+// 부트스트랩 툴팁 적용 : data-toggle="tooltip" data-placement="top" title="툴팁내용입력" //
+$(document).ready(function(){
+    $('[data-toggle="tooltip"]').tooltip({
+        html: true
+    });
+});
+
+function updateViewHeight() {
+    // 헤더와 메인 콘텐츠의 높이 계산
+    let headerHeight = $("#page-topbar").outerHeight(true); // margin 포함
+    let mainContent = $("#main-content");
+
+    // 브라우저 전체 높이에서 헤더 높이와 패딩을 뺀 값 계산
+    let availableHeight = $(window).height() - headerHeight - parseInt(mainContent.css('padding-top')) - parseInt(mainContent.css('padding-bottom'));
+
+    // iframe 높이 설정
+    $('#dynamic-iframe').css('height', availableHeight + 'px');
+}
+
+function url_click(url, element) {
+    // 1. 먼저 해당 URL이 존재하는지 확인
+    fetch(url, { method: 'HEAD' })
+        .then(response => {
+            if (!response.ok) {
+                notiToast("이미 삭제되었거나 만료된 페이지입니다.");
+                throw new Error("Invalid page");  // 이후 코드 실행 방지
+            }
+
+            if (typeof noti_search === 'function') {
+                noti_search();
+            }
+
+            const mainContent = document.getElementById('main-content');
+
+            // 기존 iframe 제거
+            let iframe = document.getElementById('dynamic-iframe');
+            if (iframe) {
+                iframe.remove();
+            }
+
+            // 새로운 iframe 생성
+            iframe = document.createElement('iframe');
+            iframe.id = 'dynamic-iframe';
+            iframe.style.width = '100%';
+            iframe.style.border = 'none';
+            iframe.style.overflowY = 'auto';
+            iframe.src = url;
+
+            mainContent.appendChild(iframe);
+            updateViewHeight();
+            window.addEventListener('resize', updateViewHeight);
+
+            document.querySelectorAll("#side-menu a").forEach(item => {
+                item.classList.remove("menu_clicked");
+            });
+            document.querySelectorAll("#side-menu li").forEach(item => {
+                item.classList.remove("mm-active");
+            });
+
+            if (element) {
+                element.classList.add("menu_clicked");
+                if (element.closest('.sub-menu')) {
+                    let menuItem = element.closest('.menu_item');
+                    if (menuItem) {
+                        menuItem.classList.add('mm-active');
+                    }
+                }
+            }
+
+            document.body.classList.remove("sidebar-enable");
+        })
+        .catch(() => {
+            notiToast("이미 삭제되었거나 만료된 페이지입니다.");
+        });
+}
+
+{% comment %}function url_click(url, element) {
+    noti_search();
+    const mainContent = document.getElementById('main-content');
+
+    // 기존 iframe 제거
+    let iframe = document.getElementById('dynamic-iframe');
+    if (iframe) {
+        iframe.remove();
+    }
+
+    // 새로운 iframe 생성
+    iframe = document.createElement('iframe');
+    iframe.id = 'dynamic-iframe';
+    iframe.style.width = '100%';
+    iframe.style.border = 'none';
+    iframe.style.overflowY = 'auto';
+    iframe.src = url;
+
+    // iframe을 mainContent에 삽입
+    mainContent.appendChild(iframe);
+
+    // 동적으로 높이 업데이트
+    updateViewHeight();
+
+    // 브라우저 크기 조정 시 높이 재조정
+    window.addEventListener('resize', updateViewHeight);
+
+    // 기존에 clicked가 있는 요소에서 제거
+    document.querySelectorAll("#side-menu a").forEach(item => {
+        item.classList.remove("menu_clicked");
+    });
+    document.querySelectorAll("#side-menu li").forEach(item => {
+        item.classList.remove("mm-active");
+    });
+
+    // 현재 클릭한 요소에 clicked 클래스 추가
+    if (element) {
+        element.classList.add("menu_clicked");
+        if (element.closest('.sub-menu')) {
+            let menuItem = element.closest('.menu_item');
+            if (menuItem) {
+                menuItem.classList.add('mm-active');
+            }
+        }
+    }
+    
+    // 모바일에서 사이드바 닫기
+    document.body.classList.remove("sidebar-enable");
+}{% endcomment %}
+
+function url_click_request(url) {
+    window.parent.postMessage({ type: 'url_click', url: url }, '*');
+}
+
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'url_click') {
+        url_click(event.data.url);
+        {% comment %}noti_search();{% endcomment %}
+    }
+});
+
+function set_autocomplete(val) {
+    if (['on', 'off'].includes(val)) {
+        const inputElements = document.querySelectorAll('input');
+        inputElements.forEach(inputElement => {
+            inputElement.setAttribute('autocomplete', val);
+        });
+    }
+}
+
+function set_datepicker() {
+    $(".datepicker").datepicker({
+        format: "yyyy-mm-dd",
+        minViewMode: 0,
+        maxViewMode: 2,
+        autoclose: true,
+        language: "ko",
+        todayHighlight: 'true',
+        "setDate": "today",
+        clearBtn: true,
+    });
+}
+
+function init_date_flatpickr() {
+    flatpickr(".date_flatpickr", {
+        dateFormat: "Y-m-d",
+        locale: "ko",
+        allowInput: true,
+        disableMobile: true, // 모바일에서 flatpickr 강제적용 
+    });
+}
+
+function init_datetime_flatpickr() {
+    document.querySelectorAll(".datetime_flatpickr").forEach((element) => {
+        let defaultTime = element.dataset.defaultTime || "09:00"; // 기본값 설정
+        let [defaultHour, defaultMinute] = defaultTime.split(":").map(Number); // 시간과 분 분리
+
+        flatpickr(element, {
+            enableTime: true,
+            noCalendar: false, // 달력은 그대로 유지
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true,
+            locale: "ko",
+            allowInput: true,
+            disableMobile: true, // 모바일에서 flatpickr 강제적용 
+            defaultHour: defaultHour, // 기본 시간 설정
+            defaultMinute: defaultMinute // 기본 분 설정
+        });
+    });
+}
+
+function reset_date_flatpickr(selector) {
+    return flatpickr(selector, {
+        dateFormat: "Y-m-d",
+        locale: "ko",
+        allowInput: true,
+        disableMobile: true, // 모바일에서 flatpickr 강제적용 
+        defaultDate: new Date()
+    });
+}
+
+function reset_datetime_flatpickr(selector) {
+    return flatpickr(selector, {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        locale: "ko",
+        allowInput: true,
+        disableMobile: true, // 모바일에서 flatpickr 강제적용 
+        defaultDate: new Date()
+    });
+}
+
+$(document).ready(function () {
+    // 모달 드래그
+    $("#a_create_modal").draggable({
+        handle: ".modal-header"
+    });
+    $("#a_update_modal").draggable({
+        handle: ".modal-header"
+    });
+    $("#a_read_modal").draggable({
+        handle: ".modal-header"
+    });
+    $("#b_create_modal").draggable({
+        handle: ".modal-header"
+    });
+    $("#b_update_modal").draggable({
+        handle: ".modal-header"
+    });
+    $("#c_create_modal").draggable({
+        handle: ".modal-header"
+    });
+    $("#c_update_modal").draggable({
+        handle: ".modal-header"
+    });
+    $("#d_create_modal").draggable({
+        handle: ".modal-header"
+    });
+    $("#d_update_modal").draggable({
+        handle: ".modal-header"
+    });
+
+    // 모달 팝업시 백그라운드 스크롤 제거 및 모달 닫을때 복구
+    $("#a_create_modal").on("show.bs.modal", function () {
+        $("html, body").css("overflow-y", "hidden");  // iframe 내부 스크롤 제거
+    });
+    $("#a_create_modal").on("hidden.bs.modal", function () {
+        $("html, body").attr("style", "overflow-y: auto !important");
+        $("html, body").attr("style", "overflow-x: hidden !important");
+    });
+
+    $("#a_update_modal").on("show.bs.modal", function () {
+        $("html, body").css("overflow-y", "hidden");  // iframe 내부 스크롤 제거
+    });
+    $("#a_update_modal").on("hidden.bs.modal", function () {
+        $("html, body").attr("style", "overflow-y: auto !important");
+        $("html, body").attr("style", "overflow-x: hidden !important");
+    });
+    
+    $("#a_read_modal").on("show.bs.modal", function () {
+        $("html, body").css("overflow-y", "hidden");  // iframe 내부 스크롤 제거
+    });
+    $("#a_read_modal").on("hidden.bs.modal", function () {
+        $("html, body").attr("style", "overflow-y: auto !important");
+        $("html, body").attr("style", "overflow-x: hidden !important");
+    });
+    
+    $("#b_create_modal").on("show.bs.modal", function () {
+        $("html, body").css("overflow-y", "hidden");  // iframe 내부 스크롤 제거
+    });
+    $("#b_create_modal").on("hidden.bs.modal", function () {
+        $("html, body").attr("style", "overflow-y: auto !important");
+        $("html, body").attr("style", "overflow-x: hidden !important");
+    });
+
+    $("#b_update_modal").on("show.bs.modal", function () {
+        $("html, body").css("overflow-y", "hidden");  // iframe 내부 스크롤 제거
+    });
+    $("#b_update_modal").on("hidden.bs.modal", function () {
+        $("html, body").attr("style", "overflow-y: auto !important");
+        $("html, body").attr("style", "overflow-x: hidden !important");
+    });
+    
+    $("#c_create_modal").on("show.bs.modal", function () {
+        $("html, body").css("overflow-y", "hidden");  // iframe 내부 스크롤 제거
+    });
+    $("#c_create_modal").on("hidden.bs.modal", function () {
+        $("html, body").attr("style", "overflow-y: auto !important");
+        $("html, body").attr("style", "overflow-x: hidden !important");
+    });
+
+    $("#c_update_modal").on("show.bs.modal", function () {
+        $("html, body").css("overflow-y", "hidden");  // iframe 내부 스크롤 제거
+    });
+    $("#c_update_modal").on("hidden.bs.modal", function () {
+        $("html, body").attr("style", "overflow-y: auto !important");
+        $("html, body").attr("style", "overflow-x: hidden !important");
+    });
+    
+    $("#d_create_modal").on("show.bs.modal", function () {
+        $("html, body").css("overflow-y", "hidden");  // iframe 내부 스크롤 제거
+    });
+    $("#d_create_modal").on("hidden.bs.modal", function () {
+        $("html, body").attr("style", "overflow-y: auto !important");
+        $("html, body").attr("style", "overflow-x: hidden !important");
+    });
+
+    $("#d_update_modal").on("show.bs.modal", function () {
+        $("html, body").css("overflow-y", "hidden");  // iframe 내부 스크롤 제거
+    });
+    $("#d_update_modal").on("hidden.bs.modal", function () {
+        $("html, body").attr("style", "overflow-y: auto !important");
+        $("html, body").attr("style", "overflow-x: hidden !important");
+    });
+});
+
+function toggleModalFullscreen(modalElement, iconElement) {
+    const modalDialog = modalElement.querySelector('.modal-dialog');
+    if (!modalDialog) return;
+
+    if (!modalDialog.classList.contains('fullscreen')) {
+        modalElement.style.left = '0';
+        modalElement.style.top = '0';
+        modalElement.style.transform = 'none';
+        modalDialog.classList.add('fullscreen');
+        iconElement.classList.replace('fa-expand', 'fa-compress');
+        iconElement.setAttribute('title', '기본화면');
+        $(modalElement).draggable('disable');
+    } else {
+        modalDialog.classList.remove('fullscreen');
+        iconElement.classList.replace('fa-compress', 'fa-expand');
+        iconElement.setAttribute('title', '전체화면');
+        $(modalElement).draggable('enable');
+    }
+}
+
+function resetModalFullscreen(modalElement, iconElement) {
+    const modalDialog = modalElement.querySelector('.modal-dialog');
+    if (!modalDialog) return;
+
+    modalDialog.classList.remove('fullscreen');
+    iconElement.classList.replace('fa-compress', 'fa-expand');
+    iconElement.setAttribute('title', '전체화면');
+    $(modalElement).draggable('enable');
+}
+
+function modal_toast(popup_off, modal_id) {
+    if (!popup_off) {
+        let toast = $('<div id="reset_toast" style="position: absolute; top: 25%; left: 50%; transform: translateX(-50%); background-color: #5c636a; color: white; padding: 10px; border-radius: 5px; z-index: 10000;">입력된 내용을 모두 초기화 하였습니다</div>');
+        
+        $(modal_id).append(toast);
+
+        setTimeout(function () {
+            toast.fadeOut(function () {
+                $(this).remove();
+            });
+        }, 1000);
+    }
+}
+
+// 전자결재 첨부파일 렌더링 함수
+function renderFileAttachment(div_id, apv_attach, fileSize = null) {
+    let fileListContainer = $(`#${div_id}`);
+
+    if (apv_attach) {
+        let fileUrl = apv_attach;
+        let fileName = decodeURIComponent(fileUrl.split('/').pop()); // 파일명 디코딩
+        let fileIconClass = getFileIconClass(fileName); // 확장자에 따른 아이콘 클래스 가져오기
+
+        // 파일 크기 변환 (바이트 → MB, KB 변환)
+        let formattedSize = fileSize ? formatFileSize(fileSize) : '';
+
+        // 파일 리스트 요소 생성
+        fileListContainer.html(`
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="${fileUrl}" target="_blank" download="${fileName}">
+                    <i class="${fileIconClass} me-2"></i>${fileName} ${formattedSize}
+                </a>
+                <div class="btn btn-white py-0 px-1" style="border: none;" id="removeFileBtn" onclick="removeFile('${div_id}')">
+                    <i class="fa-solid fa-xmark fa-lg"></i>
+                </div>
+            </div>
+        `);
+    } else {
+        fileListContainer.text("첨부된 파일이 없습니다.");
+    }
+}
+
+// 파일 크기 변환 함수 (바이트 → KB, MB)
+function formatFileSize(size) {
+    if (size >= 1024 * 1024) {
+        return `(${(size / (1024 * 1024)).toFixed(1)} MB)`;
+    } else if (size >= 1024) {
+        return `(${(size / 1024).toFixed(1)} KB)`;
+    } else {
+        return `(${size} B)`;
+    }
+}
+
+// 전자결재 첨부파일 제거 함수
+function removeFile(div_id) {
+    $(`#${div_id}`).html("첨부된 파일이 없습니다.");
+    $('#attached_file').val('');
+}
+
+// 새로운 첨부파일 선택 시 기존 파일 제거 후 추가하는 함수
+function updateFileAttachment(div_id, fileInput) {
+    let file = fileInput.files[0]; // 선택한 파일 가져오기
+
+    if (!file) return; // 파일이 선택되지 않았다면 종료
+
+    // 파일 크기 제한 (5MB 초과 시 경고)
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_SIZE) {
+        alert("첨부파일 용량은 5MB를 초과할 수 없습니다.");
+        fileInput.value = ""; // 파일 선택 초기화
+        return;
+    }
+
+    let fileListContainer = $(`#${div_id}`);
+    let fileUrl = URL.createObjectURL(file); // 파일의 임시 URL 생성
+    let fileName = file.name; // 파일명 가져오기
+    let fileSize = file.size; // 파일 크기 가져오기 (바이트 단위)
+    let fileIconClass = getFileIconClass(fileName); // 확장자에 따른 아이콘 클래스 가져오기
+
+    // 기존 파일 제거 후 새 파일 추가
+    fileListContainer.html(`
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="${fileUrl}" target="_blank" download="${fileName}">
+                <i class="${fileIconClass} me-2"></i>${fileName} ${formatFileSize(fileSize)}
+            </a>
+            <div class="btn btn-white py-0 px-1" style="border: none;" id="removeFileBtn" onclick="removeFile('${div_id}')">
+                <i class="fa-solid fa-xmark fa-lg"></i>
+            </div>
+        </div>
+    `);
+}
+
+// 전자결재 첨부파일 렌더링 아이콘 함수
+function getFileIconClass(fileName) {
+    let iconClassMap = {
+        'default': 'fa-regular fa-file fa-lg',
+        'txt': 'fa-regular fa-file-lines fa-lg',
+        'hwp': 'fa-regular fa-file-lines fa-lg',
+        'hwpx': 'fa-regular fa-file-lines fa-lg',
+        'jpg': 'fa-regular fa-file-image fa-lg',
+        'png': 'fa-regular fa-file-image fa-lg',
+        'pdf': 'fa-regular fa-file-powerpoint fa-lg',
+        'doc': 'fa-regular fa-file-word fa-lg',
+        'docx': 'fa-regular fa-file-word fa-lg',
+        'ppt': 'fa-regular fa-file-powerpoint fa-lg',
+        'pptx': 'fa-regular fa-file-powerpoint fa-lg',
+        'xls': 'fa-regular fa-file-excel fa-lg',
+        'xlsx': 'fa-regular fa-file-excel fa-lg',
+        'zip': 'fa-regular fa-file-zipper fa-lg',
+    };
+    let fileExtension = fileName.split('.').pop().toLowerCase();
+    return iconClassMap[fileExtension] || iconClassMap['default'];
+}
+
+// 첨부파일 드랍존 오버레이 활성화
+function init_drop_overlay() {
+    let fileInput = $("#attached_file");
+    let dropOverlay = $("#drop_overlay"); // 전역 드롭존
+    let dragCounter = 0; // 드래그 상태 추적
+
+    // **전역 드래그 감지**: 사용자가 파일을 드래그하면 오버레이 표시
+    $(document).on("dragenter", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        dragCounter++;
+        dropOverlay.fadeIn(200).css("display", "flex"); // 드롭존 활성화
+    });
+
+    // **드래그 상태 유지**
+    $(document).on("dragover", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    });
+
+    // **전역 드래그 해제 감지 (드래그 취소 시 오버레이 제거)**
+    $(document).on("dragleave", function (event) {
+        event.stopPropagation();
+        dragCounter--;
+        if (dragCounter === 0) { // 모든 드래그가 종료되면 오버레이 제거
+            dropOverlay.fadeOut(200);
+        }
+    });
+
+    // **전역 드롭 이벤트 처리**
+    $(document).on("drop", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        dragCounter = 0;
+        dropOverlay.fadeOut(200); // 오버레이 숨김
+
+        let droppedFiles = event.originalEvent.dataTransfer.files;
+        if (droppedFiles.length > 0) {
+            fileInput[0].files = droppedFiles; // 파일을 input[type=file]에 적용
+            fileInput.trigger("change"); // 기존 updateFileAttachment 함수 실행
+        }
+    });
+
+    // **파일 선택 (클릭 업로드)도 정상적으로 동작**
+    fileInput.on("change", function () {
+        updateFileAttachment('file_list', this);
+    });
+}
+
+let comment_draw_url;
+let comment_create_url;
+let docType;
+let docId;
+
+function comment_draw_table(docType, docId) {
+     if (docType === 'apv') {
+        comment_draw_url = `/comment_apv_read_fn/${docId}/`;
+    } else if (docType === 'board') {
+        comment_draw_url = `/comment_board_read_fn/${docId}/`;
+    } else if (docType === 'project') {
+        comment_draw_url = `/comment_project_read_fn/${docId}/`;
+    }
+    
+    fetch(`${comment_draw_url}`)
+        .then(response => response.json())
+        .then(data => {
+            // console.log("comment_draw_table: ", data);
+
+            if (!data || !Array.isArray(data.results)) {
+                console.error("데이터 형식이 올바르지 않습니다. results가 배열이 아님:", data);
+                return;
+            }
+
+            let comments = data.results; // Pagination 적용된 경우
+            let commentList = document.getElementById(`comment_list`);
+            commentList.innerHTML = "";
+
+            if (comments.length === 0) {
+                commentList.innerHTML = `
+                    <div class="text-muted text-center p-2">
+                        <i class="fa-regular fa-comment-dots"></i> 아직 등록된 댓글이 없습니다.
+                    </div>
+                `;
+                return;
+            }
+
+            comments.forEach(comment => {
+                let editDeleteButtons = comment.is_owner ? `
+                    <i class="fa-solid fa-pen text-warning me-2" onclick="comment_update_submit(${comment.id})" style="cursor:pointer;"></i>
+                    <i class="fa-solid fa-trash-can text-danger me-2" onclick="comment_delete_submit(${comment.id}, ${docId})" style="cursor:pointer;"></i>
+                ` : "";
+
+                let editedText = comment.created_at !== comment.updated_at ? " <span class='text-muted' style='font-size: 12px;'>(수정됨)</span>" : "";
+
+                let commentHTML = `
+                    <div id="comment-${comment.id}" class="d-flex align-items-start mb-1 p-2 ${comment.is_owner ? "bg-info-subtle-25" : "bg-secondary-subtle-25"} rounded">
+                        <img class="avatar-sm p-1 me-2" src="${comment.profile_image}" alt="프로필 사진"
+                             style="border-radius: 8px; width: 40px; height: 40px; object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <h6 class="fw-bold mb-1 d-flex align-items-center justify-content-between">
+                                <span>
+                                    ${comment.created_by} ${comment.created_by_job_level}
+                                    <span class="text-muted fw-normal" style="font-size: 12px;"> · ${comment.updated_at} ${editedText}</span>
+                                </span>
+                                <span class="text-muted" style="font-size: 13px;">
+                                    ${editDeleteButtons}
+                                </span>
+                            </h6>
+                            <p class="mb-0 comment-content" style="white-space: pre-line;">${comment.content}</p>
+                        </div>
+                    </div>
+                `;
+                commentList.innerHTML += commentHTML;
+            });
+        })
+        .catch(error => {
+            console.error("댓글을 불러오는 중 오류 발생:", error);
+        });
+}
+
+
+function comment_create_submit(docType, docId) {
+    if (docType === 'apv') {
+        comment_create_url = `/comment_apv_create_fn/${docId}/`;
+    } else if (docType === 'board') {
+        comment_create_url = `/comment_board_create_fn/${docId}/`;
+    } else if (docType === 'project') {
+        comment_create_url = `/comment_project_create_fn/${docId}/`;
+    }
+    
+    let commentInput = document.getElementById("comment_input");
+    if (!commentInput) {
+        console.error("댓글 입력창을 찾을 수 없습니다.");
+        return;
+    }
+
+    let content = commentInput.value.trim();
+    if (!content) {
+        alert("댓글 내용을 입력하세요.");
+        return;
+    }
+
+    fetch(`${comment_create_url}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({ content: content })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            comment_draw_table(docType, docId);
+            commentInput.value = "";
+        }
+    });
+}
+
+function comment_update_submit(commentId) {
+    let commentElement = document.querySelector(`#comment-${commentId} .comment-content`);
+    let editButton = document.querySelector(`#edit-btn-${commentId}`); // 수정 버튼 선택
+    
+    // 이미 textarea가 있으면 중복 실행 방지 및 수정버튼 감추기
+    if (commentElement.querySelector('textarea')) {
+        if (editButton) {
+            editButton.style.display = "none";
+        }
+        return;
+    }
+    
+    let originalContent = commentElement.innerHTML.replace(/<br>/g, "\n").trim();
+    commentElement.dataset.originalContent = originalContent;
+
+    let editHTML = `
+        <textarea id="edit-text-${commentId}" class="form-control" rows="3" style="resize: none; margin-top: -14px; margin-bottom: -10px;">${originalContent}</textarea>
+        <div class="d-flex">
+            <button class="btn btn-success btn-sm me-2" onclick="saveEditedComment(${commentId})">저장</button>
+            <button class="btn btn-secondary btn-sm" onclick="cancelEditComment(${commentId})">취소</button>
+        </div>
+    `;
+
+    commentElement.innerHTML = editHTML;
+}
+
+function saveEditedComment(commentId) {
+    let editedContent = document.querySelector(`#edit-text-${commentId}`).value.trim();
+    let editButton = document.querySelector(`#edit-btn-${commentId}`);
+
+    if (!editedContent) {
+        alert("댓글 내용을 입력하세요.");
+        return;
+    }
+
+    fetch(`/comment_update_fn/${commentId}/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({ content: editedContent })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            let commentElement = document.querySelector(`#comment-${commentId} .comment-content`);
+            commentElement.innerHTML = data.content.replace(/\n/g, "<br>");
+
+            let timestampElement = document.querySelector(`#comment-${commentId} h6 span .text-muted.fw-normal`);
+            if (timestampElement) {
+                timestampElement.innerHTML = ` · ${data.updated_at} <span class='text-muted' style='font-size: 12px;'>(수정됨)</span>`;
+            }
+
+            if (editButton) {
+                editButton.style.display = "inline";
+            }
+        }
+    });
+}
+
+function cancelEditComment(commentId) {
+    let commentElement = document.querySelector(`#comment-${commentId} .comment-content`);
+    let editButton = document.querySelector(`#edit-btn-${commentId}`); // 수정 버튼 선택
+    let originalContent = commentElement.dataset.originalContent || "";
+    commentElement.innerHTML = originalContent.replace(/\n/g, "<br>");
+
+    commentElement.dataset.editing = "false";
+    if (editButton) {
+        editButton.style.display = "inline";
+    }
+}
+
+function comment_delete_submit(commentId) {
+    if (!confirm("댓글을 삭제하시겠습니까?")) return;
+
+    fetch_gp(`/comment_delete_fn/${commentId}/`, 'post', true, null, (done) => {
+
+        comment_draw_table(docType, docId);
+        alert(txt.delete_ed);
+    });
+}
+
+function apv_cc_expand() {
+    let $apvCcUl = $("#apv_cc ul");
+    let currentHeight = $apvCcUl.css("max-height");
+    
+    if (currentHeight === "100px") {
+        $apvCcUl.animate({"max-height": "400px"}, 300);
+        $('#apv_cc_icon').css("transform", "rotate(180deg)");
+    } else {
+        $apvCcUl.animate({"max-height": "100px"}, 300);
+        $('#apv_cc_icon').css("transform", "rotate(0deg)");
+    }
+}
+
+function apv_memo_update() {
+    let $memoEditBtn = $("#memoEditBtn");
+    let $memoSaveBtn = $("#memoSaveBtn");
+    let $memoCancelBtn = $("#memoCancelBtn");
+    let $memoApv = $("#apv_memo");
+
+    let originalMemoContent = $memoApv.html();
+
+    // 편집 버튼 클릭
+    $memoEditBtn.on("click", function () {
+        $memoApv.attr("contenteditable", "true").addClass("bg-info-subtle");
+        originalMemoContent = $memoApv.html(); // 현재 내용 저장
+
+        $memoEditBtn.addClass("d-none");
+        $memoSaveBtn.removeClass("d-none");
+        $memoCancelBtn.removeClass("d-none");
+    });
+
+    // 저장 버튼 클릭
+    $memoSaveBtn.on("click", function () {
+        $memoApv.attr("contenteditable", "false").removeClass("bg-info-subtle");
+
+        $memoEditBtn.removeClass("d-none");
+        $memoSaveBtn.addClass("d-none");
+        $memoCancelBtn.addClass("d-none");
+
+        // 저장된 내용 처리
+        a_apv_memo_submit($memoApv);
+    });
+
+    // 취소 버튼 클릭
+    $memoCancelBtn.on("click", function () {
+        $memoApv.html(originalMemoContent).attr("contenteditable", "false").removeClass("bg-info-subtle");
+
+        $memoEditBtn.removeClass("d-none");
+        $memoSaveBtn.addClass("d-none");
+        $memoCancelBtn.addClass("d-none");
+    });
+}
+
+function notiToast(message, options = {}) {
+    const {
+        position = 'top: 0.5rem; right: 0.5rem;',
+        delay = 3000,
+        width = '450px',
+    } = options;
+
+    const toastId = `toast_${Date.now()}`;
+
+    $('#noti_toast_area').append(`
+        <div id="${toastId}" class="toast position-fixed animate-slide-in" style="${position} z-index: 10000; width: ${width}; border: 1px solid rgba(0, 0, 0, 0.1);">
+          <div class="toast-header bg-dark text-white p-1">
+            <strong class="mx-2" style="font-size: 13px; font-family: sans-serif;"><i class="fa-solid fa-bell me-2"></i>토스트 알리미</strong>
+          </div>
+          <div class="toast-body" style="color: #2b2d30; font-size: 12px; font-family: sans-serif;">
+            ${message}
+          </div>
+        </div>
+    `);
+
+    const toastElement = $(`#${toastId}`);
+    toastElement.toast({ delay });
+    toastElement.toast('show');
+
+    setTimeout(function () {
+        toastElement
+            .removeClass('animate-slide-in')
+            .addClass('animate-slide-out');
+        setTimeout(function () {
+            toastElement.remove();
+        }, 500); // 애니메이션 시간(0.5초) 후 삭제
+    }, delay);
+}
+
+function openCodePage(group, create) {
+    const url = `{% url 'admin_code_page' %}?group_filter=${encodeURIComponent(group)}&create=true`;
+    const codeWindow = window.open(url, '_blank', 'width=700,height=500,scrollbars=yes,resizable=yes');
+
+    // 팝업 로드 완료 후 body id 부여 및 create 모드 실행
+    const interval = setInterval(() => {
+        if (codeWindow && codeWindow.document && codeWindow.document.readyState === 'complete') {
+            const body = codeWindow.document.body;
+            if (body && !body.id) {
+                body.id = 'codeWindow';
+            }
+
+            if (create && typeof codeWindow.a_create_modal_in === 'function') {
+                codeWindow.a_create_modal_in();
+            }
+
+            clearInterval(interval);
+        }
+    }, 200);
+}
+
+function openFactoryCodePage(group, create) {
+    const url = `{% url 'factory_code_page' %}?group_filter=${encodeURIComponent(group)}&create=true`;
+    const codeWindow = window.open(url, '_blank', 'width=700,height=500,scrollbars=yes,resizable=yes');
+
+    // 팝업 로드 완료 후 body id 부여 및 create 모드 실행
+    const interval = setInterval(() => {
+        if (codeWindow && codeWindow.document && codeWindow.document.readyState === 'complete') {
+            const body = codeWindow.document.body;
+            if (body && !body.id) {
+                body.id = 'codeWindow';
+            }
+
+            if (create && typeof codeWindow.a_create_modal_in === 'function') {
+                codeWindow.a_create_modal_in();
+            }
+
+            clearInterval(interval);
+        }
+    }, 200);
+}
+
+// change_type은 read(읽음처리) / unread(안읽음처리)
+function noti_read_update(noti_id, change_type) {
+    let api_data = new FormData();
+        api_data.append("noti_id", noti_id);    
+        api_data.append("change_type", change_type);
+        
+    fetch_gp('/noti_read_update_fn/', 'post', true, api_data, (done) => {});
+}
+
+
+</script>

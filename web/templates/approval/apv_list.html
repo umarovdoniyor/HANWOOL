@@ -1,0 +1,596 @@
+<!-- 전자결재 > 리스트 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+/* 결재양식선택 모달 */
+.list_group_item:hover {
+    background-color: {% comment %}#34c38f;{% endcomment %} var(--bs-info);
+    border: 1px solid var(--bs-info-bg-subtle) !important;
+    color: white;
+    cursor: pointer;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-envelope-circle-check me-2"></i>전자결재
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 구성원이 결재를 신청하면 승인할 수 있는 전자결재 페이지입니다."></i>
+                </div>
+            </div>
+
+            <!-- 좌측 메뉴 -->
+            <div class="col-md-3 col-xl-2">
+                <div class="card border border-light">
+                    <div class="card-body bg-white p-3">
+                        <div class="d-flex w-100">
+                            <button type="button" class="btn btn-success text-nowrap mx-1 px-3 w-100" onclick="a_create_modal_in()">
+                                <i class="fa-solid fa-pen-to-square fa-lg me-2"></i>새 결재 작성
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card border border-light">
+                    <div class="card-body">
+                        <small class="text-muted text-uppercase align-middle font-size-12 mb-1">Approval Action</small>
+                        <div class="d-flex flex-md-column font-size-14 gap-1 p-1 mb-2 mb-md-3">
+                            <label class="d-flex align-items-center text-nowrap me-3 mb-0 hover-primary" style="cursor: pointer;" id="waiting_docs_btn">
+                                <i class="fa-regular fa-envelope me-2 text-primary"></i>미결재 문서
+                                <span id="waiting_docs" class="d-none badge bg-primary ms-2" style="font-size: 0.6rem; padding: 0.25em; min-width: 1rem; text-align: center;"></span></label>
+                            <label class="d-flex align-items-center text-nowrap me-3 mb-0 hover-success" style="cursor: pointer;" id="unread_docs_btn">
+                                <i class="fa-regular fa-envelope me-2 text-success"></i>미확인 문서
+                                <span id="unread_docs" class="d-none badge bg-success ms-2" style="font-size: 0.6rem; padding: 0.25em; min-width: 1rem; text-align: center;"></span></label>
+                        </div>
+
+                        <small class="text-muted text-uppercase align-middle font-size-12 mb-1">Approval List</small>
+                        <div class="d-flex flex-md-column font-size-14 gap-1 p-1 mb-2 mb-md-3">
+                            <label class="d-flex align-items-center text-nowrap me-3 mb-0 hover-secondary" style="cursor: pointer;" id="allBox">
+                                <i class="fa-solid fa-envelope me-2 text-secondary"></i>전체<span class="d-none d-md-block">&nbsp;결재함</span></label>
+                            <label class="d-flex align-items-center text-nowrap me-3 mb-0 hover-success" style="cursor: pointer;" id="myBox">
+                                <i class="fa-solid fa-envelope me-2 text-success"></i>보낸<span class="d-none d-md-block">&nbsp;결재함</span></label>
+                            <label class="d-flex align-items-center text-nowrap me-3 mb-0 hover-primary" style="cursor: pointer;" id="rcvBox">
+                                <i class="fa-solid fa-envelope me-2 text-primary"></i>받은<span class="d-none d-md-block">&nbsp;결재함</span></label>
+                            <label class="d-flex align-items-center text-nowrap me-3 mb-0 hover-warning" style="cursor: pointer;" id="ccBox">
+                                <i class="fa-solid fa-envelope me-2 text-warning"></i>참조<span class="d-none d-md-block">&nbsp;결재함</span></label>
+                        </div>
+                        
+                        <small class="text-muted text-uppercase align-middle font-size-12">Status Filter</small>
+                        <div class="d-flex flex-md-column font-size-14 gap-1 p-1">
+                            <div class="form-check form-check-secondary me-3">
+                                <input class="form-check-input status_filter_item" type="checkbox" id="status_임시">
+                                <label class="form-check-label" for="status_임시">임시</label>
+                            </div>
+                            <div class="form-check form-check-primary me-3">
+                                <input class="form-check-input status_filter_item" type="checkbox" id="status_진행">
+                                <label class="form-check-label" for="status_진행">진행</label>
+                            </div>
+                            <div class="form-check form-check-success me-3">
+                                <input class="form-check-input status_filter_item" type="checkbox" id="status_완료">
+                                <label class="form-check-label" for="status_완료">완료</label>
+                            </div>
+                            <div class="form-check form-check-danger me-3">
+                                <input class="form-check-input status_filter_item" type="checkbox" id="status_반려">
+                                <label class="form-check-label" for="status_반려">반려</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 우측 본문 -->
+            <div class="col-md-9 col-xl-10">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                </div>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            {% comment %}{% if request.user.is_superuser or request.user.is_master %}
+                            <div class="d-flex position-relative p-0">
+                                <div class="d-none d-md-block btn btn-info dropdown-toggle text-nowrap ms-1 px-2.5" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-wand-sparkles"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">옵션</span></div>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><button class="dropdown-item" type="button" onclick="a_popup_open()">
+                                        <i class="fa-solid fa-file-invoice me-2"></i>지출 통계</button></li>
+                                    </ul>
+                            </div>
+                            {% endif %}{% endcomment %}
+                        </div>
+
+                        <div class="custom_table table-responsive text-nowrap align-middle">
+                            <table class="table">
+                                <thead class="thead-light">
+                                    <tr class="text-nowrap">
+                                        <th id="check_box" style="text-align: center; vertical-align: middle;" class="d-none d-md-table-cell form-check-info min_width">
+                                            <input class="form-check-input checkbox_lg" type="checkbox" id="select_all"></th>
+                                        <th class="d-none d-md-table-cell">최종 수정일</th>
+                                        <th class="d-none d-md-table-cell">결재 번호</th>
+                                        <th class="d-none d-md-table-cell">결재 분류</th>
+                                        <th>제목</th>
+                                        <th class="d-none d-md-table-cell">작성자</th>
+                                        <th>결재 상태</th>
+                                        <th>결재 대기</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="a_tbody"></tbody>
+                            </table>
+                            <div class="div_center" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">전자 결재 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <div class="d-flex align-items-center fw-bold mb-2" style="font-size: 16px;">
+                            <i class="fa-regular fa-folder-open me-2"></i>결재양식 선택
+                        </div>
+                        <div class="p-2" style="border: 1px #c7c9d1 solid; overflow-y: auto;">
+                            <a class="card border border-secondary-subtle list_group_item p-2.5 mb-2" onclick=apv_create_confirm('휴가신청서','1')>
+                                <div class="d-flex align-items-center fw-bold mb-1">
+                                    <i class="fa-regular fa-file me-2"></i>휴가신청서
+                                </div>
+                                <div style="font-size: 12px;"> • 연차, 예비군, 병가, 무급 등 각종 휴가 사용 시 제출</div>
+                            </a>
+                            {% comment %}<a class="card border border-secondary-subtle list_group_item p-2.5 mb-2" onclick=apv_create_confirm('출장신청서','2')>
+                                <div class="d-flex align-items-center fw-bold mb-1">
+                                    <i class="fa-regular fa-file me-2"></i>출장신청서
+                                </div>
+                                <div style="font-size: 12px;"> • 업무상 출장이 필요할 경우 사전 승인 및 기록을 위해 제출</div>
+                            </a>{% endcomment %}
+                            <a class="card border border-secondary-subtle list_group_item p-2.5 mb-2" onclick=apv_create_confirm('지출결의서','3')>
+                                <div class="d-flex align-items-center fw-bold mb-1">
+                                    <i class="fa-regular fa-file me-2"></i>지출결의서
+                                </div>
+                                <div style="font-size: 12px;"> • 사무용품, 사업비 등 비용 지출이 필요한 경우 승인 요청</div>
+                            </a>
+                            {% comment %}<a class="card border border-secondary-subtle list_group_item p-2.5 mb-2" onclick=apv_create_confirm('비용청구서','4')>
+                                <div class="d-flex align-items-center fw-bold mb-1">
+                                    <i class="fa-regular fa-file me-2"></i>비용청구서
+                                </div>
+                                <div style="font-size: 12px;"> • 업무상 개인 비용을 지출한 경우 회사에 환급 요청</div>
+                            </a>
+                            <a class="card border border-secondary-subtle list_group_item p-2.5 mb-2" onclick=apv_create_confirm('일반신청서','5')>
+                                <div class="d-flex align-items-center fw-bold mb-1">
+                                    <i class="fa-regular fa-file me-2"></i>일반신청서
+                                </div>
+                                <div style="font-size: 12px;"> • 기타 요청 사항을 신청할 때 사용하는 공용 신청서</div>
+                            </a>{% endcomment %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let currentUserId = {{ request.user.id }};
+let fr_date;
+let to_date;
+let all_sch;
+let action_filter;
+let status_filter;
+let apvbox_filter;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('apv_list_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = '/approval/list';  // shortcut 연계로 인해 이렇게 해야함 
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('apv_list_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    a_search_ready();
+}
+
+// 필터 버튼 작동부
+$(document).ready(function () {
+    $("#waiting_docs_btn").on("click", function () {
+        toggleActionFilter($(this), 'waiting_docs', 'bg-primary-subtle-50');
+    });
+
+    $("#unread_docs_btn").on("click", function () {
+        toggleActionFilter($(this), 'unread_docs', 'bg-success-subtle-50');
+    });
+
+    $("#allBox").on("click", function () {
+        toggleApvboxFilter($(this), 'alldocs', 'bg-secondary-subtle-50', true);
+    });
+
+    $("#myBox").on("click", function () {
+        toggleApvboxFilter($(this), 'mydocs', 'bg-success-subtle-50', true);
+    });
+
+    $("#rcvBox").on("click", function () {
+        toggleApvboxFilter($(this), 'rcvdocs', 'bg-primary-subtle-50', true);
+    });
+
+    $("#ccBox").on("click", function () {
+        toggleApvboxFilter($(this), 'ccdocs', 'bg-warning-subtle-50', true);
+    });
+
+    $(".status_filter_item").on("change", function () {
+        let selectedStatuses = [];
+        $(".status_filter_item:checked").each(function () {
+            selectedStatuses.push($(this).attr("id").replace("status_", ""));
+        });
+
+        status_filter = selectedStatuses.join(",");
+        a_search_ready();
+    });
+});
+
+// 필터 토글 함수
+function toggleActionFilter($element, filterType, highlightClass) {
+    if (action_filter === filterType) {
+        action_filter = ''; // 선택 초기화
+        $element.removeClass(highlightClass);
+        $element.find("i").removeClass("fa-envelope-open").addClass("fa-envelope"); // 아이콘 원래대로 복귀
+    } else {
+        action_filter = filterType;
+        $("#waiting_docs_btn").removeClass("bg-primary-subtle-50").find("i").removeClass("fa-envelope-open").addClass("fa-envelope");
+        $("#unread_docs_btn").removeClass("bg-success-subtle-50").find("i").removeClass("fa-envelope-open").addClass("fa-envelope");
+        $element.addClass(highlightClass);
+        $element.find("i").removeClass("fa-envelope").addClass("fa-envelope-open");
+    }
+    a_search_ready();
+}
+
+// 결재함 필터 (하나만 선택 가능)
+function toggleApvboxFilter($element, filterType, highlightClass, isApvBox = false) {
+    if (isApvBox) {
+        if (apvbox_filter === filterType) {
+            apvbox_filter = ''; // 선택 초기화
+            $element.removeClass(highlightClass);
+            $element.find("i").removeClass("fa-envelope-open").addClass("fa-envelope"); // 아이콘 원래대로 복귀
+        } else {
+            apvbox_filter = filterType;
+            $("#allBox").removeClass("bg-secondary-subtle-50").find("i").removeClass("fa-envelope-open").addClass("fa-envelope");
+            $("#myBox").removeClass("bg-success-subtle-50").find("i").removeClass("fa-envelope-open").addClass("fa-envelope");
+            $("#rcvBox").removeClass("bg-primary-subtle-50").find("i").removeClass("fa-envelope-open").addClass("fa-envelope");
+            $("#ccBox").removeClass("bg-warning-subtle-50").find("i").removeClass("fa-envelope-open").addClass("fa-envelope");
+            $element.addClass(highlightClass);
+            $element.find("i").removeClass("fa-envelope").addClass("fa-envelope-open");
+        }
+    }
+    a_search_ready();
+}
+
+function a_search_ready() {
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    all_sch = $('#all_sch').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&fr_date=" + fr_date;
+    query += "&to_date=" + to_date;
+    query += "&all_sch=" + all_sch;
+    query += "&action_filter=" + action_filter;
+    query += "&apvbox_filter=" + apvbox_filter;
+    query += "&status_filter=" + encodeURIComponent(status_filter);
+
+    fetch_gp("/approval_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        let badgeColor = 'btn btn-secondary';
+            if (item.status === '진행') {
+                badgeColor = 'btn btn-primary';
+            } else if (item.status === '완료') {
+                badgeColor = 'btn btn-success';
+            } else if (item.status === '반려') {
+                badgeColor = 'btn btn-danger';
+            }
+        let isUserInCC = item.apv_cc.some(cc => cc.user_id === currentUserId);
+        let ccBadge = isUserInCC ? '<span class="badge btn btn-warning font-size-12 py-1 px-2 ms-1">참조</span>' : '';
+        let unreadClass = item.is_read ? '' : 'fw-bold bg-success-subtle';
+        $('#waiting_docs').text(done.waiting_docs).toggleClass("d-none", done.waiting_docs == 0);
+        $('#unread_docs').text(done.unread_docs).toggleClass("d-none", done.unread_docs == 0);
+        let waitingDocsIcon = $('#waiting_docs_btn i');
+        let unreadDocsIcon = $('#unread_docs_btn i');
+
+        if (done.waiting_docs > 0) {
+            waitingDocsIcon.addClass("fa-bounce");
+            $('#waiting_docs_btn').addClass("fw-bold text-primary")
+        } else {
+            waitingDocsIcon.removeClass("fa-bounce");
+            $('#waiting_docs_btn').removeClass("fw-bold text-primary")
+        }
+
+        if (done.unread_docs > 0) {
+            unreadDocsIcon.addClass("fa-bounce");
+            $('#unread_docs_btn').addClass("fw-bold text-success")
+        } else {
+            unreadDocsIcon.removeClass("fa-bounce");
+            $('#unread_docs_btn').removeClass("fw-bold text-success")
+        }
+
+        let row = `
+        <tr id='${item.id}' status='${item.status}' category='${item.category}' class='align-middle text-nowrap ${unreadClass}' style='cursor:pointer;'>
+            <td name="check_box" class="d-none d-md-table-cell form-check-info" style="text-align: center; vertical-align: middle; cursor: default !important;">
+                <input type="checkbox" class="form-check-input checkbox_lg" value="${item.id}"></td>
+            <td name='updated_at' class="d-none d-md-table-cell clickable">${item.updated_at || ""}</td>
+            <td name='apv_no' class="d-none d-md-table-cell clickable">${item.apv_no || ""}</td>
+            <td name='category' class="d-none">${item.category || ""}</td>
+            <td name='category_name' class="d-none d-md-table-cell clickable">${item.category_name || ""}</td>
+            <td name='title' class="clickable">${item.title || ""}<i class="fa-solid fa-comment-dots ms-2 me-1"></i>${ item.comment_count }</td>
+            <td name='created_user' class="d-none d-md-table-cell clickable">${item.created_by.name || ""} ${item.created_by.job_level || ""}</td>
+            <td name='created_by' class="d-none">${item.created_by.name || ""}</td>
+            <td name='status' class="d-none">${item.status || ""}</td>
+            <td name='status_badge' class="clickable"><span class="font-size-12 py-1 px-2 badge ${badgeColor}">${item.status || ""}</span>${ccBadge || ""}</td>
+            <td name='next_approver' class="clickable">${item.next_approver || ""}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+    
+    $('#a_tbody').on('click', '.checkbox_lg', function (e) {
+        e.stopPropagation();  // 부모 `tr` 클릭 이벤트 중단
+    
+        let row = $(this).closest('tr'); // 체크박스가 속한 행 선택
+        if (this.checked) {
+            row.addClass('bg-light');  // 체크되었을 때 배경색 변경
+        } else {
+            row.removeClass('bg-light');  // 체크 해제 시 배경색 제거
+        }
+    });
+
+    $('#a_tbody').on('click', 'tr', function (e) {
+        // 클릭한 요소가 체크박스이거나 클릭 가능한 열이 아닌 경우 이벤트를 중단
+        if (e.target.type === 'checkbox' || !$(e.target).hasClass('clickable')) {
+            return;
+        }
+        $(this).parent().find('tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        let clicked_id = $(this).attr("id");
+        let clicked_category = $(this).attr("category");
+        let clicked_status = $(this).attr("status");
+        if (clicked_status === '임시') {
+            location.href = `/approval/create/${clicked_category}/${clicked_id}`;
+        } else {
+            location.href = `/approval/progress/${clicked_category}/${clicked_id}`;
+        }
+    });
+}
+
+function a_create_modal_in() {
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function apv_create_confirm(apv_type, category_id) {
+    if (confirm(`[${apv_type}]\n전자결재를 작성하시겠습니까?`)) {
+        window.location.href = `/approval/create/${category_id}`;
+    }
+}
+
+// 대시보드 shortcut 명령
+document.addEventListener("DOMContentLoaded", function () {
+    const params = new URLSearchParams(window.location.search);
+    const shortcut = params.get("shortcut");
+
+    if (shortcut === "apv_waiting_docs") {
+        $('#fullscreenLoader').removeClass('d-none'); // 스피너 보여주기
+        setTimeout(() => {
+            document.getElementById("waiting_docs_btn").click();
+            setTimeout(() => {
+                $('#fullscreenLoader').addClass('d-none');
+            }, 200);  // 클릭 이후 200ms 정도 추가로 기다리기
+        }, 200);
+    }
+
+    if (shortcut === "apv_unread_docs") {
+        $('#fullscreenLoader').removeClass('d-none');
+        setTimeout(() => {
+            document.getElementById("unread_docs_btn").click();
+            setTimeout(() => {
+                $('#fullscreenLoader').addClass('d-none');
+            }, 200);  // 클릭 이후 200ms 정도 추가로 기다리기
+        }, 200);
+    }
+
+    if (shortcut === "apv_my_temp_docs") {
+        $('#fullscreenLoader').removeClass('d-none'); // 스피너 보이기
+
+        setTimeout(() => {
+            let $checkbox = $("#status_임시");
+            if (!$checkbox.prop("checked")) {
+                $checkbox.prop("checked", true).trigger("change");
+            } else {
+                $checkbox.trigger("change");
+            }
+
+            // 200ms 더 기다렸다가 스피너 끄기
+            setTimeout(() => {
+                $('#fullscreenLoader').addClass('d-none');
+            }, 200);
+        }, 200);
+    }
+});
+
+document.getElementById('select_all').addEventListener('change', function (e) {
+    let checkboxes = document.querySelectorAll('.checkbox_lg');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = e.target.checked;
+        // 모두 선택할 때 모든 행에 bg-success 클래스 추가/제거
+        if (e.target.checked) {
+            checkbox.closest('tr').classList.add('bg-light');
+        } else {
+            checkbox.closest('tr').classList.remove('bg-light');
+        }
+    });
+});
+
+function a_popup_open() {
+    let url = `/approval/cost/`;
+    window.open(url, '_blank', 'width=1600,height=1000,scrollbars=yes,resizable=yes');
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+</script>

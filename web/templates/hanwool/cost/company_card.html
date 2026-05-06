@@ -1,0 +1,1390 @@
+<!-- 법인카드/경비 > 법인카드 관리 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+<style>
+.rotate {
+    transition: transform 0.3s ease;
+    transform: rotate(180deg);
+}
+#a_filter_open {
+    transition: transform 0.3s ease;
+}
+
+#imageTooltip {
+    display: none;
+    position: absolute;
+    z-index: 9999;
+    border: 1px solid #ccc;
+    background: white;
+    padding: 3px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    border-radius: 5px;
+}
+#tooltipImage {
+    min-width: 390px;
+    max-width: 600px;
+    max-height: 600px;
+    width: auto;
+    height: auto;
+    display: block;
+}
+
+/* select2 컨테이너 너비 지정 */
+#sch_card_account + .select2-container {
+    width: 150px !important;
+}
+
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_card_account + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+
+/* 선택된 항목 텍스트 정렬 */
+#sch_card_account + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+
+/* 화살표 위치 조정 */
+#sch_card_account + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+
+/* 클리어버튼 위치 조정 */
+#sch_card_account + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-file-invoice-dollar me-2"></i>법인카드 관리
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 법인카드와 법인카드 사용내역을 관리하는 페이지입니다.<br>• 수정하려는 항목에서 더블클릭하면 수정 팝업이 열립니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="c_page_size"
+                                        onchange="c_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange position-relative w-auto me-1"
+                                     id="date_filter" data-toggle="tooltip" data-placement="top" title="법인카드 사용일 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="c_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="c_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px; border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
+
+                                    <div id="date_dropdown" class="d-none position-absolute bg-light border border-secondary-subtle rounded shadow-sm p-1"
+                                         style="top: 100%; left: 0; z-index: 1000; min-width: 150px;">
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('yesterday')">어제</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('today')">오늘</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('tomorrow')">내일</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_week')">지난주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_week')">이번주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_week')">다음주</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_month')">지난달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_month')">이번달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_month')">다음달</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_year')">작년</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_year')">올해</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_year')">내년</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="계정과목 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_card_account"
+                                            onchange="c_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1" data-toggle="tooltip" data-placement="top" title="내용, 비고 등 텍스트 검색">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="c_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex position-relative p-0">
+                                <div class="d-none d-md-block btn btn-info dropdown-toggle text-nowrap ms-1 px-2.5" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-wand-sparkles"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">옵션</span></div>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><button class="dropdown-item" type="button" onclick="a_popup_open()">
+                                        <i class="fa-solid fa-file-invoice me-2"></i>지출 통계</button></li>
+                                    </ul>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="d-flex flex-column flex-lg-row justify-content-between">
+                            <div class="col-12 col-lg-3">
+                                <div class="card border border-light mb-3 mb-lg-0">
+                                    <div class="card-body p-3">
+                                        <!-- 법인카드 목록 -->
+                                        <div class="d-flex justify-content-between align-items-center fw-bold mb-2" style="font-size: 16px; color: #2a3040;">
+                                            <div class="d-flex justify-content-between align-items-center">법인카드 목록<i class="fa-solid fa-chevron-up ms-2 rotate-icon" style="cursor: pointer;" id="a_filter_open"></i></div>
+                                            <div class="d-flex p-0">
+                                                <button class="btn btn-sm btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-warning text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3" id="a_filter" style="display: none;">
+                                            <div class="d-flex p-0">
+                                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                                    <option value="10">10개</option>
+                                                    <option value="20" selected>20개</option>
+                                                    <option value="50">50개</option>
+                                                    <option value="100">100개</option>
+                                                    <option value="200">200개</option>
+                                                    <option value="500">500개</option>
+                                                </select>
+
+                                                <select class="page_size form-select form-select-sm me-1" id="sch_is_valid"
+                                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="사용 여부로 검색">
+                                                    <option value="">모두</option>
+                                                    <option value="true" selected>사용</option>
+                                                    <option value="false">미사용</option>
+                                                </select>
+
+                                                <div class="search-box d-flex me-1" data-toggle="tooltip" data-placement="top" title="카드번호, 별칭, 카드사, 소유자 성명 등 텍스트 검색">
+                                                    <div class="position-relative flex-grow-1">
+                                                        <input type="text" class="form-control rounded border-secondary" id="a_all_sch" placeholder="검색어 입력">
+                                                        <i class="mdi mdi-magnify search-icon"></i>
+                                                    </div>
+                                                </div>
+
+                                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="custom_table table-responsive">
+                                            <table class="table">
+                                                <thead class="thead-light">
+                                                    <tr class="text-nowrap">
+                                                        <th>순번</th>
+                                                        <th>카드번호</th>
+                                                        <th>카드사</th>
+                                                        <th>소유자</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="a_tbody"></tbody>
+                                            </table>
+                                        </div>
+                                        <div class="div_center mt-3" id="a_nation_id"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-lg-9 ps-0 ps-lg-3">
+                                <div class="card border border-light mb-0">
+                                    <div class="card-body p-3">
+                                        <!-- 법인카드 사용내역 -->
+                                        <div class="d-flex justify-content-between align-items-center fw-bold mb-2" style="font-size: 16px; color: #2a3040;">법인카드 사용내역
+                                            <div class="d-flex p-0">
+                                                <button class="btn btn-sm btn-success text-nowrap ms-1 px-2.5" onclick="c_create_modal_in()">
+                                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-warning text-nowrap ms-1 px-2.5" onclick="c_update_modal_in()">
+                                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="c_delete_submit()">
+                                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="custom_table table-responsive">
+                                            <table class="table">
+                                                <thead class="thead-light">
+                                                    <tr class="text-nowrap">
+                                                        <th style="width: 5%;">순번</th>
+                                                        <th style="width: 5%;">사용일</th>
+                                                        <th style="width: 5%;">카드번호</th>
+                                                        <th style="width: 5%;">실제 사용자</th>
+                                                        <th style="width: 5%;">계정과목</th>
+                                                        <th style="width: 10%;">내용</th>
+                                                        <th style="width: 5%;">금액</th>
+                                                        <th style="width: 10%;">비고</th>
+                                                        <th style="width: 5%;">첨부파일</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="c_tbody"></tbody>
+                                            </table>
+                                        </div>
+                                        <div class="div_center mt-3" id="c_nation_id"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">법인카드 관리 <i class="fa-solid fa-angle-right px-1"></i> 법인카드 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="code" class="form-label">카드 번호</label>
+                        <input type="text" class="form-control" id="code">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="name" class="form-label">카드 별칭</label>
+                        <input type="text" class="form-control" id="name">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="validation_date" class="form-label">카드 만료일</label>
+                        <input type="text" class="form-control date_flatpickr" id="validation_date">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="card_supplier" class="form-label">카드사</label>
+                        <input type="text" class="form-control" id="card_supplier">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="owner" class="form-label">카드 소유자</label>
+                        <select class="form-control" id="owner"></select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="is_valid" class="form-label">사용 여부</label>
+                        <select class="text-left form-select" id="is_valid">
+                            <option value="true">사용</option>
+                            <option value="false">미사용</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">법인카드 관리 <i class="fa-solid fa-angle-right px-1"></i> 법인카드 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="code" class="form-label">카드 번호</label>
+                        <input type="text" class="form-control" id="code">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="name" class="form-label">카드 별칭</label>
+                        <input type="text" class="form-control" id="name">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="validation_date" class="form-label">카드 만료일</label>
+                        <input type="text" class="form-control date_flatpickr" id="validation_date">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="card_supplier" class="form-label">카드사</label>
+                        <input type="text" class="form-control" id="card_supplier">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="owner" class="form-label">카드 소유자</label>
+                        <select class="form-control" id="owner"></select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="is_valid" class="form-label">사용 여부</label>
+                        <select class="text-left form-select" id="is_valid">
+                            <option value="true">사용</option>
+                            <option value="false">미사용</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">저장</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- c_create_modal -->
+<div class="modal fade" id="c_create_modal" tabindex="-1" role="dialog" aria-labelledby="c_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">법인카드 관리 <i class="fa-solid fa-angle-right px-1"></i> 사용내역 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create_c"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="c_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="date" class="form-label">사용 일자</label>
+                        <input type="text" class="form-control date_flatpickr div_required" id="date">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="card" class="form-label">법인 카드</label>
+                        <select class="form-select" id="card"></select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="user" class="form-label">실제 사용자</label>
+                        <select class="form-select" id="user"></select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="card_account" class="form-label">계정 과목
+                            <button class="btn btn-sm px-1 py-0" onclick="openCodePage('card_account', 'create')">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+                        </label>
+                        <select class="form-select" id="card_account"></select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="price" class="form-label">사용 금액</label>
+                        <input type="text" class="form-control" id="price" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="desc1" class="form-label">내용</label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="desc2" class="form-label">비고</label>
+                        <input type="text" class="form-control" id="desc2">
+                    </div>
+
+                    <div class="col-md-6 d-flex flex-column mb-3">
+                        <label for="image" class="form-label">증빙 자료</label>
+                        <div class="d-flex">
+                            <input type="file" class="form-control" id="image" accept="image/*">
+                            <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="image_clear_btn('c_create_modal')">
+                                <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">제거</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="c_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="c_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- c_update_modal -->
+<div class="modal fade" id="c_update_modal" tabindex="-1" role="dialog" aria-labelledby="c_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">법인카드 관리 <i class="fa-solid fa-angle-right px-1"></i> 사용내역 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update_c"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="c_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="date" class="form-label">사용 일자</label>
+                        <input type="text" class="form-control date_flatpickr div_required" id="date">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="card" class="form-label">법인 카드</label>
+                        <select class="form-select" id="card"></select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="user" class="form-label">실제 사용자</label>
+                        <select class="form-select" id="user"></select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="card_account" class="form-label">계정 과목
+                            <button class="btn btn-sm px-1 py-0" onclick="openCodePage('card_account', 'create')">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+                        </label>
+                        <select class="form-select" id="card_account"></select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="price" class="form-label">사용 금액</label>
+                        <input type="text" class="form-control" id="price" onkeyup="checkNumber(this, 2)">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="desc1" class="form-label">내용</label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="desc2" class="form-label">비고</label>
+                        <input type="text" class="form-control" id="desc2">
+                    </div>
+
+                    <div class="col-md-6 d-flex flex-column mb-3">
+                        <label for="image" class="form-label">증빙 자료</label>
+                        <div class="d-flex">
+                            <input type="file" class="form-control" id="image" accept="image/*">
+                            <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="image_clear_btn('c_update_modal')">
+                                <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">제거</span>
+                            </button>
+                        </div>
+                        <span id="image_filename" class="text-secondary small text-truncate" style="max-width: 100%;"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="c_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="c_update_submit()">저장</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 이미지 미리보기 툴팁용 -->
+<div id="imageTooltip">
+    <img id="tooltipImage" src="" alt="미리보기">
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_name;
+let a_click_code;
+let a_click_owner_id;
+let a_click_owner_name;
+let a_click_card_supplier;
+let a_click_validation_date;
+let a_click_is_valid;
+let a_click_created_at;
+let a_click_created_by_id;
+let a_click_created_by_name;
+let a_click_updated_at;
+let a_click_updated_by_id;
+let a_click_updated_by_name;
+
+let c_click_id;
+let c_click_card_id;
+let c_click_card_code;
+let c_click_user_id;
+let c_click_user_name;
+let c_click_card_account_id;
+let c_click_card_account_name;
+let c_click_date;
+let c_click_price;
+let c_click_desc1;
+let c_click_desc2;
+let c_click_desc3;
+let c_click_created_at;
+let c_click_created_by_id;
+let c_click_created_by_name;
+let c_click_updated_at;
+let c_click_updated_by_id;
+let c_click_updated_by_name;
+let c_click_file_name;
+let image_clear_flag = false;  // c_update 이미지 제거 플래그
+
+let fr_date;
+let to_date;
+let all_sch;
+let a_all_sch;
+let sch_card_account;
+let sch_is_valid;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+let c_nation_data = {
+    cname: 'c_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'c_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let c_nation = new Nations(c_nation_data, c_search); // 인스턴스 명
+c_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('company_card_page_size', $(this).val());
+});
+
+$('#c_page_size').on('change', function () {
+    localStorage.setItem('company_card_c_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        c_search_ready();
+    }
+});
+
+document.getElementById("a_all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('company_card_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    let savedPageSize_c = localStorage.getItem('company_card_c_page_size');
+    if (savedPageSize_c) { $('#c_page_size').val(savedPageSize_c);}
+
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_card_account', '선택', '/sel2_code_card_account/', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+    c_search_ready();
+}
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    a_all_sch = $('#a_all_sch').val();
+    sch_is_valid = $('#sch_is_valid').val();
+
+    a_search();
+}
+
+// 선택대상 유지 : 주로 update 후 호출
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    
+    if (a_all_sch) { query += "&a_all_sch=" + a_all_sch; }
+    if (sch_is_valid) { query += "&sch_is_valid=" + sch_is_valid; }
+
+    fetch_gp("/cost_company_card_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let currentOwner = item.owner || {};
+        let profileImage = currentOwner.profile_image
+        ? `<img src="${currentOwner.profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">`
+        : "";
+
+        let ownerProfile = currentOwner.name
+            ? `${profileImage} ${currentOwner.name} ${currentOwner.job_level || ""}`
+            : "-";
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td>${num + i}</td>
+            <td name='code'><span class="badge bg-info font-size-12 p-2" style="min-width: 50px;">${item.code || ""}</span></td>
+            <td name='card_supplier'>${item.card_supplier || ""}</td>
+            <td name='owner_profile' class="py-1">${ownerProfile}</td>
+
+            <td name='name' class='d-none'>${item.name || ""}</td>
+            <td name='validation_date' class='d-none'>${item.validation_date || ""}</td>
+            <td name='is_valid' class='d-none'>${item.is_valid || ""}</td>
+            <td name='owner_id' class='d-none'>${item.owner.id || ""}</td>
+            <td name='owner_name' class='d-none'>${item.owner.name || ""}</td>
+
+            <td name='created_at' class='d-none'>${item.created_at}</td>
+            <td name='updated_at' class='d-none'>${item.updated_at}</td>
+            <td name='created_by_id' class='d-none'>${item.created_by.id}</td>
+            <td name='created_by_name' class='d-none'>${item.created_by.name}</td>
+            <td name='updated_by_id' class='d-none'>${item.updated_by.id}</td>
+            <td name='updated_by_name' class='d-none'>${item.updated_by.name}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_code = $(this).find("[name='code']").text();
+        a_click_name = $(this).find("[name='name']").text();
+        a_click_owner_id = $(this).find("[name='owner_id']").text();
+        a_click_owner_name = $(this).find("[name='owner_name']").text();
+        a_click_card_supplier = $(this).find("[name='card_supplier']").text();
+        a_click_validation_date = $(this).find("[name='validation_date']").text();
+        a_click_is_valid = $(this).find("[name='is_valid']").text();
+
+        a_click_created_at = $(this).find("[name='created_at']").text();
+        a_click_updated_at = $(this).find("[name='updated_at']").text();
+        a_click_created_by_id = $(this).find("[name='created_by_id']").text();
+        a_click_created_by_name = $(this).find("[name='created_by_name']").text();
+        a_click_updated_by_id = $(this).find("[name='updated_by_id']").text();
+        a_click_updated_by_name = $(this).find("[name='updated_by_name']").text();
+
+        c_search_ready();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_update_modal_in();
+    });
+}
+
+function a_create_modal_in() {
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    $("#a_create_modal #code").val('');
+    $("#a_create_modal #name").val('');
+    $("#a_create_modal #card_supplier").val('');
+    $("#a_create_modal #validation_date").val('');
+    $("#a_create_modal #is_valid").val('true');
+
+    init_Select2_modal('#a_create_modal #owner', '선택', '/sel2_user_manager/?me=true', {id: 'id', txt: item => `${item.text}`});
+
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_submit() {
+    let api_data = new FormData();
+        api_data.append("code", nullapply($('#a_create_modal #code').val()));
+        api_data.append("name", nullapply($('#a_create_modal #name').val()));
+        api_data.append("owner", nullapply($('#a_create_modal #owner').val()));
+        api_data.append("card_supplier", nullapply($('#a_create_modal #card_supplier').val()));
+        api_data.append("validation_date", nullapply($('#a_create_modal #validation_date').val()));
+        api_data.append("is_valid", nullapply($('#a_create_modal #is_valid').val()));
+
+    fetch_gp('/cost_company_card_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        a_search_ready();
+        alert(txt.create_ed);
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    $("#a_update_modal #code").val(a_click_code);
+    $("#a_update_modal #name").val(a_click_name);
+    $("#a_update_modal #card_supplier").val(a_click_card_supplier);
+    $("#a_update_modal #validation_date").val(a_click_validation_date);
+    $("#a_update_modal #is_valid").val(a_click_is_valid ? "true" : "false");
+
+    init_Select2_modal('#a_update_modal #owner', '선택', '/sel2_user_manager/?me=true', {id: 'id', txt: item => `${item.text}`}, a_click_owner_id);
+
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("code", nullapply($('#a_update_modal #code').val()));
+        api_data.append("name", nullapply($('#a_update_modal #name').val()));
+        api_data.append("owner", nullapply($('#a_update_modal #owner').val()));
+        api_data.append("card_supplier", nullapply($('#a_update_modal #card_supplier').val()));
+        api_data.append("validation_date", nullapply($('#a_update_modal #validation_date').val()));
+        api_data.append("is_valid", nullapply($('#a_update_modal #is_valid').val()));
+
+    fetch_gp('/cost_company_card_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search();
+        alert(txt.update_ed);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt(`[${a_click_code}] 카드를 삭제하시겠습니까?\n` + txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/cost_company_card_delete_fn/', 'post', true, api_data, (done) => {
+            a_nation.page = 1;
+            a_click_id = null;
+
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+
+// C_MODAL_AREA --------------------------------------------------------------------------------------------------------
+function c_search_ready() {
+    c_click_id = null;
+    c_nation.page = 1;
+    c_nation_data.page_size = $("#c_page_size").val();
+    
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    all_sch = $('#all_sch').val();
+    sch_card_account = $('#sch_card_account').val();
+
+    c_search();
+}
+
+function c_search() {
+    let query = "?page=" + c_nation.page + "&page_size=" + c_nation_data.page_size;
+    if (fr_date) { query += "&fr_date=" + fr_date; }
+    if (to_date) { query += "&to_date=" + to_date; }
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_card_account) { query += "&sch_card_account=" + sch_card_account; }
+    if (a_click_id) { query += "&card_id=" + a_click_id; }
+
+    fetch_gp("/cost_company_card_history_list_fn/" + query, 'GET', true, {}, (done) => {
+        c_draw_table(done);
+    });
+}
+
+function c_draw_table(done) {
+    // console.log("c_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#c_tbody').html(emptyRow);
+        return;
+    }
+
+    let total_price_sum = 0;
+    let num = ((c_nation.page - 1) * c_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        let total_price = parseFloat(item.price) || 0;
+        total_price_sum += total_price;
+
+        let user = item.user || {};
+        let profileImage = user.profile_image
+        ? `<img src="${user.profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">`
+        : "";
+
+        let userProfile = user.name
+            ? `${profileImage} ${user.name} ${user.job_level || ""}`
+            : "-";
+
+        let imageUrl = item.image;
+        let imageBtnHtml = "";
+        if (imageUrl) {
+            let fileName = imageUrl.split('/').pop();
+            let fileBaseName = fileName.split('.').slice(0, -1).join('.');
+            imageBtnHtml = `
+                <button class="btn btn-outline-primary btn-sm text-truncate w-100 image-preview-btn" data-image-url="${imageUrl}">
+                    <i class="fa-regular fa-image"></i>
+                    <span class="ms-1">증빙 자료</span>
+                </button>
+            `;
+        } else {
+            imageBtnHtml = "";
+        }
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td>${num + i}</td>
+            <td name='date'>${item.date || ""}</td>
+            <td name='card_code'><span class="badge bg-info font-size-12 p-2" style="min-width: 50px;">${item.card_code || ""}</span></td>
+            <td name='userProfile' class="py-1">${userProfile}</td>
+            <td name='card_account_name'>${item.card_account_name || ""}</td>
+            <td name='desc1'>${item.desc1 || ""}</td>
+            <td name='price'>${formatNumber(item.price, 2) || ""}</td>
+            <td name='desc2'>${item.desc2 || ""}</td>
+            <td name='image_btn' class="py-1">${imageBtnHtml}</td>
+
+            <td name='card_id' class='d-none'>${item.card_id || ""}</td>
+            <td name='user_id' class='d-none'>${item.user.id || ""}</td>
+            <td name='user_name' class='d-none'>${item.user.name || ""}</td>
+            <td name='card_account_id' class='d-none'>${item.card_account_id || ""}</td>
+            <td name='desc3' class='d-none'>${item.desc3 || ""}</td>
+            <td name='file_name' class='d-none'>
+                기존 첨부파일 : ${item.image ? decodeURIComponent(item.image.split('/').pop()) : "없음"}
+            </td>
+
+            <td name='created_at' class='d-none'>${item.created_at}</td>
+            <td name='updated_at' class='d-none'>${item.updated_at}</td>
+            <td name='created_by_id' class='d-none'>${item.created_by.id}</td>
+            <td name='created_by_name' class='d-none'>${item.created_by.name}</td>
+            <td name='updated_by_id' class='d-none'>${item.updated_by.id}</td>
+            <td name='updated_by_name' class='d-none'>${item.updated_by.name}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    let sumRow = `
+        <tr class="no-click" style="background: #f8f8f8; border-top: 1px solid #d9dee3" id="tr_total_price_amount">
+            <td colspan="6" class="fw-bold text-end">금액 합계</td>
+            <td colspan="2" class="fw-bold text-start">${formatNumber(total_price_sum, 0) || ""} 원</td>
+            <td></td>
+        </tr>`;
+        rows += sumRow;
+
+    c_nation.nation_display(done);
+    $('#c_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (c_click_id != null) {
+        $("#c_tbody #" + c_click_id).addClass('clicked');
+    }
+
+    $('#c_tbody > tr').on('click', function () {
+        $('#c_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        c_click_id = $(this).attr("id");
+        c_click_card_id = $(this).find("[name='card_id']").text();
+        c_click_card_code = $(this).find("[name='card_code']").text();
+        c_click_user_id = $(this).find("[name='user_id']").text();
+        c_click_user_name = $(this).find("[name='user_name']").text();
+        c_click_card_account_id = $(this).find("[name='card_account_id']").text();
+        c_click_card_account_name = $(this).find("[name='card_account_name']").text();
+        c_click_date = $(this).find("[name='date']").text();
+        c_click_price = $(this).find("[name='price']").text();
+        c_click_desc1 = $(this).find("[name='desc1']").text();
+        c_click_desc2 = $(this).find("[name='desc2']").text();
+        c_click_desc3 = $(this).find("[name='desc3']").text();
+        c_click_file_name = $(this).find("[name='file_name']").text();
+        c_click_created_at = $(this).find("[name='created_at']").text();
+        c_click_created_by_name = $(this).find("[name='created_by_name']").text();
+        c_click_updated_at = $(this).find("[name='updated_at']").text();
+        c_click_updated_by_name = $(this).find("[name='updated_by_name']").text();
+    });
+
+    $('#c_tbody > tr').on('dblclick', function () {
+        c_update_modal_in();
+    });
+}
+
+// 첨부 이미지 미리보기
+$(document).on('mouseenter', '.image-preview-btn', function (e) {
+    const imageUrl = $(this).data('image-url');
+    $('#tooltipImage').attr('src', imageUrl);
+
+    $('#imageTooltip').css({
+        top: 'calc(140px)',
+        left: 'calc(40px)', // 화면 오른쪽에서 620px 왼쪽
+        position: 'fixed'            // 뷰포트 기준 고정
+    }).show();
+});
+
+$(document).on('mouseleave', '.image-preview-btn', function () {
+    $('#imageTooltip').hide();
+});
+
+$(document).on('click', '.image-preview-btn', function () {
+    const imageUrl = $(this).data('image-url');
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = imageUrl.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+function c_create_modal_in() {
+    c_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create_c').trigger('click');
+    }
+
+    $('#c_create_modal').modal("show");
+}
+
+function c_create_modal_reset(popup_off) {
+    $("#c_create_modal #date").val(date_today_str);
+    $("#c_create_modal #price").val('');
+    $("#c_create_modal #desc1").val('');
+    $("#c_create_modal #desc2").val('');
+    $("#c_create_modal #image").val('');
+
+    init_Select2_modal('#c_create_modal #card', '선택', '/sel2_company_card/', {id: 'id', txt: item => `${item.text}`}, a_click_id);
+    init_Select2_modal('#c_create_modal #user', '선택', '/sel2_user_manager/?me=true', {id: 'id', txt: item => `${item.text}`}, a_click_owner_id);
+    init_Select2_modal('#c_create_modal #card_account', '선택', '/sel2_code_card_account/', {id: 'id', txt: item => `${item.text}`});
+
+    modal_toast(popup_off, '#c_create_modal');
+}
+
+function c_create_submit() {
+    let date = $('#c_create_modal #date').val();
+    if (!date) {
+        alert("[사용 일자] 항목을 입력하세요.");
+        return;
+    }
+
+    let Image = $('#c_create_modal #image')[0].files[0];
+
+    let api_data = new FormData();
+        api_data.append("card", nullapply($('#c_create_modal #card').val()));
+        api_data.append("user", nullapply($('#c_create_modal #user').val()));
+        api_data.append("card_account", nullapply($('#c_create_modal #card_account').val()));
+        api_data.append("date", nullapply($('#c_create_modal #date').val()));
+        api_data.append("price", nullapply(del_comma($('#c_create_modal #price').val())));
+        api_data.append("desc1", nullapply($('#c_create_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#c_create_modal #desc2').val()));
+
+        if (Image) api_data.append("image", Image);
+
+    fetch_gp('/cost_company_card_history_create_fn/', 'post', true, api_data, (done) => {
+        $('#c_create_modal').modal("hide");
+        c_search_ready();
+        alert(txt.create_ed);
+    });
+}
+
+function c_update_modal_in() {
+    if (c_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    c_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update_c').trigger('click');
+    }
+
+    $('#c_update_modal').modal("show");
+}
+
+function c_update_modal_reset(popup_off) {
+    $("#c_update_modal #date").val(c_click_date);
+    $("#c_update_modal #price").val(c_click_price);
+    $("#c_update_modal #desc1").val(c_click_desc1);
+    $("#c_update_modal #desc2").val(c_click_desc2);
+    $("#c_update_modal #image").val('');
+    if (c_click_file_name) {
+        $("#c_update_modal #image_filename").text(c_click_file_name);
+    } else {
+        $("#c_update_modal #image_filename").text('');
+    }
+
+    init_Select2_modal('#c_update_modal #card', '선택', '/sel2_company_card/', {id: 'id', txt: item => `${item.text}`}, c_click_card_id);
+    init_Select2_modal('#c_update_modal #user', '선택', '/sel2_user_manager/?me=true', {id: 'id', txt: item => `${item.text}`}, c_click_user_id);
+    init_Select2_modal('#c_update_modal #card_account', '선택', '/sel2_code_card_account/', {id: 'id', txt: item => `${item.text}`}, c_click_card_account_id);
+
+    image_clear_flag = false;  // 이미지 제거 플래그 초기화
+
+    modal_toast(popup_off, '#c_update_modal');
+}
+
+function c_update_submit() {
+    let date = $('#c_update_modal #date').val();
+    if (!date) {
+        alert("[사용 일자] 항목을 입력하세요.");
+        return;
+    }
+
+    let Image = $('#c_update_modal #image')[0].files[0];
+
+    let api_data = new FormData();
+        api_data.append("pk", c_click_id);
+        api_data.append("card", nullapply($('#c_update_modal #card').val()));
+        api_data.append("user", nullapply($('#c_update_modal #user').val()));
+        api_data.append("card_account", nullapply($('#c_update_modal #card_account').val()));
+        api_data.append("date", nullapply($('#c_update_modal #date').val()));
+        api_data.append("price", nullapply(del_comma($('#c_update_modal #price').val())));
+        api_data.append("desc1", nullapply($('#c_update_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#c_update_modal #desc2').val()));
+        api_data.append("image_clear", image_clear_flag ? "true" : "false");
+
+        if (Image) api_data.append("image", Image);
+
+    fetch_gp('/cost_company_card_history_update_fn/', 'post', true, api_data, (done) => {
+        $('#c_update_modal').modal("hide");
+        c_search();
+        alert(txt.update_ed);
+        image_clear_flag = false;  // 이미지 제거 플래그 초기화
+    });
+}
+
+function c_delete_submit() {
+    if (c_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt("사용내역을 삭제하시겠습니까?\n" +
+        txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", c_click_id);
+
+        fetch_gp('/cost_company_card_history_delete_fn/', 'post', true, api_data, (done) => {
+            c_nation.page = 1;
+            c_click_id = null;
+
+            c_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function image_clear_btn(modalId) {
+    $(`#${modalId} #image`).val('');
+    $(`#${modalId} #image_filename`).text('삭제 예정');
+    image_clear_flag = true;  // 이미지 제거 플래그 활성화
+}
+
+
+$('#a_filter_open').on('click', function () {
+    $('#a_filter').slideToggle(200);
+    $(this).toggleClass('rotate');
+});
+
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+function a_popup_open() {
+    let url = `/cost/company_card/data/`;
+    window.open(url, '_blank', 'width=1600,height=1000,scrollbars=yes,resizable=yes');
+}
+
+function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+// 데이트 필터 드랍다운 이벤트
+$('#date_filter').on('mouseenter', function () {
+    $('#date_dropdown').removeClass('d-none');
+});
+$('#date_filter').on('mouseleave', function () {
+    $('#date_dropdown').addClass('d-none');
+});
+
+function set_date_range(range) {
+    const today = new Date();
+    let start, end;
+
+    if (range === 'yesterday') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end.setDate(today.getDate() - 1);
+    } else if (range === 'today') {
+        start = end = new Date(today);
+    } else if (range === 'tomorrow') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() + 1);
+        end.setDate(today.getDate() + 1);
+    } else if (range === 'last_week') {
+        const day = today.getDay() || 7;
+        end = new Date(today);
+        end.setDate(today.getDate() - day);
+        start = new Date(end);
+        start.setDate(end.getDate() - 6);
+    } else if (range === 'this_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 1);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'next_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 8);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (range === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (range === 'next_month') {
+        start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    }
+
+    else if (range === 'last_year') {
+        start = new Date(today.getFullYear() - 1, 0, 1);
+        end = new Date(today.getFullYear() - 1, 11, 31); }
+
+    else if (range === 'this_year') {
+        start = new Date(today.getFullYear(), 0, 1);
+        end = new Date(today.getFullYear(), 11, 31); }
+
+    else if (range === 'next_year') {
+        start = new Date(today.getFullYear() + 1, 0, 1);
+        end = new Date(today.getFullYear() + 1, 11, 31); }
+
+
+    $('#fr_date').val(formatDate(start));
+    $('#to_date').val(formatDate(end));
+    c_search_ready();
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+    { modalId: 'c_create_modal', iconId: 'md_fullscreen_create_c' },
+    { modalId: 'c_update_modal', iconId: 'md_fullscreen_update_c' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

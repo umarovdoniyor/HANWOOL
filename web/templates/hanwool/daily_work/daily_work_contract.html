@@ -1,0 +1,843 @@
+<!-- 거래처/현장관리 > 일일근무관리 > 근로계약서 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% load humanize %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+{% if worker.pdf %}
+    <img src="/data/{{ worker.pdf }}" style="width:100%">
+{% else %}
+    <style>
+    @media print {
+        body {
+            zoom: 0.8; /* 전체 80% 축소 */
+        }
+
+        .no-print, .btn, .navbar, .footer {
+            display: none !important;
+        }
+
+        #print_area {
+            width: 100%;
+            height: auto;
+            margin: 0 auto;
+            padding: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+    }
+
+    @media (max-width: 768px) {
+        #signature-pad {
+            width: 100%;
+            height: 50vh;
+            
+            {% comment %}/* 캔버스 영역 디버깅용 */
+            background-color: rgba(255, 230, 200, 0.6); /* 캔버스 영역을 연한 주황색으로 표시 */
+            border: 3px dashed red; /* 테두리 표시 */
+            outline: 2px solid blue; /* 외곽선 강조 (뷰포트 기준 확인용) */{% endcomment %}
+        }
+
+        body {
+            zoom: 0.5; /* 전체 80% 축소 */
+        }
+
+        /* 기본 (Android 포함) */
+        body, html {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior: none;
+        }
+
+        .row, .col-12 {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        #print_area {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        {% if worker.sign_status == "진행" %}
+        #main_area {
+            max-height: 130vh;
+            overflow-y: auto;
+        }
+        {% endif %}
+
+        th, td {
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
+            font-size: 11px !important;
+        }
+    }
+
+
+    #scroll-sign-btn {
+        position: fixed;
+        top: 150px;
+        right: 20px;
+        z-index: 9999;
+        background-color: #198754; /* Bootstrap success 색상 */
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 20px;
+        font-size: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    #scroll-sign-btn:hover {
+        background-color: #157347;
+        transform: scale(1.05);
+    }
+
+    #scroll-top-btn {
+        position: fixed;
+        top: 70px; /* 서명 버튼보다 약간 위 */
+        right: 20px;
+        z-index: 9999;
+        background-color: #0d6efd; /* Bootstrap primary 색상 */
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 20px;
+        font-size: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    #scroll-top-btn:hover {
+        background-color: #0b5ed7;
+        transform: scale(1.05);
+    }
+
+    @supports (-webkit-touch-callout: none) {
+        /* iPhone Safari만 인식하는 조건 */
+        input, textarea, select, button {
+            font-size: 16px !important;
+        }
+
+        body {
+            transform: scale(0.5);
+            transform-origin: top left;
+            width: 140% !important; /* 서명패드 보정용 */
+            height: 200% !important;
+            max-height: none !important;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        #main_area,
+        #sign_area {
+            width: 100% !important;
+            max-width: none !important;
+            height: auto !important;
+        }
+    }
+    </style>
+    <!-- Content Area -->
+    <div class="row py-3 px-4">
+
+        <!-- 게시물 목록 -->
+        <div class="col-12">
+            <div class="d-flex flex-column gx-4 mx-0">
+
+                <!-- 상단 메뉴바 -->
+                <div class="col-12 no-print d-none d-md-block" style="max-width: 920px;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-inline-block align-items-center" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                            <i class="fa-solid fa-users me-2"></i>일일근무관리 <i class="fa-solid fa-angle-right px-1"></i> 근로계약서
+                        </div>
+                        <div class="d-flex">
+                            <button class="btn btn-sm btn-primary text-nowrap ms-1 px-2.5" onclick="save_pdf()">
+                                <i class="fa-solid fa-file-pdf me-2"></i>PDF 저장
+                            </button>
+
+                            <button class="btn btn-sm btn-secondary text-nowrap ms-1 px-2.5" onclick="window.close()">
+                                <i class="fa-solid fa-xmark me-2"></i>닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 본문 -->
+                <div class="col-12 p-2" id="main_area" style="max-width: 920px;">
+                    <div class="card border border-light">
+                        <div class="card-body p-3">
+                            <div id="print_area" class="p-3">
+                                <h1 class="text-center text-black fw-bold mb-4">일용직 근로계약서</h1>
+
+                                <h5 class="text-center text-black mb-4">
+                                    “갑”과 “을”은 아래의 근로조건을 성실히 이행할 것을 약정하고 근로계약을 체결한다.<br>
+                                    “을”은 근로계약서 작성 시 “갑” 관리자에게 건강상 아무런 이상이 없음을 통보하였음을 확인함
+                                </h5>
+
+                                <div class="table-responsive">
+                                    <table class="table border-top">
+                                        <tbody>
+                                            <tr class="text-nowrap" style="text-align: start;">
+                                                <th rowspan="2" class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 10%; vertical-align: middle;">(갑)고용자</th>
+                                                <td class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 10%;">이름</td>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px; width: 80%;">
+                                                    <span>주식회사 {{ work_order.subsidiary.name }} 대표 {{ work_order.subsidiary.owner_name }}</span>
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start;">
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">주소</th>
+                                                <td class="py-2 px-3" style="color: #333 !important; font-size: 14px;">
+                                                    <span>{{ work_order.subsidiary.address }}</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table border-top">
+                                        <tbody>
+                                            <tr class="text-nowrap" style="text-align: start;">
+                                                <th rowspan="3" class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 10%; vertical-align: middle;">(을)근로자</th>
+                                                <td class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 10%;">이름</td>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px; width: 45%;">
+                                                    <span>{{ worker.user.name }}</span>
+                                                </td>
+                                                <td class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 10%;">연락처</td>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px; width: 35%;">
+                                                    <span>{{ worker.user.phone }}</span>
+                                                </td>
+                                            </tr>
+                                            {% comment %}<tr class="text-nowrap" style="text-align: start;">
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">주소</th>
+                                                <td class="py-2 px-3" style="color: #333 !important; font-size: 14px;">
+                                                    <span>{{ worker.user.address }}</span>
+                                                </td>
+                                                <td class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">주민등록번호</td>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px;">
+                                                    <span>{{ worker.user.rrn }}</span>
+                                                </td>
+                                            </tr>
+                                            <tr class="text-nowrap" style="text-align: start;">
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">계좌번호</th>
+                                                <td class="py-2 px-3" style="color: #333 !important; font-size: 14px;">
+                                                    <span>
+                                                        {{ worker.user.bank_name }}&nbsp;{{ worker.user.account_code }} 
+                                                    </span>
+                                                </td>
+                                                <td class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">예금주</td>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px;">
+                                                    <span>
+                                                        {% if worker.user.account_name %}
+                                                            {{ worker.user.account_name }}
+                                                        {% else %}
+                                                            {{ worker.user.name }}
+                                                        {% endif %}
+                                                    </span>
+                                                </td>
+                                            </tr>{% endcomment %}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <h5 class="text-center text-black mb-2">
+                                    근로계약기간은 {{ work_order.date }}부터 {{ work_order.date }}까지
+                                </h5>
+                                <h6 class="text-center text-black mb-2">
+                                    위 일용계약 기간 종료 후 갱신없이 만료됨
+                                </h6>
+
+                                <div class="table-responsive">
+                                    <table class="table border-top">
+                                        <tbody>
+                                            <tr>
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold; width: 20%;">근무주소</th>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px; width: 80%;">
+                                                    <span>{{ work_order.customer.address|default_if_none:'*** 거래처 정보가 누락되어 있습니다 ***' }}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">근무시간</th>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px;">
+                                                    <span>{{ worker.worktime.name|default_if_none:'*** 근무시간 정보가 누락되어 있습니다 ***' }}</span>
+                                                    {% if worker.worktime.desc1 %}
+                                                    <span> / {{ worker.worktime.desc1 }}</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">업무내용</th>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px;">
+                                                    <span>{{ work_order.customer.desc3|default_if_none:'*** 거래처 정보가 누락되어 있습니다 ***' }}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">휴게시간</th>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px;">
+                                                    <span>{{ work_order.customer.desc4|default_if_none:'*** 거래처 정보가 누락되어 있습니다 ***' }}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">고정일급</th>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px;">
+                                                    <span>{{ wage_price }}원</span>
+                                                    {% if worker.wage.desc1 %}
+                                                    <span> / {{ worker.wage.desc1 }}</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">지급방식</th>
+                                                <td class="py-2 px-3" style="color: #333; font-size: 14px;">
+                                                    <span>급여일은 근로 시 익일 지급되며 지정된 계좌에 현금 입금</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="py-2 px-3" style="background-color: #f8f8f8; color: #333; font-size: 14px; font-weight: bold;">계좌번호</th>
+                                                <td class="py-2 px-3" style="color: #333 !important; font-size: 14px;">
+                                                    <span>
+                                                        {{ worker.user.bank.name }}&nbsp;
+                                                        {{ worker.user.account_code }}&nbsp;예금주&nbsp;
+                                                        {% if worker.user.account_name %}
+                                                            {{ worker.user.account_name }}
+                                                        {% else %}
+                                                            {{ worker.user.name }}
+                                                        {% endif %}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="text-start text-black" style="font-size: 11px;">
+                                    [고용조건]
+                                </div>
+                                <div id="content1" class="text-start text-black" style="font-size: 11px;">
+                                    <p class="text-start text-black" style="font-size: 11px;">
+                                        1. “을”이 내부 규정 위반 및 근무 태도 불성실한 경우 바로 근로계약이 종료될 수 있다.<br>
+                                        2. “을”이 업무수행 중 또는 업무에 관련 없이 취득한 회사 비밀은 어떠한 방법으로도 회사 내외의 제3자에게 누설하거나 공개하지 않는다. 비밀 누설로 인해 발생하는 모든 책임은 “을”이 진다.<br>
+                                        3. 근무 주 작업지시 불이행, 근무지 이탈, 소란, 음주, 폭행, 폭언 등 현장 분위기를 어지럽히는 행위 시 시정조치 및 근로계약이 바로 종료될 수 있다. 이로 인해 발생하는 모든 책임은 “을”이 진다.<br>
+                                        4. 작업장 내에서 발생하는 절도, 절취, 물품 반출의 경우 “을”에게 민, 형사상 책임을 물을 수 있다.<br>
+                                        5. 무단결근 및 기타 사유로 작업장 내 업무에 지장을 초래하게 되면 1차 경고 (관리자 경고, 시말서 등)<br>
+                                        6. “을”은 주식회사 {{ work_order.subsidiary.name }} 취업 규칙 및 근로계약을 성실히 준수하고, 이를 위반할 시 제 규정에 의거 조치에 대해 이의를 제기하지 않는다.<br>
+                                    </p>
+                                </div>
+                                <div id="editor1">
+                                    <textarea class="d-none summernote" name="content1"></textarea>
+                                </div>
+
+                                <div class="text-start text-black mt-3" style="font-size: 11px;">
+                                    [무급휴직동의서]
+                                </div>
+                                <div id="content2" class="text-start text-black" style="font-size: 11px;">
+                                    <p class="text-start text-black" style="font-size: 11px;">
+                                        1. 근로자 본인은 위 근로계약기간 내 다음과 같은 회사 사정에 의해 무급휴직함에 동의합니다.<br>
+                                        2. 회사사정 : 현장 내 물량감소 및 인력감소<br>
+                                        3. 본인은 위 무급휴직 동의서에 대한 내용을 충분히 숙지한 후 자유의사에 기해 작성하였음을 확인합니다.<br>
+                                    </p>
+                                </div>
+                                <div id="editor2">
+                                    <textarea class="d-none summernote" name="content2"></textarea>
+                                </div>
+
+                                <h6 class="text-end text-black mt-2 me-5 position-relative">
+                                    성함 : {{ worker.user.name }} (인)
+                                    <img src="" class="sign-image position-absolute d-none" style="right: -60px; top: {% if device_type == 'desktop' %}-10px{% else %}-20px{%endif %}; width: 150px; height: auto;">
+                                </h6>
+
+                                <div class="text-start text-black" style="font-size: 11px;">
+                                    [확약동의서]
+                                </div>
+                                <div id="content3" class="text-start text-black" style="font-size: 11px;">
+                                    <p class="text-start text-black" style="font-size: 11px;">
+                                        1. 업무상 근로자의 과실로 인해 발생한 손해에 전체 금액은 근로자 본인이 부담한다.<br>
+                                        2. 손해액을 부담하지 못할 경우 “갑”이 우선 부담하며, 손해액은 해당 근로자에게 구상권을 청구할 수 있다.<br>
+                                        - 구상권 청구에 대한 법적 비용은 “을”이 부담한다.<br>
+                                    </p>
+                                </div>
+                                <div id="editor3">
+                                    <textarea class="d-none summernote" name="content3"></textarea>
+                                </div>
+
+                                <h6 class="text-end text-black mb-2 mt-3 me-5 position-relative">
+                                    확약서 내용에 대해 동의함<br>
+                                    성함 : {{ worker.user.name }} (인)
+                                    <img src="" class="sign-image position-absolute d-none" style="right: -60px; top: {% if device_type == 'desktop' %}5px{% else %}-20px{%endif %}; width: 150px; height: auto;">
+                            </h6>
+
+                                <h6 class="text-center text-black mb-2">
+                                    “갑”은 근로계약 체결함과 동시에 본 계약서를 “을”에게 계약서 사본을 교부함을 확인하고 서명 날인함<br>
+                                    본 계약서에 명시되지 않은 사항은 근로기준법 및 자사 취업 규칙 제 규정에 정한 바에 따름
+                                </h6>
+
+                                <h6 class="text-end text-black me-5 position-relative">
+                                    <div class="mb-1">근로자 : {{ worker.user.name }} (인)</div>
+                                    <img src="" class="sign-image position-absolute d-none" style="right: -70px; top: {% if device_type == 'desktop' %}-5px{% else %}-30px{%endif %}; width: 150px; height: auto;">
+                                    <div>사업자 : 주식회사 {{ work_order.subsidiary.name }} (인)</div>
+                                    {% if worker.image and work_order.subsidiary.image %}
+                                    <img src="{{ work_order.subsidiary.image.url }}" class="position-absolute d-none" style="right: -20px; top: -10px; width: 70px; height: auto;">
+                                    {% endif %}
+                                    <img src="/data/{{ company_info.stamp }}" class="position-absolute" style="right: -40px; top: {% if device_type == 'desktop' %}10px{% else %}0px{%endif %}; width: 50px; height: auto;">
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 하단 -->
+                {% if worker.sign_status == "진행" %}
+                <div class="col-12 mb-4 no-print px-2" id="sign_area" style="max-width: 920px;">
+                    <div class="d-flex justify-content-center p-3">
+                        <div class="w-100">
+                            <label for="signature-pad" class="form-label fw-bold">전자 서명</label>
+                            <div style="border: 3px solid #ccc; border-radius: 4px; width: 100%;">
+                                <canvas id="signature-pad" width="800" height="150" style="touch-action: none;"></canvas>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <label for="" class="form-label">&nbsp;</label>
+                            <button class="btn btn-warning text-nowrap ms-2 mb-2 px-2.5 h-100" id="clearSignatureBtn" onclick="clearSignature()">
+                                <i class="fa-solid fa-rotate-right me-2"></i>다시 하기
+                            </button>
+                            <button class="btn btn-success text-nowrap ms-2 px-2.5 h-100" id="saveSignatureBtn" onclick="saveSignature()">
+                                <i class="fa-solid fa-signature me-2"></i>서명 완료
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if worker.sign_status == "진행" %}
+        <div class="d-md-none">
+            <button id="scroll-top-btn" class="no-print">
+                <i class="fa-solid fa-file-contract"></i> 내용 보기
+            </button>
+            <button id="scroll-sign-btn" class="no-print">
+                <i class="fa-solid fa-signature fa-sm"></i> 서명하기
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.1.3/dist/signature_pad.umd.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+    <script type="text/javascript" src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.min.js"></script>
+
+    <script>
+    let work_order_id = {% if work_order %} {{ work_order.id }} {% else %} null {% endif %};
+    let worker_id = {% if worker %} {{ worker.id }} {% else %} null {% endif %};
+    let worktime_id = "{{ worktime_id }}";
+    let wage_id = "{{ wage_id }}";
+    let referer = "{{ referer }}";
+
+    // 0.6 & 3은 약 250~300kb 용량으로 pdf 저장됨
+    const pdf_options = {
+        margin: [10, 10, 10, 10],
+        filename: get_pdf_name(),
+        image: { type: 'jpeg', quality: 0.6 }, // 이미지 품질 100%
+        html2canvas: {
+            scale: 3, // 캔버스의 해상도를 높임
+            useCORS: true, // CORS 문제 방지
+        },
+        jsPDF: {
+            unit: 'mm',
+            format: [240, 340],
+            orientation: 'portrait',
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    window.onkeydown = function (event) {
+        if (event.keyCode == 116) {  // F5
+            event.returnValue = false;
+            refresh();
+        }
+    }
+
+    function refresh() {
+        window.location.href = window.location.href
+    }
+
+    $(function () {
+        main();
+    });
+
+    function main() {
+        set_autocomplete('off');
+        init_date_flatpickr();
+
+        for (var i = 1; i <= 3; i++) {
+            if (referer != "None") {
+                var content = $(`#content${i}`);
+                var editor = $(`#editor${i} textarea`);
+                editor.summernote({
+                    width: "100%",
+                    height: 400,
+                    focus: true,
+                    lang: 'ko-KR',
+                    //이미지 업로드 시 width 적용
+                    callbacks: {
+                        onImageUpload: function(image) {
+                            console.log('in');
+                            const file = image[0];
+                            const reader = new FileReader();
+                            reader.onloadend = function() {
+                                const image = $('<img>').attr('src',  reader.result);
+                                image.attr('width','100%');
+                                editor.summernote("insertNode", image[0]);
+                            }
+                            reader.readAsDataURL(file);
+                        }
+                    }
+                });
+                editor.summernote("code", content.html());
+                content.addClass("d-none");
+                editor.removeClass("d-none");
+            } else {
+                content.removeClass("d-none");
+                editor.addClass("d-none");
+            }
+        }
+    }
+
+    function save_pdf() {
+        const element = document.getElementById('print_area');
+        window.scrollTo(0, 0); // 스크롤이 PDF생성화면에 영향을 주기 때문에 반드시 최상단으로 이동
+        html2pdf().set(pdf_options).from(element).save();
+    }
+
+    function get_pdf_name() {
+        const pdf_title = "근로계약서";
+        const customerName = "{{ work_order.customer.name|default_if_none:'' }}";
+        const userName = "{{ worker.user.name|default_if_none:'' }}";
+
+        const dateStr = "{{ work_order.date|date:'Y-m-d'|default_if_none:'' }}";  // "2025-08-06"
+        const [year, month, day] = dateStr.split('-');
+
+        const yy = year?.slice(2) || "00";
+        const mm = month?.padStart(2, '0') || "00";
+        const dd = day?.padStart(2, '0') || "00";
+        const formattedDate = `${yy}${mm}${dd}`;
+
+        return `${pdf_title}_${formattedDate}_${customerName}_${userName}.pdf`;
+    }
+
+
+    // 전자서명 기능
+    let canvas = document.getElementById("signature-pad");
+    let signaturePad = null;
+
+    if (canvas) {
+        signaturePad = new SignaturePad(canvas, {
+            penColor: "black"
+        });
+    }
+
+    function clearSignature() {
+        signaturePad.clear();
+    }
+
+    function saveSignature() {
+        disabledBtn(true);
+        /*
+        if (signaturePad.isEmpty()) {
+            alert("서명을 작성해주세요.");
+            disabledBtn(false);
+            return;
+        }
+        */
+        if (confirm("근로계약서에 작성을 완료하시겠습니까?")) {
+            const dataURL = signaturePad.toDataURL("image/png");
+            const blob = dataURLtoBlob(dataURL);
+
+            const fileName = `{{ work_order.date|date:"ymd" }}_{{ worker.user.id }}.png`;
+            const safeFileName = fileName.replace(/[^\w\-_.]/g, '_');
+
+            $(".sign-image").each(function(index, item) {
+                $(item).attr("src", dataURL);
+                $(item).removeClass("d-none");
+            })
+            $('.summernote').each(function(index, item) {
+                var markupStr = $(item).summernote('code');
+
+                $(item).parent().prev().removeClass("d-none");
+                $(item).parent().addClass("d-none");
+            });
+            const element = document.getElementById('print_area');
+            window.scrollTo(0, 0);
+            if (!isAndroid()) {
+                html2canvas(element)
+                .then(function(canvas)
+                {
+                    canvas.toBlob(function(html_blob){
+                        if (html_blob) {
+                            saveContractDocument(
+                                worker_id,
+                                work_order_id,
+                                worktime_id,
+                                wage_id,
+                                blob,
+                                html_blob,
+                                safeFileName
+                            );
+                        }
+                    },'image/png');
+                });
+            } else {
+                htmlToImage
+                .toBlob(
+                    element,
+                    {
+                        cacheBust: true,
+                        quality: 0.5,
+                        backgroundColor: '#ffffff'
+                    }
+                )
+                .then((html_blob) => {
+                    if (html_blob) {
+                        saveContractDocument(
+                            worker_id,
+                            work_order_id,
+                            worktime_id,
+                            wage_id,
+                            blob,
+                            html_blob,
+                            safeFileName
+                        );
+                    }
+                })
+                .catch((err) => {
+                    alert('htmlToImage err:', err);
+                    disabledBtn(false);
+                });
+            }
+            
+        } else {
+            alert(txt.cancel);
+            disabledBtn(false);
+        }
+    }
+
+    function disabledBtn(disabled) {
+        $("#saveSignatureBtn").prop('disabled', disabled);
+    }
+    
+    function isAndroid() {
+        return /Android/i.test(navigator.userAgent);
+    }
+
+    function saveContractDocument(worker_id, work_order_id, worktime_id, wage_id, blob, html_blob, safeFileName) {
+        let api_data = new FormData();
+        api_data.append("pk", worker_id);
+        api_data.append("work_order_id", work_order_id);
+        if (worktime_id) {
+            api_data.append("worktime_id", worktime_id);
+        }
+        if (wage_id) {
+            api_data.append("wage_id", wage_id);
+        }
+        api_data.append("image", blob, safeFileName);
+        api_data.append("pdf", html_blob, safeFileName.replace(".png", "_contract.png"));
+        fetch_gp('/daily_worker_sign_fn/', 'post', true, api_data, (done) => {
+            if (done.error) {
+                alert(`근로계약서 작성중 오류가 발생되었습니다.\n\n${done.message}`);
+            } else {
+                alert("근로계약서 작성이 완료되었습니다.");
+                location.href = "kakaotalk://inappbrowser/close";  // 카카오톡 인앱브라우저 닫기
+                if (opener) {
+                    opener.location.href = opener.location.href;
+                }
+                window.close();
+            }
+            disabledBtn(false);
+        });
+    }
+
+    // base64 → Blob 변환 함수
+    function dataURLtoBlob(dataurl) {
+        const arr = dataurl.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+
+        return new Blob([u8arr], { type: mime });
+    }
+
+    function resizeCanvasForDevice() {
+        const canvas = document.getElementById("signature-pad");
+        const isMobile = window.innerWidth <= 768;
+
+        if (canvas) {
+            canvas.width = isMobile ? 400 : 800;
+        }
+    }
+    window.addEventListener("load", resizeCanvasForDevice);
+    window.addEventListener("resize", resizeCanvasForDevice);
+
+
+    // 플로팅 버튼 → 전자서명 영역으로 스크롤 이동
+    document.addEventListener("DOMContentLoaded", function () {
+        const signBtn = document.getElementById("scroll-sign-btn");
+        const signArea = document.getElementById("signature-pad");
+
+        if (signBtn && signArea) {
+            signBtn.addEventListener("click", function () {
+                signArea.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            });
+        }
+    });
+
+    // 플로팅 버튼 → 계약서 상단으로 스크롤 이동
+    document.addEventListener("DOMContentLoaded", function () {
+        const topBtn = document.getElementById("scroll-top-btn");
+
+        if (topBtn) {
+            topBtn.addEventListener("click", function () {
+                const mainArea = document.getElementById("main_area");
+                
+                // main_area가 스크롤 가능한 경우 (모바일)
+                if (mainArea && mainArea.scrollTop > 0) {
+                    mainArea.scrollTo({ top: 0, behavior: "smooth" });
+                }
+
+                // body/html이 스크롤 가능한 경우 (데스크탑)
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                document.documentElement.scrollTo({ top: 0, behavior: "smooth" });
+                document.body.scrollTo({ top: 0, behavior: "smooth" });
+            });
+        }
+    });
+
+
+    {% if worker.sign_status == "진행" %}
+    // 아이폰용 화면&패드 사이즈 조절
+    document.addEventListener("DOMContentLoaded", function () {
+        const canvas = document.getElementById("signature-pad");
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (isIOS && canvas) {
+            // Safari에서 zoom/scale/transform 모두 제거
+            document.querySelector("meta[name=viewport]")
+                ?.setAttribute("content", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes");
+            document.body.style.zoom = "1";
+            document.body.style.transform = "none";
+
+            // 캔버스 크기 동적으로 조정
+            const resizeCanvas = () => {
+                const ratio = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                const heightFix = 0.5;
+
+                // 실제 해상도를 CSS와 일치시켜 왜곡 제거
+                canvas.width = rect.width * ratio;
+                canvas.height = rect.height * ratio * heightFix;
+
+                const ctx = canvas.getContext("2d");
+                ctx.scale(ratio, ratio);
+            };
+            resizeCanvas();
+            window.addEventListener("resize", resizeCanvas);
+
+            // 서명패드 재초기화
+            signaturePad = new SignaturePad(canvas, { penColor: "black" });
+
+            // iOS 터치 좌표 오프셋 보정
+            const originalAddPoint = signaturePad._addPoint.bind(signaturePad);
+
+            signaturePad._addPoint = function (point) {
+                const rect = canvas.getBoundingClientRect();
+                const scrollY = window.scrollY || window.pageYOffset;
+
+                // 실제 캔버스 기준 좌표로 보정
+                point.x = point.x - rect.left;
+                point.y = point.y - rect.top - scrollY;
+
+                originalAddPoint(point);
+            };
+
+            // 강제 줌 리셋
+            setTimeout(() => {
+                document.querySelector("meta[name=viewport]")
+                ?.setAttribute("content", "width=device-width, maximum-scale=1, user-scalable=yes");
+            }, 300);
+        }
+    });
+    {% else %}
+    document.addEventListener("DOMContentLoaded", function () {
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isIOS) {
+            const html = document.documentElement;
+            const body = document.body;
+
+            // 확대/축소 및 기준점 설정
+            body.style.transform = "scale(0.7)";
+            body.style.transformOrigin = "top left";
+            body.style.width = "100%";
+            body.style.height = "auto";
+            body.style.maxWidth = "none";
+            body.style.overflowX = "hidden";
+            body.style.overflowY = "auto";
+            body.style.margin = "0";
+            body.style.padding = "0";
+
+            html.style.overflowX = "hidden";
+            html.style.overflowY = "auto";
+            html.style.width = "100%";
+            html.style.height = "auto";
+            html.style.margin = "0";
+            html.style.padding = "0";
+            html.style.maxWidth = "none";
+
+            // 혹시 남은 여백이 있으면 스크롤 초기화
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                document.body.scrollLeft = 0;
+                document.documentElement.scrollLeft = 0;
+            }, 200);
+        }
+    });
+    {% endif %}
+
+    </script>
+
+    {% if messages %}
+    <script>
+        {% for message in messages %}
+            alert("{{ message }}");
+            window.close();
+        {% endfor %}
+    </script>
+    {% endif %}
+{% endif %}

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+{% load static %}
+{% include 'header.html' %}
+<style>
+body {
+    background: url('{% static 'img/login_office.jpg' %}') no-repeat center center/cover;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    opacity: 0.1;
+    z-index: 0;
+}
+
+.loginbox {
+    background-color: rgba(245, 245, 245, 0.6);
+    border: 20px double #fff;
+    z-index: 1;
+}
+
+.titlebox {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    z-index: 1;
+}
+
+.main-text {
+    font-size: 48px;
+    font-weight: bold;
+    background: linear-gradient(to right, rgba(52, 58, 64, 0.8), rgba(52, 58, 64, 0.5));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+}
+
+.sub-text {
+    font-size: 20px;
+    font-weight: bold;
+    background: linear-gradient(to right, rgba(52, 58, 64, 0.8), rgba(52, 58, 64, 0.5));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+}
+
+.sitelink:hover {
+    text-decoration: underline !important;
+}
+
+.form-check-input:checked {
+    background-color: #495057;
+    border-color: #495057;
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+}
+
+@media (max-width: 900px) {
+    .titlecard {
+        padding: 10px !important;
+    }
+
+    .main-text {
+        font-size: 36px;
+    }
+
+    .sub-text {
+        font-size: 18px;
+    }
+
+    .box-margin {
+        margin-top: -20px !important;
+    }
+
+    .login-text {
+        width: 100% !important;
+    }
+
+    .form-group {
+        margin-left: 10px !important;
+        margin-right: 10px !important;
+    }
+}
+</style>
+<body>
+<div class="container-fluid">
+    <div class="box-margin row no-gutters justify-content-center align-items-center flex-column my-5">
+        <div class="loginbox card col-10 col-md-8 col-lg-6 col-xl-4 align-self-center">
+
+            <div class="titlecard card-body p-5">
+                <div class="titlebox text-center my-5">
+                    <h1 class="main-text text-nowrap">HANWOOL</h1>
+                    <p class="sub-text text-nowrap">한울 통합관리 솔루션</p>
+                </div>
+
+                <form id="loginForm" method="POST" action="{% url 'login_page' %}">
+                    {% csrf_token %}
+                
+                    <!-- next 값이 잘못되었을 경우 기본 페이지로 설정 -->
+                    <input type="hidden" name="next" value="{% if next and next != '/' and next != '|' %}{{ next }}{% else %}{% url 'index_page' %}{% endif %}">
+                    
+                    <div class="form-group text-center mx-5 my-0">
+                        <input class="form-control login-text" id="username" name="username" type="text" placeholder="아이디" />
+                    </div>
+                    <div class="form-group text-center mx-5 my-1">
+                        <input class="form-control login-text" id="password" name="password" type="password" placeholder="비밀번호" />
+                    </div>
+                
+                    <div class="form-group text-center m-0 my-4">
+                        <div class="form-check form-switch form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="rememberMe" name="remember_me" />
+                            <label class="form-check-label" for="rememberMe" style="font-weight: bold; font-size: 12px;">아이디 기억</label>
+                        </div>
+                    </div>
+                
+                    <div class="d-flex justify-content-center m-1">
+                        <button class="btn btn-dark col-12 col-md-6 p-2" type="submit">로그인</button>
+                    </div>
+
+                    {% if error %}
+                    <div class="d-flex justify-content-center mt-3">
+                        <div class="text-danger text-center fw-bold col-12 p-2" style="background-color: rgba(255,255,255,0.8); font-size: 11px;">{{ error|safe }}</div>
+                    </div>
+                    {% endif %}
+                </form>
+
+                {% comment %}<div class="d-flex justify-content-center align-items-center mt-3">
+                    <a href="{% url 'password_reset_step1' %}" class="sitelink text-decoration-none text-dark fw-bold" style="font-size: 10px;">아이디 / 비밀번호 찾기</a>
+                </div>{% endcomment %}
+            </div>
+        </div>
+
+        {% comment %}<div class="row no-gutters justify-content-center align-items-center m-0 p-2" style="z-index: 1;">
+            <div class="contactinfo d-flex justify-content-center text-white">
+                <a href="{% url 'signup_step1' %}" class="sitelink text-decoration-none text-white fw-bold">신규 회원가입</a>
+                <span class="mx-3">|</span>
+                <a href="{% url 'brand_page' %}" class="sitelink text-decoration-none text-white">토스트 오피스</a>
+            </div>
+            <div class="contactinfo d-flex justify-content-center text-white">
+                <div><i class="fa-regular fa-envelope me-1"></i>tost.korea@gmail.com</div>
+                <div class="mx-2">|</div>
+                <a href="https://www.instagram.com/tost_office_korea/" target="_blank" rel="noopener noreferrer"
+                data-toggle="tooltip" data-placement="top" title="DM으로도 문의하실 수 있습니다."
+                style="background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent;">
+                    <i class="fa-brands fa-instagram me-1"></i>Instagram
+                </a>
+            </div>
+        </div>{% endcomment %}
+    </div>
+</div>
+{% include 'footer.html' %}
+
+<script>
+{% if user.is_authenticated %}
+    // 브라우저 캐시로 로그인 페이지에 들어왔을 경우 새로고침 유도
+    window.location.href = "{% url 'index_page' %}";
+{% endif %}
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = "/index/"
+}
+
+$("#login").submit(function (event) {
+    let username = $('#login [name="username"]').val();
+    let password = $('#login [name="password"]').val();
+
+    api_login(
+        username,
+        password,
+        () => {
+            window.location.href = "/index/";
+        },
+        handle_error,
+        (xhr, status) => {
+        }
+    );
+
+    event.preventDefault();
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    // 아이디 기억 기능 (localStorage 사용)
+    let savedUsername = localStorage.getItem("savedUsername");
+    if (savedUsername) {
+        document.querySelector("#username").value = savedUsername;
+        document.querySelector("#rememberMe").checked = true;
+    }
+
+    document.querySelector("#loginForm").addEventListener("submit", function () {
+        let username = document.querySelector("#username").value;
+        let rememberMe = document.querySelector("#rememberMe").checked;
+
+        if (rememberMe) {
+            localStorage.setItem("savedUsername", username);  // 아이디 저장
+        } else {
+            localStorage.removeItem("savedUsername");  // 체크 해제 시 삭제
+        }
+    });
+});
+</script>
+</body>
+</html>

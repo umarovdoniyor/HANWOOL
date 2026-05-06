@@ -1,0 +1,773 @@
+<!-- 팩토리 > 재고관리 > 재고현황 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+<style>
+/* select2 컨테이너 너비 지정 */
+#sch_item + .select2-container {
+    width: 250px !important;
+}
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_item + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+/* 선택된 항목 텍스트 정렬 */
+#sch_item + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+/* 화살표 위치 조정 */
+#sch_code + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+/* 클리어버튼 위치 조정 */
+#sch_item + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+
+/* select2 컨테이너 너비 지정 */
+#sch_item_class + .select2-container {
+    width: 150px !important;
+}
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_item_class + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+/* 선택된 항목 텍스트 정렬 */
+#sch_item_class + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+/* 화살표 위치 조정 */
+#sch_item_class + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+/* 클리어버튼 위치 조정 */
+#sch_item_class + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-cubes me-2"></i>재고현황
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 전체 재고 현황 및 창고별 재고 현황을 확인할 수 있는 페이지입니다.<br>• 창고 간의 재고 이동을 실시할 수 있습니다.<br>• 입고/출고에서 창고를 지정하지 않으면 [창고별 재고]에는 재고가 올바르게 반영되지 않습니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-lg-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="기간 재고 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search(); b_search()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search(); b_search()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                </div>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="품목명 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_item"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="품목 분류 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_item_class"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1" data-toggle="tooltip" data-placement="top"
+                                         title="품번, 자재분류, 품목정보 텍스트 검색">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_is_valid"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="품목 사용 여부로 검색">
+                                    <option value="">모두</option>
+                                    <option value="true" selected>사용</option>
+                                    <option value="false">미사용</option>
+                                </select>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                    <i class="fa-solid fa-warehouse"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">창고이동</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="d-flex justify-content-between">
+                            <div class="col-12 col-xl-10">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <div class="custom_table table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="thead-light">
+                                                    <tr class="text-nowrap">
+                                                        <th>순번</th>
+                                                        <th>품번</th>
+                                                        <th>품명</th>
+                                                        <th>제품정보1</th>
+                                                        <th>제품정보2</th>
+                                                        <th>자재분류</th>
+                                                        {% comment %}<th>입하수량</th>
+                                                        <th>불량수량</th>{% endcomment %}
+                                                        <th>입고수량</th>
+                                                        <th>출고수량</th>
+                                                        <th>현재고</th>
+                                                        <th>안전재고</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="a_tbody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 창고별 재고 현황 -->
+                            <div class="d-none d-xl-block col-2 ps-3">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex fw-bold mb-2" style="font-size: 13px; color: #2a3040;">창고별 재고</div>
+                                        <div id="warehouse_list" style="max-height: 430px; overflow-y: auto;">
+                                            <div class="text-center my-4">선택된 품목이 없습니다.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="div_center mt-3" id="a_nation_id"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">창고 이동 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="d-flex justify-content-between">
+                    <div class="col-6 col-md-9">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="item" class="form-label">이동 품목</label>
+                                <input type="text" class="form-control" id="item" disabled>
+                            </div>
+
+                            <div class="d-none d-md-block col-md-6 mb-3">
+                                <label for="item_class" class="form-label">품목 분류</label>
+                                <input type="text" class="form-control" id="item_class" disabled>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="desc1" class="form-label">품목 정보1</label>
+                                <input type="text" class="form-control" id="desc1" disabled>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="desc2" class="form-label">품목 정보2</label>
+                                <input type="text" class="form-control" id="desc2" disabled>
+                            </div>
+
+                            <div class="d-none d-md-block col-md-6 mb-3">
+                                <label for="desc3" class="form-label">품목 정보3</label>
+                                <input type="text" class="form-control" id="desc3" disabled>
+                            </div>
+
+                            <div class="d-none d-md-block col-md-6 mb-3">
+                                <label for="item_stock" class="form-label">전체 재고</label>
+                                <input type="text" class="form-control" id="item_stock" disabled>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="warehouse_from" class="form-label fw-bold mb-1">
+                                    <span class="badge bg-danger px-2 py-1" style="font-size: 13px;">출고 창고</span>
+                                    <button class="btn btn-sm px-1 py-0" onclick="openFactoryCodePage('factory_warehouse', 'create')">
+                                        <i class="fa-solid fa-gear"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control div_required" id="warehouse_from"></select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="warehouse_to" class="form-label fw-bold mb-1">
+                                    <span class="badge bg-success px-2 py-1" style="font-size: 13px;">입고 창고</span>
+                                    <button class="btn btn-sm px-1 py-0" onclick="openFactoryCodePage('factory_warehouse', 'create')">
+                                        <i class="fa-solid fa-gear"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control div_required" id="warehouse_to"></select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-7 col-md-4 mb-3">
+                                <label for="date" class="form-label fw-bold">이동 일자</label>
+                                <input type="text" class="form-control date_flatpickr div_required" id="date">
+                            </div>
+
+                            <div class="col-5 col-md-2 mb-3">
+                                <label for="transfer_amount" class="form-label fw-bold">이동 수량</label>
+                                <input type="text" class="form-control div_required" id="transfer_amount" onkeyup="checkNumber(this, 2)">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="remark" class="form-label">비고</label>
+                                <input type="text" class="form-control" id="remark">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-md-3 ps-3">
+                        <div class="card border border-light">
+                            <div class="card-body p-3">
+                                <div class="fw-bold text-nowrap mb-1" style="font-size: 13px; color: #2a3040;">창고 선택</div>
+                                <div class="d-flex align-items-center mb-1" style="font-size: 12px; color: #2a3040;">
+                                    <span class="badge bg-danger me-2 px-2 py-1">출고 창고</span>
+                                    <span class="d-none d-md-block">마우스 좌클릭</span>
+                                    <span class="d-block d-md-none">짧게 손클릭</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2" style="font-size: 12px; color: #2a3040;">
+                                    <span class="badge bg-success me-2 px-2 py-1">입고 창고</span>
+                                    <span class="d-none d-md-block">마우스 우클릭</span>
+                                    <span class="d-block d-md-none">길게 손클릭</span>
+                                </div>
+                                <div id="warehouse_list" style="max-height: 320px; overflow-y: auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_code;
+let a_click_name;
+let a_click_desc1;
+let a_click_desc2;
+let a_click_desc3;
+let a_click_unit_id;
+let a_click_unit_name;
+let a_click_item_class_id;
+let a_click_item_class_name;
+let a_click_item_stock;
+
+let fr_date;
+let to_date;
+let all_sch;
+let sch_item;
+let sch_item_class;
+let sch_is_valid;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('factory_inventory_list_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('factory_inventory_list_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_item', '품목 검색', '/sel2_factory_item/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#sch_item_class', '품목 분류 검색', '/sel2_code_item_class/', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+}
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    a_search();
+}
+
+function a_search() {
+    all_sch = $('#all_sch').val();
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    sch_item = $('#sch_item').val();
+    sch_item_class = $('#sch_item_class').val();
+    sch_is_valid = $('#sch_is_valid').val();
+    
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (fr_date) { query += "&fr_date=" + fr_date; }
+    if (to_date) { query += "&to_date=" + to_date; }
+    if (sch_item) { query += "&sch_item=" + sch_item; }
+    if (sch_item_class) { query += "&sch_item_class=" + sch_item_class; }
+    if (sch_is_valid) { query += "&sch_is_valid=" + sch_is_valid; }
+
+    fetch_gp("/factory_inventory_list_read_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td>${num + i}</td>
+            <td name='code'>${item.code || ""}</td>
+            <td name='name'>${item.name || ""}</td>
+            <td name='desc1' class="text-truncate" style="max-width: 200px;">${item.desc1 || ""}</td>
+            <td name='desc2' class="text-truncate" style="max-width: 200px;">${item.desc2 || ""}</td>
+            <td name='item_class_name'>${item.item_class_name || ""}</td>
+            {% comment %}<td name='in_total_sum'>${formatNumber(item.in_total_sum, 2) || ""}</td>
+            <td name='in_faulty_sum'>${formatNumber(item.in_faulty_sum, 2) || ""}</td>{% endcomment %}
+            <td name='in_result_sum'>${formatNumber(item.in_result_sum, 2) || ""}</td>
+            <td name='out_result_sum'>${formatNumber(item.out_result_sum, 2) || ""}</td>
+            <td class='${item.item_stock < item.safety_stock ? "text-danger" : ""}'>
+                ${formatNumber(item.item_stock, 2) || ""}</td>
+            <td class='${item.item_stock < item.safety_stock ? "text-danger" : ""}'>
+                ${formatNumber(item.safety_stock, 2) || ""}</td>
+
+            <td name='desc3' class="d-none text-truncate" style="max-width: 200px;">${item.desc3 || ""}</td>
+            <td name='unit_name' class="d-none">${item.unit_name || ""}</td>
+            <td name='item_stock' class="d-none">${formatNumber(item.item_stock, 2) || ""}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_code = $(this).find("[name='code']").text();
+        a_click_name = $(this).find("[name='name']").text();
+        a_click_desc1 = $(this).find("[name='desc1']").text();
+        a_click_desc2 = $(this).find("[name='desc2']").text();
+        a_click_desc3 = $(this).find("[name='desc3']").text();
+        a_click_unit_name = $(this).find("[name='unit_name']").text();
+        a_click_item_class_name = $(this).find("[name='item_class_name']").text();
+        a_click_item_stock = $(this).find("[name='item_stock']").text();
+
+        b_search();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_create_modal_in();
+    });
+}
+
+function a_create_modal_in() {
+    if (a_click_id == null) {
+        alert("창고 이동을 실시할 품목을 선택하세요.");
+        return;
+    }
+
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    $("#a_create_modal #item").val(a_click_name);
+    $("#a_create_modal #item_class").val(a_click_item_class_name);
+    $("#a_create_modal #desc1").val(a_click_desc1);
+    $("#a_create_modal #desc2").val(a_click_desc2);
+    $("#a_create_modal #desc3").val(a_click_desc3);
+    $("#a_create_modal #item_stock").val(a_click_item_stock);
+    $("#a_create_modal #date").val(date_today_str);
+    $("#a_create_modal #transfer_amount").val('');
+    $("#a_create_modal #remark").val('');
+
+    init_date_flatpickr();
+    init_Select2_modal('#a_create_modal #warehouse_from', '선택', '/sel2_code_warehouse/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #warehouse_to', '선택', '/sel2_code_warehouse/', {id: 'id', txt: item => `${item.text}`});
+
+    fetch_gp(`/factory_warehouse_list_read_fn/?item_id=${a_click_id}`, 'GET', true, {}, (done) => {
+        a_create_modal_warehouse_list(done);
+    });
+
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_modal_warehouse_list(done) {
+    let data = done.results;
+    if (!data || data.length === 0) {
+        let emptyRow = `
+            <div class="text-center my-4">등록된 데이터가 없습니다.</div>
+        `;
+        $('#a_create_modal #warehouse_list').html(emptyRow);
+        return;
+    }
+
+    let html = "";
+    data.forEach((item, idx) => {
+        html += `
+            <div class="card border border-light mb-2 warehouse-card"
+                 data-index="${idx}"
+                 data-warehouse-id="${item.warehouse_id}"
+                 style="cursor: pointer;">
+                <div class="card-body d-flex p-2">
+                    <div class="col-4 d-flex justify-content-center align-items-center">
+                        <i class="fa-solid fa-warehouse" style="font-size: 24px;"></i>
+                    </div>
+                    <div class="col-8">
+                        <div class="fw-bold">${item.warehouse_name || ''}</div>
+                        <div class="d-flex justify-content-start align-items-center">
+                            <span class="badge bg-info px-2 py-1">현재고</span>
+                            <span class="ms-2">${formatNumber(item.warehouse_item_stock, 2) || ""}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    $('#a_create_modal #warehouse_list').html(html);
+
+    // 좌클릭: 출고창고 지정
+    $('#a_create_modal .warehouse-card').on('click', function (e) {
+        $('#a_create_modal .warehouse-card').removeClass('bg-danger-subtle');
+        $(this).addClass('bg-danger-subtle');
+
+        let warehouseId = $(this).data('warehouse-id');
+        init_Select2_modal('#a_create_modal #warehouse_from', '선택', '/sel2_code_warehouse/', {id: 'id', txt: item => `${item.text}`}, warehouseId);
+    });
+
+    // 우클릭: 입고창고 지정
+    $('#a_create_modal .warehouse-card').on('contextmenu', function (e) {
+        e.preventDefault();
+        $('#a_create_modal .warehouse-card').removeClass('bg-success-subtle');
+        $(this).addClass('bg-success-subtle');
+
+        let warehouseId = $(this).data('warehouse-id');
+        init_Select2_modal('#a_create_modal #warehouse_to', '선택', '/sel2_code_warehouse/', {id: 'id', txt: item => `${item.text}`}, warehouseId);
+    });
+}
+
+// 입고창고, 출고창고 선택시 색상 변경하기
+$(document).ready(function () {
+    $('#a_create_modal #warehouse_from').on('change', function () {
+        let warehouseId = $(this).val();
+        $('#a_create_modal .warehouse-card').removeClass('bg-danger-subtle');
+        if (warehouseId) {
+            $(`#a_create_modal .warehouse-card[data-warehouse-id="${warehouseId}"]`).addClass('bg-danger-subtle');
+        }
+    });
+
+    $('#a_create_modal #warehouse_to').on('change', function () {
+        let warehouseId = $(this).val();
+        $('#a_create_modal .warehouse-card').removeClass('bg-success-subtle');
+        if (warehouseId) {
+            $(`#a_create_modal .warehouse-card[data-warehouse-id="${warehouseId}"]`).addClass('bg-success-subtle');
+        }
+    });
+});
+
+function a_create_submit() {
+    if (is_empty($('#a_create_modal #warehouse_from').val()) === true) {
+        alert("[출고 창고] 항목을 입력하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_create_modal #warehouse_to').val()) === true) {
+        alert("[입고 창고] 항목을 입력하세요.");
+        return;
+    }
+
+    if ($('#a_create_modal #warehouse_from').val() === $('#a_create_modal #warehouse_to').val()) {
+        alert("[출고 창고]와 [입고 창고] 를 동일한 항목으로 지정할 수 없습니다.");
+        return;
+    }
+
+    if (is_empty($('#a_create_modal #date').val()) === true) {
+        alert("[이동 일자] 항목을 입력하세요.");
+        return;
+    }
+
+    if (is_empty($('#a_create_modal #transfer_amount').val()) === true) {
+        alert("[이동 수량] 항목을 입력하세요.");
+        return;
+    }
+
+    let api_data = new FormData();
+        api_data.append("item", a_click_id);
+        api_data.append("date", nullapply($('#a_create_modal #date').val()));
+        api_data.append("transfer_amount", nullapply(del_comma($('#a_create_modal #transfer_amount').val())));
+        api_data.append("remark", nullapply($('#a_create_modal #remark').val()));
+        api_data.append("warehouse_from", nullapply($('#a_create_modal #warehouse_from').val()));
+        api_data.append("warehouse_to", nullapply($('#a_create_modal #warehouse_to').val()));
+
+    fetch_gp('/factory_inventory_transfer_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        a_search();
+        b_search();
+        alert(txt.create_ed);
+    });
+}
+
+
+function b_search() {
+    if (!a_click_id) {
+        return
+    }
+    
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+
+    let query = "?item_id=" + a_click_id + "&exist=true";
+    if (fr_date) { query += "&fr_date=" + fr_date; }
+    if (to_date) { query += "&to_date=" + to_date; }
+    
+    fetch_gp("/factory_warehouse_list_read_fn/" + query, 'GET', true, {}, (done) => {
+        b_draw_table(done);
+    });
+}
+
+function b_draw_table(done) {
+    // console.log("b_draw_table: ", done);
+
+    let data = done.results;
+    if (!data || data.length === 0) {
+        let emptyRow = `
+            <div class="text-center my-4">등록된 데이터가 없습니다.</div>
+        `;
+        $('#warehouse_list').html(emptyRow);
+        return;
+    }
+
+    let html = "";
+    data.forEach(item => {
+        html += `
+            <div class="card border border-light mb-2">
+                <div class="card-body d-flex p-2">
+                    <div class="col-4 d-flex justify-content-center align-items-center">
+                        <i class="fa-solid fa-warehouse" style="font-size: 24px;"></i>
+                    </div>
+                    <div class="col-8">
+                        <div class="fw-bold">${item.warehouse_name || ''}</div>
+                        <div class="d-flex justify-content-start align-items-center">
+                            <span class="badge bg-info px-2 py-1">현재고</span>
+                            <span class="ms-2">${formatNumber(item.warehouse_item_stock, 2) || ""}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    $('#warehouse_list').html(html);
+}
+
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

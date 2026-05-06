@@ -1,0 +1,50 @@
+<html>
+    <head>
+    <link href="/static/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" crossorigin="anonymous">
+    <link href="/static/assets/css/icons.min.css" rel="stylesheet" type="text/css" crossorigin="anonymous" />
+    <link href="/static/assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-5-theme/1.3.0/select2-bootstrap-5-theme.min.css" rel="stylesheet" crossorigin="anonymous" />
+
+    <script>
+    function print_content() {
+        let button_list = document.querySelector("#button_list");
+        button_list.style.display = "none";
+        window.print();
+        button_list.style.display = "";
+    }
+
+    function download_content() {
+  		var img = new Image();
+        	img.crossOrigin = "Anonymous";
+            img.id = "getshot";
+            img.src = "{{ pdf_url }}";
+            document.body.appendChild(img);
+            
+        var a = document.createElement("a");
+            a.href = getshot.src;
+            a.download = "contract.png";
+            a.click();
+            document.body.removeChild(img);
+    }
+    </script>
+    </head>
+<body>
+    <table>
+        <tr id="button_list">
+            <td style="display:flex;justify-content:flex-end;gap:3">
+                <button class="btn btn-primary text-nowrap mx-1 px-3" onclick="print_content()">출력</button>
+                <button class="btn btn-primary text-nowrap mx-1 px-3" style="margin-left:5px;margin-right:5px" onclick="download_content()">저장</button>
+                <button class="btn btn-secondary text-nowrap mx-1 px-3" onclick="window.close()">닫기</button>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="{{ pdf_url }}" style="width:95%">
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

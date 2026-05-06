@@ -1,0 +1,325 @@
+<!-- 내 정보 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-user-gear me-2"></i>내 정보
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 내 정보를 조회, 수정할 수 있는 페이지 입니다.<br>• 일부 정보는 관리자만 수정할 수 있습니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="row">
+                            <h5 class="fw-bold">내 정보</h5>
+                        </div>
+                        <div class="row px-2.5">
+                            <hr class="border-light">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 d-flex flex-column mb-3">
+                                <label for="profile_image" class="form-label">프로필 사진</label>
+                                <img id="profile_image_preview" style="margin-bottom: 10px; display: none; width: 150px;
+                                height: 150px; object-fit: cover; border: 1px solid #ced4da; border-radius: 5px;">
+                                <div class="d-flex">
+                                    <input type="file" class="form-control" id="profile_image" accept="image/*">
+                                    <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="clear_profile_image()">
+                                        <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">제거</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="name" class="form-label">이름</label>
+                                        <input type="text" class="form-control border border-none" id="name" disabled>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="join_date" class="form-label">입사일</label>
+                                        <input type="text" class="form-control date_flatpickr border border-none" id="join_date" disabled>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="employee_code" class="form-label d-block">사번</label>
+                                        <input type="text" class="form-control border border-none" id="employee_code" disabled>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="user_id" class="form-label">접속 ID</label>
+                                        <input type="text" class="form-control border border-none" id="user_id" disabled>
+                                    </div>
+
+                                    {% comment %}<div class="col-md-6 mb-3">
+                                        <label for="workplace" class="form-label">근무지</label>
+                                        <input type="text" class="form-control border border-none" id="workplace" disabled>
+                                    </div>{% endcomment %}
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="hire_type" class="form-label">근무형태</label>
+                                        <input type="text" class="form-control border border-none" id="hire_type" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="team" class="form-label">부서</label>
+                                <select class="form-control border border-none" id="team" disabled></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="job_level" class="form-label">직급</label>
+                                <select class="form-control border border-none" id="job_level" disabled></select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="job_title" class="form-label">직책</label>
+                                <select class="form-control border border-none" id="job_title" disabled></select>
+                            </div>
+                        </div>
+
+                        <form autocomplete="off" onsubmit="return false;"> <!-- form을 써야 브라우저 강제 autocomplete이 차단됨 -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="phone" class="form-label">연락처</label>
+                                <input type="text" class="form-control" id="phone">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="email" class="form-label">이메일</label>
+                                <input type="text" class="form-control" id="email">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="address" class="form-label">주소</label>
+                                <input type="text" class="form-control" id="address">
+                            </div>
+                        </div>
+                        </form>
+
+                        <div class="row mt-5">
+                            <h5 class="fw-bold">비밀번호 재설정</h5>
+                        </div>
+                        <div class="row px-2.5">
+                            <hr class="border-light">
+                        </div>
+
+                        <form autocomplete="off" onsubmit="return false;"> <!-- form을 써야 브라우저 강제 autocomplete이 차단됨 -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="current_password" class="form-label">현재 비밀번호</label>
+                                <input type="password" class="form-control" id="current_password" placeholder="미입력시 기존 비밀번호 적용">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="new_password" class="form-label">신규 비밀번호</label>
+                                <input type="password" class="form-control" id="new_password" placeholder="미입력시 기존 비밀번호 적용">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="new_password_confirm" class="form-label">신규 비밀번호 확인</label>
+                                <input type="password" class="form-control" id="new_password_confirm" placeholder="미입력시 기존 비밀번호 적용">
+                            </div>
+                        </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center align-items-center gap-2">
+                <button type="button" class="col-3 btn btn-secondary text-nowrap px-3" onclick="a_reset_submit()">
+                    <i class="fa-solid fa-rotate-right fa-rotate-90 me-2"></i>초기화
+                </button>
+                <button type="button" class="col-3 btn btn-success text-nowrap px-3" onclick="a_update_submit()">
+                    <i class="fa-solid fa-check me-2"></i>저장
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let profile_image_url;
+let default_profile_image = '{% static 'img/profile_default.png' %}';
+let profile_image_deleted = false;
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+
+    a_search_ready();
+}
+
+function a_search_ready() {
+    a_search();
+}
+
+function a_search() {
+    fetch_gp("/admin_employee_list_fn/?myinfo=true", 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+    clear_profile_image('init_reset');
+
+    let data = done.results[0];
+    $('#name').val(`${data.name}`);
+    $('#join_date').val(`${data.join_date}`);
+    $('#employee_code').val(`${data.employee_code}`);
+    $('#user_id').val(`${data.user_id}`);
+    {% comment %}$('#workplace').val(`${data.workplace}`);{% endcomment %}
+    $('#hire_type').val(`${data.hire_type}`);
+    $('#phone').val(`${data.phone}`);
+    $('#email').val(`${data.email}`);
+    $('#address').val(`${data.address}`);
+
+    load_user_profile(data);
+    init_Select2('#team', '선택', '/sel2_code_team/', {id: 'id', txt: item => `${item.text}`}, `${data.team_id}`);
+    init_Select2('#job_level', '선택', '/sel2_code_job_level/', {id: 'id', txt: item => `${item.text}`}, `${data.job_level_id}`);
+    init_Select2('#job_title', '선택', '/sel2_code_job_title/', {id: 'id', txt: item => `${item.text}`}, `${data.job_title_id}`);
+    init_Select2('#company_change', '선택', '/sel2_code_company/', {id: 'id', txt: item => `[${item.id}] ${item.text}`}, `${data.company_id}`);
+}
+
+
+function a_update_submit() {
+    let currentPassword = $('#current_password').val();
+    let newPassword = $('#new_password').val();
+    let confirmNewPassword = $('#new_password_confirm').val();
+
+    if (currentPassword || newPassword || confirmNewPassword) {
+        if (!currentPassword) {
+            alert("현재 비밀번호를 입력하세요.");
+            return;
+        }
+
+        if (!newPassword || !confirmNewPassword) {
+            alert("새 비밀번호와 확인 비밀번호를 입력하세요.");
+            return;
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            alert("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
+            return;
+        }
+    }
+
+    if (chkEmail($('#email').val()) == false) {
+        alert(txt.chk_email);
+        return;
+    }
+
+    let profile_image = $('#profile_image')[0].files[0];
+
+    let api_data = new FormData();
+    api_data.append("phone", nullapply($('#phone').val()));
+    api_data.append("email", nullapply($('#email').val()));
+    api_data.append("address", nullapply($('#address').val()));
+    api_data.append("company_change", nullapply($('#company_change').val()));
+    if (currentPassword && newPassword) {
+        api_data.append("current_password", nullapply(currentPassword));
+        api_data.append("new_password", nullapply(newPassword));
+    }
+
+    if (profile_image) api_data.append("profile_image", profile_image);
+    if (profile_image_deleted) api_data.append("profile_image_deleted", true);
+
+    fetch_gp('/myinfo_update_fn/', 'post', true, api_data, (done) => {
+        alert("내 정보 저장이 완료되었습니다.");
+        window.location.href = '{% url 'myinfo_page' %}';
+    });
+}
+
+function a_reset_submit() {
+    a_search_ready();
+    $('#current_password').val('');
+    $('#new_password').val('');
+    $('#new_password_confirm').val('');
+    notiToast('변경사항을 모두 초기화하였습니다.');
+}
+
+function load_user_profile(data) {
+    profile_image_url = data.profile_image;
+
+    if (profile_image_url) {
+        $('#profile_image_preview').attr('src', profile_image_url).show();
+    } else {
+        $('#profile_image_preview').attr('src', default_profile_image).show();
+    }
+
+    $(`#profile_image`).on('change', function (event) {
+        let file = event.target.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                $(`#profile_image_preview`).attr('src', e.target.result).show();
+            };
+            reader.readAsDataURL(file);
+            profile_image_deleted = false;
+        }
+    });
+}
+
+function clear_profile_image(init_reset) {
+    $('#profile_image').val('');  // 파일 input 비움
+    if (!init_reset) {
+        $('#profile_image_preview').attr('src', default_profile_image);  // 미리보기 숨김
+        profile_image_url = '';  // 변수 초기화
+    }
+    profile_image_deleted = !init_reset;
+}
+
+function chkEmail(_email) {
+    if (_email == '') {
+        return true;
+    }
+    _email = _email.trim();
+    _email = _email.toLowerCase();
+
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (emailPattern.test(_email)) {
+        return true;
+    } else {
+        return false; // 유효하지 않은 이메일 주소
+    }
+}
+
+
+</script>

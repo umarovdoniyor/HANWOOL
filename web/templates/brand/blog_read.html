@@ -1,0 +1,265 @@
+<!-- 브랜드 페이지 > 블로그 목록 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+    .nav-item {
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .row.mt-4.px-2 img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    @media (max-width: 992px) {
+        body {
+            padding-top: 118px !important;
+        }
+    }
+</style>
+
+<body class="text-dark" style="padding-top: 82px;">
+
+<!-- Top Navigation -->
+<nav class="navbar navbar-expand-lg bg-white shadow-sm py-2 fixed-top">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center py-2 px-3 m-0" href="{% url 'brand_page' %}">
+            <img src="{% static 'img/tost_office_color_1200px.png' %}" alt="Logo" height="50" class="">
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav"
+                style="border: none;">
+            <span class=""><i class="fa-solid fa-bars text-dark" style="font-size: 30px;"></i></span>
+        </button>
+
+        {% comment %}<div class="collapse navbar-collapse justify-content-center" id="topNav">
+            <ul class="navbar-nav mb-2 mb-lg-0 mx-auto">
+                <li class="nav-item px-2"><a class="nav-link" href="{% url 'brand_fn_intro_page' %}">기능 소개</a></li>
+                <li class="nav-item px-2"><a class="nav-link" href="{% url 'blog_list_page' %}">블로그</a></li>
+                <li class="nav-item px-2" data-toggle="tooltip" data-placement="top" title="준비중 입니다."><a
+                        class="nav-link" href="#">도입 사례</a></li>
+            </ul>
+        </div>{% endcomment %}
+
+        <div class="d-none d-lg-flex align-items-center gap-2">
+            <a href="{% url 'signup_step1' %}" class="btn btn-info fw-bold">시작하기</a>
+            <a href="{% url 'login_page' %}" class="btn btn-success fw-bold">그룹웨어 로그인</a>
+        </div>
+    </div>
+    <div class="d-flex d-lg-none align-items-center gap-2 ms-auto px-3">
+        <a href="{% url 'signup_step1' %}" class="btn btn-info fw-bold">시작하기</a>
+        <a href="{% url 'login_page' %}" class="btn btn-success fw-bold">그룹웨어 로그인</a>
+    </div>
+</nav>
+
+
+<!-- Section 1 -->
+<section class="position-relative text-center text-dark py-5"
+         style="background: url('{% static 'img/login_office.jpg' %}') no-repeat center center/cover; height: 100%;">
+    <!-- 밝은 반투명 오버레이 -->
+    <div class="position-absolute top-0 start-0 w-100 h-100"
+         style="background-color: rgba(255, 255, 255, 0.7); z-index: 1;"></div>
+
+    <!-- 콘텐츠 -->
+    <div class="container position-relative my-3" style="z-index: 2;"></div>
+</section>
+
+
+<!-- Content Area -->
+<div class="container-fluid" style="max-width: 1400px; margin: auto;">
+    <div class="row w-100 py-4 px-1 m-0">
+
+        <!-- 좌측 게시글 목록 -->
+        <div class="col-12 col-md-8 col-xl-9">
+            <div class="row gx-4">
+
+                <!-- 상단 메뉴바 -->
+                <div class="col-xxl-12">
+                    <div class="card border border-light">
+                        <div class="card-body d-flex justify-content-between p-3">
+                            <div class="d-flex p-0">
+                                <div class="btn btn-secondary text-nowrap me-1 px-2.5"
+                                     onclick="window.location.href = '{% url 'blog_list_page' %}'"
+                                     data-bs-toggle="tooltip" data-bs-placement="top" title="목록">
+                                    <i class="fa-solid fa-list"></i>
+                                </div>
+
+                                <div class="search-box me-1">
+                                    <form method="GET" action="{% url 'blog_list_page' %}"
+                                          class="search-box me-1 d-flex">
+                                        <div class="position-relative flex-grow-1">
+                                            <input type="text" class="form-control rounded border-secondary"
+                                                   id="all_sch" name="all_sch" value="{{ all_sch }}"
+                                                   placeholder="검색어 입력" autocomplete="off">
+                                            <i class="mdi mdi-magnify search-icon"></i>
+                                        </div>
+                                        <button type="submit" class="btn btn-secondary text-nowrap ms-1 px-2.5">
+                                            <i class="fa-solid fa-magnifying-glass"></i><span
+                                                class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 게시물 -->
+                <div class="col-xxl-12">
+                    <div class="card border border-light">
+                        <div class="card-body">
+                            <div class="d-flex text-left mb-4">
+                                <div class="col-9 col-xxl-10">
+                                    <p class="text-success text-uppercase mb-2">{{ notice.category.name }}</p>
+                                    <h4 class="text-dark fw-semibold mb-2">{{ notice.title }}</h4>
+                                    <span class="text-muted mb-4">
+                                        <i class="fa-regular fa-calendar-days me-1"></i>{{ notice.created_at|date:"Y년 n월 j일 G시 i분" }}
+                                        <div class="d-flex d-md-inline align-items-center m-0 p-0">
+                                            <i class="fa-solid fa-eye ms-0 ms-md-3 me-1"></i>{{ notice.views_count }}
+                                        </div>
+                                    </span>
+                                </div>
+
+                                <div class="col-3 col-xxl-2 d-flex justify-content-end justify-content-md-center align-items-center">
+                                    <div class="d-flex justify-content-start align-items-center flex-md-row flex-column">
+                                        <div class="flex-shrink-0 mb-1">
+                                            <img src="{{ notice.created_by.profile_image.url }}"
+                                                 alt="{{ notice.created_by }}" class="avatar-sm p-1"
+                                                 style="border-radius: 8px;">
+                                        </div>
+                                        <div class="d-inline text-start ms-1" style="font-size: 11px;">
+                                            <h6 class="fw-bold"
+                                                style="margin-bottom: 2px;">{{ notice.created_by.name }} {{ notice.created_by.job_level.name|default_if_none:"" }}</h6>
+                                            <span>{{ notice.created_by.team.name|default_if_none:"" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-4 px-2">
+                                <p class="mb-3" id="content">{{ notice.content|safe }}</p>
+                            </div>
+
+                            {% if notice.upload_file %}
+                                <div class="row mt-4 px-2">
+                                    <div class="p-3 bg-success-subtle rounded">
+                                        <i class="fa-solid fa-paperclip me-2"></i><strong>첨부파일</strong>
+                                        <a href="{{ notice.upload_file.url }}" download class="text-dark ms-4">
+                                            {{ notice.upload_file.name|cut:"upload_file/" }}
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xxl-12 text-center">
+                    <div class="btn btn-success text-nowrap w-100 px-4" onclick="window.location.href = '{% url 'blog_list_page' %}'">
+                        <i class="fa-solid fa-list"></i> 목록으로 돌아가기
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 우측 메뉴바 -->
+        <div class="d-none d-md-block col-sm-4 col-xl-3">
+            <div class="card border border-light">
+                <div class="card-body p-4">
+                    <div>
+                        <div class="fw-bold mb-2">카테고리</div>
+                        <ul class="list-unstyled fw-medium">
+                            <li>
+                                <a href="/notice/list/?category=&all_sch={{ all_sch }}"
+                                   class="category_item text-muted fw-bold py-1 d-block {% if not category and not notice.category %}active{% endif %}">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa-solid fa-chevron-right me-2"></i>모든 게시물
+                                        <span class="badge badge-soft-success ms-2 float-end">{{ total_notice_count }}</span>
+                                    </div>
+                                </a>
+                            </li>
+                            {% for obj in board_category %}
+                                <li>
+                                    <a href="/notice/list/?category={{ obj.name }}&all_sch={{ all_sch }}"
+                                       class="category_item text-muted fw-bold py-1 d-block {% if notice.category.name == obj.name %}active{% endif %}">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa-solid fa-chevron-right me-2"></i>{{ obj.name }}
+                                            <span class="badge badge-soft-success ms-2 float-end">{{ obj.post_count }}</span>
+                                        </div>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-top border-dashed border-bottom-0 border-start-0 border-end-0">
+                        <p class="fw-bold mb-2">고정된 게시물</p>
+
+                        <div class="list-group list-group-flush">
+                            {% for obj in top_fixed_notices %}
+                                <a href="{% url 'blog_read_page' obj.id %}" class="list-group-item text-muted py-3 px-0">
+                                    <div class="d-flex justify-content-start align-items-center">
+                                        <div class="flex-shrink-0 me-3">
+                                            {% if obj.title_image %}
+                                                <img src="{{ obj.title_image.url }}" alt="title_image" class="avatar-md d-block rounded" style="width: 39px; height: auto; max-height: 39px;">
+                                            {% else %}
+                                                <img src="{% static '/img/tost_office_color_1200px.png' %}" alt="title_image" class="avatar-md d-block rounded" style="width: 39px; height: auto; max-height: 39px;">
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+                                            <span class="font-size-13 fw-bold text-truncate">{{ obj.title }}</span>
+                                            <div class="d-flex align-items-center">
+                                                <span class="mb-0 text-truncate">
+                                                    <i class="fa-regular fa-calendar-days me-1"></i>{{ obj.created_at|date:"Y년 n월 j일" }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% empty %}
+                                <li class="list-group-item text-muted py-3 px-2 text-center">
+                                    고정된 게시물이 없습니다.
+                                </li>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    let boardId = '{{ notice.id }}';
+
+    window.onkeydown = function (event) {
+        if (event.keyCode == 116) {  // F5
+            event.returnValue = false;
+            refresh();
+        }
+    }
+
+    function refresh() {
+        window.location.href = window.location.href
+    }
+
+    $(function () {
+        main();
+    });
+
+    function main() {
+        set_autocomplete('off');
+    }
+
+</script>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+.row.mt-4.px-2 img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 상단 타이틀 -->
+    <div class="col-xxl-12">
+        <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="window.location.href = '{% url 'tost_notice_list_page' %}'">
+            <i class="fa-solid fa-bread-slice me-2"></i>토스트 공지
+            <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+               title="토스트 오피스의 공지사항으로 사용하는 페이지입니다.<br>사용자분들과의 소통을 통해 더 나은 그룹웨어로 거듭나겠습니다."></i>
+        </div>
+    </div>
+
+    <!-- 좌측 게시글 목록 -->
+    <div class="col-12 col-md-8 col-xl-9">
+        <div class="row gx-4">
+            
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="card border border-light">
+                    <div class="card-body d-flex justify-content-between p-3">
+                        <div class="d-flex p-0">
+                            <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                 data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </div>
+                            
+                            <div class="search-box me-1">
+                                <form method="GET" action="{% url 'tost_notice_list_page' %}" class="search-box me-1 d-flex">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary"
+                                               id="all_sch" name="all_sch" value="{{ all_sch }}"
+                                               placeholder="검색어 입력" autocomplete="off">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                    <button type="submit" class="btn btn-secondary text-nowrap ms-1 px-2.5">
+                                        <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex p-0">
+                            {% if request.user.is_superuser %}
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="location.href='{% url 'tost_notice_create_page' %}'">
+                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                </button>
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="location.href='{% url 'tost_notice_update_page' notice.id %}'">
+                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="notice_delete({{ notice.id }})">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 게시물 -->
+            <div class="col-xxl-12">
+                <div class="card border border-light">
+                    <div class="card-body">
+                        <div class="d-flex text-left mb-4">
+                            <div class="col-9 col-xxl-10">
+                                <p class="text-success text-uppercase mb-2">{{ notice.category.name }}</p>
+                                <h4 class="text-dark fw-semibold mb-2">{{ notice.title }}</h4>
+                                <span class="text-muted mb-4">
+                                    <i class="fa-regular fa-calendar-days me-1"></i>{{ notice.created_at|date:"Y년 n월 j일 G시 i분" }}
+                                    <div class="d-flex d-md-inline align-items-center m-0 p-0">
+                                        <i class="fa-solid fa-eye ms-0 ms-md-3 me-1"></i>{{ notice.views_count }}
+                                        <i class="fa-solid fa-comment-dots ms-3 me-1"></i>{{ comment_count }}
+                                    </div>
+                                </span>
+                            </div>
+
+                            <div class="col-3 col-xxl-2 d-flex justify-content-end justify-content-md-center align-items-center">
+                                <div class="d-flex justify-content-start align-items-center flex-md-row flex-column">
+                                    <div class="flex-shrink-0 mb-1">
+                                         <img src="{{ notice.created_by.profile_image.url }}" alt="{{ notice.created_by }}" class="avatar-sm p-1" style="border-radius: 8px;">
+                                    </div>
+                                    <div class="d-inline text-start ms-1" style="font-size: 11px;">
+                                        <h6 class="fw-bold" style="margin-bottom: 2px;">{{ notice.created_by.name }} {{ notice.created_by.job_level.name|default_if_none:"" }}</h6>
+                                        <span>{{ notice.created_by.team.name|default_if_none:"" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4 px-2">
+                            <p class="mb-3" id="content">{{ notice.content|safe }}</p>
+                        </div>
+
+                        {% if notice.upload_file %}
+                        <div class="row mt-4 px-2">
+                            <div class="p-3 bg-success-subtle rounded">
+                                <i class="fa-solid fa-paperclip me-2"></i><strong>첨부파일</strong>
+                                <a href="{{ notice.upload_file.url }}" download class="text-dark ms-4">
+                                    {{ notice.upload_file.name|cut:"upload_file/" }}
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- 코멘트 -->
+                        <div class="row mt-4 px-2">
+                            <div class="p-3 border border-secondary-subtle rounded">
+                                <div class="mb-3" id="comment_list"></div>
+                                <div class="d-flex align-items-center p-2 bg-white border rounded">
+                                    <img class="avatar-sm p-1 me-2" src="{% static 'img/tost_icon_white_900.png' %}" alt="프로필 사진"
+                                         style="border-radius: 8px; width: 40px; height: 40px; object-fit: cover;">
+
+                                    <textarea id="comment_input" class="form-control border-0 flex-grow-1"
+                                              placeholder="토스트 관리자 외에는 익명으로 표시되며, 필요시 댓글 내용도 비공개로 등록할 수 있습니다.
+다른 사람에게 불쾌감을 주는 댓글은 예고없이 삭제될 수도 있습니다."
+                                              rows="2" style="resize: none;"></textarea>
+
+                                    <div class="d-flex flex-column">
+                                        <button class="d-flex justify-content-center btn btn-dark text-nowrap mx-2 mb-2 py-1 px-2"
+                                                onclick="tost_comment_create_submit('board', {{ notice.id }})">공개
+                                            <span class="d-none d-md-block ms-1">등록</span></button>
+                                        <button class="d-flex justify-content-center btn btn-secondary text-nowrap mx-2 py-1 px-2"
+                                                onclick="tost_comment_create_private_submit('board', {{ notice.id }})">비공개
+                                            <span class="d-none d-md-block ms-1">등록</span></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 우측 메뉴바 -->
+    <div class="d-none d-md-block col-sm-4 col-xl-3">
+        <div class="card border border-light">
+            <div class="card-body p-4">
+                <div>
+                    <div class="fw-bold mb-2">카테고리</div>
+                    <ul class="list-unstyled fw-medium">
+                        <li>
+                            <a href="/tost_notice/list/?category=&all_sch={{ all_sch }}"
+                               class="category_item text-muted fw-bold py-1 d-block {% if not category and not notice.category %}active{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    <i class="fa-solid fa-chevron-right me-2"></i>모든 게시물
+                                    <span class="badge badge-soft-success ms-2 float-end">{{ total_notice_count }}</span>
+                                </div>
+                            </a>
+                        </li>
+                        {% for obj in board_category %}
+                        <li>
+                            <a href="/tost_notice/list/?category={{ obj.name }}&all_sch={{ all_sch }}"
+                               class="category_item text-muted fw-bold py-1 d-block {% if notice.category.name == obj.name %}active{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    <i class="fa-solid fa-chevron-right me-2"></i>{{ obj.name }}
+                                    <span class="badge badge-soft-success ms-2 float-end">{{ obj.post_count }}</span>
+                                </div>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="mt-4 pt-4 border-top border-dashed border-bottom-0 border-start-0 border-end-0">
+                    {% comment %}<p class="fw-bold mb-2">인기 게시물</p>{% endcomment %}
+                    <p class="fw-bold mb-2">고정된 게시물</p>
+
+                    <div class="list-group list-group-flush">
+                        {% comment %}{% for obj in top_notices %}{% endcomment %}
+                        {% for obj in top_fixed_notices %}
+                        <a href="{% url 'tost_notice_read_page' obj.id %}" class="list-group-item text-muted p-2">
+                            <div class="d-flex justify-content-start align-items-center">
+                                <div class="flex-shrink-0 me-3">
+                                    {% if obj.title_image %}
+                                        <img src="{{ obj.title_image.url }}" alt="title_image" class="avatar-md d-block rounded" style="width: 58px; height: auto; max-height: 58px;">
+                                    {% else %}
+                                        <img src="{% static '/img/tost_office_color_1200px.png' %}" alt="title_image" class="avatar-md d-block rounded" style="width: 58px; height: auto; max-height: 58px;">
+                                    {% endif %}
+                                </div>
+                            
+                                <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+                                    <span class="font-size-13 fw-bold text-truncate">{{ obj.title }}</span>
+                                    <div class="d-flex align-items-center">
+                                        <span class="mb-0 text-truncate">
+                                            <i class="fa-regular fa-calendar-days me-1"></i>{{ obj.created_at|date:"Y년 n월 j일" }}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa-solid fa-eye me-1"></i>{{ obj.views_count }}
+                                        <i class="fa-solid fa-comment-dots ms-3 me-1"></i>{{ obj.comment_count }}
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <li class="list-group-item text-muted py-3 px-2 text-center">
+                            {% comment %}조회수 높은 게시물이 없습니다.{% endcomment %}
+                            고정된 게시물이 없습니다.
+                        </li>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let boardId = '{{ notice.id }}';
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    tost_comment_draw_table('board', boardId);
+}
+
+function notice_delete(noticeId) {
+    if (!confirm("게시물을 삭제하시겠습니까?")) {
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("csrfmiddlewaretoken", getCSRFToken());
+    formData.append("id", noticeId);
+
+    $.ajax({
+        url: '{% url 'tost_notice_delete_fn' %}',
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+            "X-CSRFToken": getCSRFToken()
+        },
+        success: function (response) {
+            if (response.success) {
+                alert("게시물이 삭제되었습니다.");
+                location.href = '{% url 'tost_notice_list_page' %}';
+            } else {
+                alert(response.message);
+            }
+        },
+        error: function (xhr) {
+            console.error(xhr.responseText);
+            alert("삭제 중 오류가 발생했습니다. 다시 시도해주세요.");
+        }
+    });
+}
+
+// 토스트 공지 댓글은 익명화
+function tost_comment_draw_table(docType, docId) {
+    if (docType === 'apv') {
+        comment_draw_url = `/comment_apv_read_fn/${docId}/`;
+    } else if (docType === 'board') {
+        comment_draw_url = `/comment_board_read_fn/${docId}/`;
+    }
+
+    fetch(`${comment_draw_url}`)
+        .then(response => response.json())
+        .then(data => {
+            // console.log("comment_draw_table: ", data);
+
+            if (!data || !Array.isArray(data.results)) {
+                console.error("데이터 형식이 올바르지 않습니다. results가 배열이 아님:", data);
+                return;
+            }
+
+            let comments = data.results; // Pagination 적용된 경우
+            let commentList = document.getElementById(`comment_list`);
+            commentList.innerHTML = "";
+
+            if (comments.length === 0) {
+                commentList.innerHTML = `
+                    <div class="text-muted text-center p-2">
+                        <i class="fa-regular fa-comment-dots"></i> 아직 등록된 댓글이 없습니다.
+                    </div>
+                `;
+                return;
+            }
+
+            comments.forEach(comment => {
+            let editDeleteButtons = (comment.is_owner || comment.is_superuser) ? `
+                <i class="fa-solid fa-pen text-warning me-2" onclick="tost_comment_update_submit(${comment.id})" style="cursor:pointer;"></i>
+                <i class="fa-solid fa-trash-can text-danger me-2" onclick="tost_comment_delete_submit(${comment.id}, ${docId})" style="cursor:pointer;"></i>
+            ` : "";
+
+            let editedText = comment.created_at !== comment.updated_at
+                ? " <span class='text-muted' style='font-size: 12px;'>(수정됨)</span>"
+                : "";
+
+            let isSuperUser = comment.is_superuser === true;
+            let displayName = comment.is_private ? "🔒 익명의 토스터" : "익명의 토스터";
+
+            let profileImage = isSuperUser ? comment.profile_image : "/static/img/tost_icon_white_900.png";
+
+            let showRealName = (comment.is_superuser || comment.is_created_by_superuser) && comment.created_by;
+
+            let userInfoHTML = showRealName
+                ? (comment.is_created_by_superuser
+                    ? `${comment.is_private ? "🔒 " : ""}${comment.created_by}`  // 관리자: 이름만
+                    : `${comment.is_private ? "🔒 " : ""}${comment.created_by} ${comment.created_by_job_level}(${comment.created_by_id}) - ${comment.created_by_company_name}(${comment.created_by_company_id})`)
+                : displayName;
+
+            let bgClass = comment.is_created_by_superuser
+                ? "bg-success-subtle-25"
+                : (comment.is_owner
+                    ? (comment.is_private ? "bg-info-subtle-25" : "bg-info-subtle-25")
+                    : (comment.is_private ? "bg-secondary-subtle-25" : "bg-secondary-subtle-25"));
+
+            let commentHTML = `
+                <div id="comment-${comment.id}" class="d-flex align-items-start mb-1 p-2 ${bgClass} rounded">
+                    <img class="avatar-sm p-1 me-2" src="${profileImage}" alt="프로필 사진"
+                         style="border-radius: 8px; width: 40px; height: 40px; object-fit: cover;">
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold mb-1 d-flex align-items-center justify-content-between">
+                            <span>
+                                ${userInfoHTML}
+                                <span class="text-muted fw-normal" style="font-size: 12px;"> · ${comment.updated_at} ${editedText}</span>
+                            </span>
+                            <span class="text-muted" style="font-size: 13px;">
+                                ${editDeleteButtons}
+                            </span>
+                        </h6>
+                        <p class="mb-0 comment-content" style="white-space: pre-line;">${comment.content}</p>
+                    </div>
+                </div>
+            `;
+            commentList.innerHTML += commentHTML;
+        });
+    })
+    .catch(error => {
+        console.error("댓글을 불러오는 중 오류 발생:", error);
+    });
+}
+
+
+function tost_comment_create_submit(docType, docId) {
+    if (docType === 'apv') {
+        comment_create_url = `/comment_apv_create_fn/${docId}/`;
+    } else if (docType === 'board') {
+        comment_create_url = `/comment_board_create_fn/${docId}/`;
+    }
+
+    let commentInput = document.getElementById("comment_input");
+    if (!commentInput) {
+        console.error("댓글 입력창을 찾을 수 없습니다.");
+        return;
+    }
+
+    let content = commentInput.value.trim();
+    if (!content) {
+        alert("댓글 내용을 입력하세요.");
+        return;
+    }
+
+    fetch(`${comment_create_url}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({ content: content })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            tost_comment_draw_table(docType, docId);
+            commentInput.value = "";
+        }
+    });
+}
+
+function tost_comment_create_private_submit(docType, docId) {
+    if (docType === 'apv') {
+        comment_create_url = `/comment_apv_create_fn/${docId}/`;
+    } else if (docType === 'board') {
+        comment_create_url = `/comment_board_create_fn/${docId}/`;
+    }
+
+    let commentInput = document.getElementById("comment_input");
+    if (!commentInput) {
+        console.error("댓글 입력창을 찾을 수 없습니다.");
+        return;
+    }
+
+    let content = commentInput.value.trim();
+    if (!content) {
+        alert("댓글 내용을 입력하세요.");
+        return;
+    }
+
+    fetch(`${comment_create_url}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({ content: content, is_private: true })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            tost_comment_draw_table(docType, docId);
+            commentInput.value = "";
+        }
+    });
+}
+
+function tost_comment_update_submit(commentId) {
+    let commentElement = document.querySelector(`#comment-${commentId} .comment-content`);
+    let editButton = document.querySelector(`#edit-btn-${commentId}`); // 수정 버튼 선택
+    let originalContent = commentElement.innerHTML.replace(/<br>/g, "\n").trim();
+
+    if (editButton) {
+        editButton.style.display = "none";
+    }
+
+    commentElement.dataset.originalContent = originalContent;
+
+    let editHTML = `
+        <textarea id="edit-text-${commentId}" class="form-control" rows="3" style="resize: none; margin-top: -14px; margin-bottom: -10px;">${originalContent}</textarea>
+        <div class="d-flex">
+            <button class="btn btn-success btn-sm me-2" onclick="tost_saveEditedComment(${commentId})">저장</button>
+            <button class="btn btn-secondary btn-sm" onclick="tost_cancelEditComment(${commentId})">취소</button>
+        </div>
+    `;
+
+    commentElement.innerHTML = editHTML;
+}
+
+function tost_saveEditedComment(commentId) {
+    let editedContent = document.querySelector(`#edit-text-${commentId}`).value.trim();
+    let editButton = document.querySelector(`#edit-btn-${commentId}`);
+
+    if (!editedContent) {
+        alert("댓글 내용을 입력하세요.");
+        return;
+    }
+
+    fetch(`/comment_update_fn/${commentId}/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({ content: editedContent })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            let commentElement = document.querySelector(`#comment-${commentId} .comment-content`);
+            commentElement.innerHTML = data.content.replace(/\n/g, "<br>");
+
+            let timestampElement = document.querySelector(`#comment-${commentId} h6 span .text-muted.fw-normal`);
+            if (timestampElement) {
+                timestampElement.innerHTML = ` · ${data.updated_at} <span class='text-muted' style='font-size: 12px;'>(수정됨)</span>`;
+            }
+
+            if (editButton) {
+                editButton.style.display = "inline";
+            }
+        }
+    });
+}
+
+function tost_cancelEditComment(commentId) {
+    let commentElement = document.querySelector(`#comment-${commentId} .comment-content`);
+    let editButton = document.querySelector(`#edit-btn-${commentId}`); // 수정 버튼 선택
+    let originalContent = commentElement.dataset.originalContent || "";
+    commentElement.innerHTML = originalContent.replace(/\n/g, "<br>");
+
+    commentElement.dataset.editing = "false";
+    if (editButton) {
+        editButton.style.display = "inline";
+    }
+}
+
+function tost_comment_delete_submit(commentId) {
+    if (!confirm("댓글을 삭제하시겠습니까?")) return;
+
+    fetch_gp(`/comment_delete_fn/${commentId}/`, 'post', true, null, (done) => {
+
+        tost_comment_draw_table(docType, docId);
+        alert(txt.delete_ed);
+    });
+}
+
+</script>

@@ -1,0 +1,664 @@
+<!-- 전자결재 > 비용청구서 작성 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 영역 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="window.location.href = '{% url 'approval_list_page' %}'">
+                    <i class="fa-solid fa-envelope-circle-check me-2"></i>전자결재
+                </div>
+            </div>
+            
+            <!-- 본문 영역 -->
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body bg-white p-3">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <input class="form-control fw-bold px-0" id="doc_title" style="font-size: 20px; border: none;">
+                            </div>
+                        </div>
+                        
+                        <div class="row d-none d-md-block">
+                            <!-- 기본 정보 -->
+                            <div class="col-12">
+                                <div class="d-flex align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <i class="fa-regular fa-file me-2"></i>기본 정보
+                                </div>
+                                <div class="card border border-secondary-subtle p-3">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="apv_no" class="form-label">문서번호</label>
+                                            <input type="text" class="form-control" id="apv_no" placeholder="자동으로 생성됩니다" disabled>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="create_date" class="form-label">작성일</label>
+                                            <input type="text" class="form-control" id="create_date" disabled>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="username_team" class="form-label">작성자</label>
+                                            <input type="text" class="form-control" id="username_team" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- 결재선 정보 -->
+                            <div class="col-md-7 d-flex flex-column">
+                                <div class="d-flex align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <i class="fa-solid fa-user-check me-2"></i>결재선 정보
+                                </div>
+                                <div class="card border border-secondary-subtle p-3">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="approver1" class="form-label fw-bold">결재자 1</label>
+                                            <select class="form-control div_required" id="approver1"></select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="approver2" class="form-label">결재자 2</label>
+                                            <select class="form-control" id="approver2"></select>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="approver3" class="form-label">결재자 3</label>
+                                            <select class="form-control" id="approver3" disabled></select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="approver4" class="form-label">결재자 4</label>
+                                            <select class="form-control" id="approver4" disabled></select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 참조자 정보 -->
+                            <div class="col-md-5 d-flex flex-column">
+                                <div class="d-flex align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <i class="fa-solid fa-user-plus me-2"></i>참조자 정보
+                                </div>
+                                <div class="card border border-secondary-subtle p-3 h-100">
+                                    <div class="col-12 mb-3">
+                                        <label for="cc_list" class="form-label">참조 목록
+                                        <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                        data-toggle="tooltip" data-placement="top" title="Ctrl 키를 누르면 목록창이 유지됩니다."></i></label>
+                                        <select class="form-control flex-wrap" id="cc_list"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- 세부 정보 -->
+                            <div class="col-md-12">
+                                <div class="d-flex align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <i class="fa-regular fa-file-lines me-2"></i>세부 정보
+                                </div>
+                                <div class="card border border-secondary-subtle p-3">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="purpose" class="form-label fw-bold">지출 목적
+                                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                            data-toggle="tooltip" data-placement="top" title="제목에 자동 반영되니 지출의 목적을 짧고 간결하게 입력하세요."></i></label>
+                                            <input type="text" class="form-control div_required" id="purpose" onchange="update_doc_title(this.value)">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="payment_method" class="form-label">계좌 정보</label>
+                                            <input type="text" class="form-control" id="payment_method" placeholder="예시) 국민은행 00000-000-00000 홍길동">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <div class="d-flex m-0 p-0">
+                                                <label for="detail_items" class="form-label">세부 항목</label>
+                                                <button type="button" id="add_row" class="btn btn-secondary btn-sm py-0 px-1 ms-2" style="height: 18px;">+</button>
+                                                <button type="button" id="remove_row" class="btn btn-secondary btn-sm py-0 px-1 ms-1" style="height: 18px;">-</button>
+                                                <span class="d-block d-md-none font-size-10 ms-2" style="margin-top: 2px;">(모바일 이용시 가로화면에서 더 크게 보입니다)</span>
+                                            </div>
+                                            <div class="" style="border: 1px solid #D9DEE3; border-radius: 4px;">
+                                                <div id="detail_items" class="text-nowrap"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <label for="detail" class="form-label">상세 설명</label>
+                                            <textarea type="text" class="form-control" id="detail" rows="5"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="attached_file" class="form-label">관련 첨부
+                                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;"
+                                            data-toggle="tooltip" data-placement="top" title="드래그앤드롭 혹은 파일선택으로 첨부 가능 (최대 5MB)"></i></label>
+                                            <input type="file" class="form-control" id="attached_file" onchange="updateFileAttachment('file_list', this)">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="file_list" class="form-label">첨부된 파일</label>
+                                            <div class="form-control bg-light-subtle" id="file_list"></div>
+                                        </div>
+                                        <div id="drop_overlay">
+                                            <div class="mb-5"><i class="fa-solid fa-file-circle-plus fa-xl fa-bounce"></i></div>
+                                            <div>여기에 파일을 놓아 업로드하세요</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- 참고 사항 -->
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between align-items-center fw-bold p-2" style="font-size: 18px;">
+                                    <div>
+                                        <i class="fa-solid fa-list-check me-2"></i>참고사항
+                                    </div>
+                                    {% if request.user.is_master %}
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-secondary text-nowrap" id="memoEditBtn">
+                                            <i class="fa-solid fa-gear me-1"></i>설정
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success d-none" id="memoSaveBtn">
+                                            <i class="fa-solid fa-save me-1"></i>저장
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger d-none" id="memoCancelBtn">
+                                            <i class="fa-solid fa-times me-1"></i>취소
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card border border-secondary-subtle p-3" id="apv_memo" contenteditable="false">
+                                    {% if apv_memo_4 %}
+                                        {{ apv_memo_4|safe }}
+                                    {% else %}
+                                        <ul class="ps-3">
+                                            <li>'세부 항목'에 각 지출 증빙별로 목록 작성</li>
+                                            <li>기타 필요한 내용은 '상세 설명'란에 기입</li>
+                                        </ul>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 전자결재 본문 버튼영역 -->
+            <div class="col-md-7 col-lg-6 col-xl-5 ms-auto">
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    <button type="button" class="btn btn-primary text-nowrap w-100 px-3" onclick="a_tempsave_submit()">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>임시저장
+                    </button>
+                    <button type="button" class="btn btn-success text-nowrap w-100 px-3" onclick="a_progress_submit()">
+                        <i class="fa-solid fa-paper-plane me-2"></i>결재전송
+                    </button>
+                    <button type="button" class="btn btn-danger text-nowrap w-100 px-3 d-none" id="deleteBtn" onclick="a_delete_submit()">
+                        <i class="fa-solid fa-trash-can me-2"></i>삭제
+                    </button>
+                    <button type="button" class="btn btn-warning text-nowrap w-100 px-3" onclick="window.location.href = '{% url 'approval_list_page' %}'">
+                        <i class="fa-solid fa-bars me-2"></i>목록
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentUserId = '{{ request.user.id }}';
+let userName = '{{ request.user.name }}';
+let userTeam = '{{ request.user.team.name }}';
+let userJobLevel = '{{ request.user.job_level.name }}';
+let categoryId = {% if category_id %} {{ category_id }} {% else %} null {% endif %};
+let apvId = {% if apv_id %} {{ apv_id }} {% else %} null {% endif %};
+let send_url;
+if (apvId) { send_url = '/approval_update_fn/' } else { send_url = '/approval_create_fn/' }
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    apv_memo_update();
+
+    init_Select2('#approver1', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#approver2', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#approver3', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2('#approver4', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_multiple('#cc_list', '  선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`});
+        
+    if(apvId) {
+        // apvId가 있다면 임시문서 수정모드로
+        a_update_page_in();
+        $('#deleteBtn').removeClass('d-none');
+    } else {
+        // apvId가 없다면 신규생성 모드로
+        a_create_page_in();
+    }
+}
+
+$(document).ready(function () {
+    init_drop_overlay();
+    $("#approver1, #approver2").on("change", toggleApprovers);
+});
+
+function a_create_page_in() {
+    let createDateInput = $('#create_date');
+    let days = ['일', '월', '화', '수', '목', '금', '토'];
+    let now = new Date();
+    let year = now.getFullYear();
+    let month = ('0' + (now.getMonth() + 1)).slice(-2);
+    let day = ('0' + now.getDate()).slice(-2);
+    let weekDay = days[now.getDay()];
+    let formattedDate = `${year}-${month}-${day} (${weekDay})`;
+    let simpleDate = year.toString().slice(-2) + month + day;
+    createDateInput.val(formattedDate);
+    
+    $('#username_team').val(`${userTeam}  |  ${userName} ${userJobLevel}`);
+    $('#doc_title').val(`[비용청구서] ${userTeam} ${userName} ${simpleDate}`);
+    $('#file_list').text("첨부된 파일이 없습니다.");
+}
+
+function a_update_page_in() {
+    let query = "?apv_id=" + apvId;
+    fetch_gp("/approval_read_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+    
+    let data = done.results[0];
+    let createDay = new Date(data.updated_at); // 문자열을 Date 객체로 변환
+    let days = ['일', '월', '화', '수', '목', '금', '토'];
+    let weekDay = days[createDay.getDay()]; // 날짜 객체에서 요일 가져오기
+    let formattedDate = `${data.updated_at} (${weekDay})`;
+    
+    $('#doc_title').val(data.title);
+    $('#apv_no').val(data.apv_no);
+    $('#create_date').val(formattedDate);
+    $('#username_team').val(`${data.created_by.team}  |  ${data.created_by.name} ${data.created_by.job_level}`);
+    $('#purpose').val(data.purpose);
+    $('#payment_method').val(data.payment_method);
+    $('#detail').val(data.detail);
+    
+    // 파일첨부 렌더링(첨부파일 div_id, api로 불러온 첨부파일 url)
+    renderFileAttachment('file_list', data.apv_attach, data.apv_attach_size);
+    
+    init_Select2('#approver1', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver1_id);
+    init_Select2('#approver2', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver2_id);
+    init_Select2('#approver3', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver3_id);
+    init_Select2('#approver4', '선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, data.approvers[0]?.approver4_id);
+    let ccUserIds = (data.apv_cc || []).map(cc => cc.user_id); // 숫자를 문자열로 변환
+    init_Select2_multiple('#cc_list', '  선택', '/sel2_user/', {id: 'id', txt: item => `${item.text}`}, ccUserIds);
+
+    // 테이블 데이터 그리기
+    let tableContainer = document.getElementById("detail_items");
+    let tbody = tableContainer.querySelector("tbody");
+    tbody.innerHTML = ""; // 기존 테이블 데이터 초기화
+
+    let items = data.sub_items;
+    rowCount = items.length; // rowCount를 불러온 데이터 수만큼 설정
+
+    items.forEach((item, index) => {
+        let row = document.createElement("tr");
+        let price = item.price ? formatNumber(item.price) : '';
+        row.innerHTML = `
+            <td class="text-center align-middle font-size-13">${index + 1}</td>
+            <td><input class="form-control date_flatpickr" type="text" placeholder="YYYY-MM-DD" id="desc3${index + 1}" value="${item.desc3}" autocomplete="off"></td>
+            <td><input class="form-control" type="text" id="desc1${index + 1}" value="${item.desc1}" autocomplete="off"></td>
+            <td><input class="form-control" type="text" id="desc2${index + 1}" value="${item.desc2}" autocomplete="off"></td>
+            <td><input class="form-control text-end" type="text" id="price${index + 1}" value="${price}" oninput="formatInput(event); calculateTotal()" autocomplete="off"></td>
+            <td><input class="form-control" type="text" id="remarks${index + 1}" value="${item.remarks}" autocomplete="off"></td>
+        `;
+        tbody.appendChild(row);
+        init_date_flatpickr();
+    });
+
+    if (items.length === 0) {
+        addRow(); // 데이터가 없을 경우 기본으로 1번 줄 생성
+    }
+    calculateTotal(); // 총액 다시 계산
+}
+
+// 임시저장 (필수필드없음)
+function a_tempsave_submit() {
+    let attachedFile = $('#attached_file')[0].files[0]
+    let tableData = getTableData();
+    
+    let api_data = new FormData();
+        api_data.append("apv_id", nullapply(apvId));
+        api_data.append("status", '임시');
+        api_data.append("category", categoryId);
+        api_data.append("apv_no", nullapply($('#apv_no').val()));
+        api_data.append("title", nullapply($('#doc_title').val()));
+        api_data.append("purpose", nullapply($('#purpose').val()));
+        api_data.append("payment_method", nullapply($('#payment_method').val()));
+        api_data.append("detail", nullapply($('#detail').val()));
+        api_data.append("table_data", tableData);
+        api_data.append("approver1", nullapply($('#approver1').val()));
+        api_data.append("approver2", nullapply($('#approver2').val()));
+        api_data.append("approver3", nullapply($('#approver3').val()));
+        api_data.append("approver4", nullapply($('#approver4').val()));
+        let ccList = $('#cc_list').val();
+        if (ccList) {
+            ccList.forEach(cc => {
+                api_data.append("apv_cc[]", cc);
+            });
+        }
+        if (attachedFile) api_data.append("apv_attach", attachedFile);
+
+    fetch_gp(send_url, 'post', true, api_data, (done) => {
+        window.location.href = '{% url 'approval_list_page' %}';
+        alert("임시저장이 완료되었습니다.");
+    });
+}
+
+// 결재전송 (필수필드누락경고)
+function a_progress_submit() {
+    if (confirm('승인 요청을 전송하시겠습니까?')) {
+        let attachedFile = $('#attached_file')[0].files[0]
+        let tableData = getTableData();
+
+        let api_data = new FormData();
+        api_data.append("apv_id", nullapply(apvId));
+        api_data.append("status", '진행');
+        api_data.append("category", categoryId);
+        api_data.append("apv_no", nullapply($('#apv_no').val()));
+        api_data.append("title", nullapply($('#doc_title').val()));
+        api_data.append("purpose", nullapply($('#purpose').val()));
+        api_data.append("payment_method", nullapply($('#payment_method').val()));
+        api_data.append("detail", nullapply($('#detail').val()));
+        api_data.append("table_data", tableData);
+        api_data.append("approver1", nullapply($('#approver1').val()));
+        api_data.append("approver2", nullapply($('#approver2').val()));
+        api_data.append("approver3", nullapply($('#approver3').val()));
+        api_data.append("approver4", nullapply($('#approver4').val()));
+        let ccList = $('#cc_list').val();
+        if (ccList) {
+            ccList.forEach(cc => {
+                api_data.append("apv_cc[]", cc);
+            });
+        }
+        if (attachedFile) api_data.append("apv_attach", attachedFile);
+
+        function sendApiRequest() {
+            fetch_gp(send_url, 'post', true, api_data, (done) => {
+                window.location.href = '{% url 'approval_list_page' %}';
+                alert("결재 전송이 완료되었습니다.");
+            });
+        }
+
+        function validateApiData(data, requiredFields) {
+            for (let { key, message } of requiredFields) {
+                if (!data.get(key)) {
+                    alert(message);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function checkForDuplicateApprovers(ccList, approvers) {
+            // 승인자 배열에서 중복 확인
+            let approverSet = new Set();
+            for (let approver of approvers) {
+                if (approver) {
+                    if (approverSet.has(approver)) {
+                        alert('승인자 목록에 중복된 ID가 있습니다.');
+                        return true;
+                    }
+                    approverSet.add(approver);
+                }
+            }
+        
+            // ccList 배열을 정확하게 가져오기
+            let cc_users = api_data.getAll('apv_cc[]');
+        
+            // 승인자가 ccList에 포함되어 있는지 확인
+            for (let approver of approvers) {
+                if (approver && cc_users.includes(String(approver))) {
+                    alert('승인자는 참조목록에 포함될 수 없습니다.');
+                    return true;
+                }
+            }
+        
+            return false;
+        }
+
+        let requiredFields = [
+            { key: 'title', message: '문서제목이 입력되지 않았습니다.' },
+            { key: 'purpose', message: '지출 목적을 입력해주세요.' },
+            { key: 'approver1', message: '최소 한명의 승인자가 필요합니다.' },
+        ];
+
+        if (!validateApiData(api_data, requiredFields)) {
+            return;
+        }
+
+        let approvers = [
+            api_data.get('approver1'),
+            api_data.get('approver2'),
+            api_data.get('approver3'),
+            api_data.get('approver4')
+        ];
+        let cc_users = api_data.get('apv_cc') ? api_data.get('apv_cc').split(',') : [];
+
+        if (checkForDuplicateApprovers(cc_users, approvers)) {
+            return;
+        }
+
+        sendApiRequest();
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function a_delete_submit() {
+    if (confirm('임시저장된 문서를 삭제하시겠습니까?')) {
+        let api_data = new FormData();
+        api_data.append("apv_id", nullapply(apvId));
+            
+        fetch_gp("/approval_delete_fn/", 'post', true, api_data, (done) => {
+            window.location.href = '{% url 'approval_list_page' %}';
+            alert("삭제가 완료되었습니다.");
+        });
+
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function toggleApprovers() {
+    if ($("#approver1").val() && $("#approver2").val()) {
+        $("#approver3, #approver4").prop("disabled", false);
+    } else {
+        $("#approver3, #approver4").prop("disabled", true);
+    }
+}
+
+function update_doc_title(leave_reason) {
+    let createDateInput = document.getElementById('create_date');
+    let days = ['일', '월', '화', '수', '목', '금', '토'];
+    let now = new Date();
+    let year = now.getFullYear();
+    let month = ('0' + (now.getMonth() + 1)).slice(-2);
+    let day = ('0' + now.getDate()).slice(-2);
+    let weekDay = days[now.getDay()];
+    let formattedDate = year + '-' + month + '-' + day + ' (' + weekDay + ')';
+    let simepleDate = year.toString().slice(-2) + month + day
+    createDateInput.value = formattedDate;
+    
+    document.getElementById('doc_title').value = `[비용청구서] ${userTeam} ${userName} ${simepleDate} (${leave_reason})`;
+}
+
+// 테이블 그리는 부분
+let rowCount = 0;
+let maxRows = 20;
+
+function addRow() {
+    let tableContainer = document.getElementById("detail_items");
+    let tbody = tableContainer.querySelector("tbody");
+
+    if (tbody.childElementCount === 0) {
+        rowCount = 0;  // 테이블이 비어있을 때만 rowCount 초기화
+    }
+    if (rowCount < maxRows) {
+        rowCount++;
+        let row = document.createElement("tr");
+        row.innerHTML = `
+            <td class="text-center align-middle font-size-13">${rowCount}</td>
+            <td><input class="form-control date_flatpickr" type="text" placeholder="YYYY-MM-DD" id="desc3${rowCount}" autocomplete="off"></td>
+            <td><input class="form-control" type="text" id="desc1${rowCount}" autocomplete="off"></td>
+            <td><input class="form-control" type="text" id="desc2${rowCount}" autocomplete="off"></td>
+            <td><input class="form-control text-end" type="text" id="price${rowCount}" oninput="formatInput(event); calculateTotal()" autocomplete="off"></td>
+            <td><input class="form-control" type="text" id="remarks${rowCount}" autocomplete="off"></td>
+        `;
+        tbody.appendChild(row);
+        calculateTotal();
+        init_date_flatpickr();
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    let tableContainer = document.getElementById("detail_items");
+    let addRowButton = document.getElementById("add_row");
+    let removeRowButton = document.getElementById("remove_row");
+
+    let table = document.createElement("table");
+    table.classList.add("table", "table-sm", "table-striped", "m-0");
+
+    let thead = document.createElement("thead");
+    thead.innerHTML = `
+        <tr class="text-center align-middle font-size-11">
+            <th id="item_no" style="width: 3%;">순번</th>
+            <th id="desc3" style="width: 12%;">관련일자</th>
+            <th id="desc1" style="width: 35%;">내 용</th>
+            <th id="desc2" style="width: 15%;">지출처</th>
+            <th id="price" style="width: 10%;">금액 (원)</th>
+            <th id="remarks" style="width: 25%;">비 고</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    let tbody = document.createElement("tbody");
+    table.appendChild(tbody);
+
+    let tfoot = document.createElement("tfoot");
+    tfoot.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align: end; font-size: 13px; font-weight: bold; border-bottom: 0;">합 계</td>
+            <td id="amount" style="text-align: end; font-size: 13px; font-weight: bold; border-bottom: 0;">0 원</td>
+            <td style="border-bottom: 0;"></td>
+        </tr>
+    `;
+    table.appendChild(tfoot);
+    tableContainer.appendChild(table);
+
+    addRowButton.addEventListener("click", addRow);
+    removeRowButton.addEventListener("click", function() {
+        if (rowCount > 1) {
+            tbody.removeChild(tbody.lastChild);
+            rowCount--;
+            calculateTotal();
+        }
+    });
+
+    for (let i = 0; i < 1; i++) {
+        addRow();
+    }
+});
+
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function unformatNumber(num) {
+    return num.replace(/,/g, '');
+}
+
+function calculateTotal() {
+    let total = 0;
+    document.querySelectorAll('input[id^="price"]').forEach(input => {
+        let value = parseFloat(unformatNumber(input.value)) || 0;
+        total += value;
+    });
+    document.getElementById("amount").textContent = formatNumber(total) + ' 원';
+}
+
+function formatInput(event) {
+    let input = event.target;
+    let value = unformatNumber(input.value);
+    if (!isNaN(value) && value !== "") {
+        input.value = formatNumber(value);
+    } else {
+        input.value = "";
+    }
+}
+
+function getTableData() {
+    let rows = document.querySelectorAll('#detail_items table tbody tr');
+    let items = [];
+
+    rows.forEach((row, index) => {
+        let desc3 = row.querySelector(`#desc3${index + 1}`).value;
+        let desc1 = row.querySelector(`#desc1${index + 1}`).value;
+        let desc2 = row.querySelector(`#desc2${index + 1}`).value;
+        let price = row.querySelector(`#price${index + 1}`).value;
+        let remarks = row.querySelector(`#remarks${index + 1}`).value;
+
+        items.push({
+            item_no: index + 1,
+            desc3: desc3,
+            desc1: desc1,
+            desc2: desc2,
+            price: parseFloat(price.replace(/,/g, '')), // 숫자로 변환
+            remarks: remarks
+        });
+    });
+    
+    return JSON.stringify(items);
+}
+
+function a_apv_memo_submit($memoApv) {
+    let api_data = new FormData();
+        api_data.append("category", categoryId);
+        api_data.append("apv_memo", $memoApv.html());
+
+    fetch_gp('/approval_memo_update_fn/', 'post', true, api_data, (done) => {
+        alert("참고사항을 변경하였습니다.");
+    });
+}
+
+</script>

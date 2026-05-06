@@ -1,0 +1,511 @@
+<!-- 매출/지출관리 > 매출관리 > 단기직청구액 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-users me-2"></i>매출관리 <i class="fa-solid fa-angle-right px-1"></i> 단기직 청구액
+                    <i class="fa-solid fa-angle-right px-1"></i> [{{ year }}년 {{ month }}월] {{ customer.name }} 
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1" data-toggle="tooltip" data-placement="top" title="기타 텍스트 검색">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-info text-nowrap ms-1 px-2.5" onclick="save_salary()">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">청구금액 저장</span>
+                                </button>
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="exportToExcel()">
+                                    <i class="fa-solid fa-file-excel"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">엑셀 다운로드</span>
+                                </button>
+                                <button class="btn btn-secondary text-nowrap ms-1 px-2.5" onclick="window.close()">
+                                    <i class="fa-solid fa-xmark"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">창닫기</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th>순번</th>
+                                            <th>근무일자</th>
+                                            <th>파트</th>
+                                            <th>협력사</th>
+                                            <th>근무자</th>
+
+                                            <th name="basic_start_time" style="min-width: 80px;">기준출근</th>
+                                            <th style="min-width: 80px;">출근시간</th>
+                                            <th name="basic_end_time" style="min-width: 80px;">기준퇴근</th>
+                                            <th style="min-width: 80px; border-right: 1px solid #dee2e6;">퇴근시간</th>
+
+                                            <th name="basic_work_dur">기준근무</th>
+                                            <th>근무시간</th>
+                                            <th>연장시간</th>
+                                            <th>야간시간</th>
+                                            <th name="late_dur">지각시간</th>
+                                            <th name="early_dur">조출시간</th>
+                                            <th name="total_dur">총근무시간</th>
+
+                                            <th style="min-width: 100px; border-left: 1px solid #dee2e6;">기본급</th>
+                                            <th name="late" style="min-width: 100px;">지각금</th>
+                                            <th name="ot" style="min-width: 100px;">연장수당</th>
+                                            <th name="night" style="min-width: 100px;">야간수당</th>
+                                            <th name="late_ot_night" style="min-width: 100px;">OT/지각금액</th>
+                                            <th name="wk" style="min-width: 100px;">주휴수당</th>
+                                            <th name="meal" style="min-width: 100px;">식대</th>
+                                            <th name="tran" style="min-width: 100px;">교통비</th>
+                                            <th name="early" style="min-width: 100px;">조출수당</th>
+                                            <th name="full" style="min-width: 100px;">만근수당</th>
+                                            <th name="title" style="min-width: 100px;">직책수당</th>
+                                            <th name="cdc" style="min-width: 100px;">CDC</th>
+                                            <th name="extra" style="min-width: 100px;">추가지급액</th>
+                                            <th name="special" style="min-width: 100px;">특별수당</th>
+                                            <th name="promo" style="min-width: 100px;">프로모션</th>
+                                            <th name="work" style="min-width: 100px;">업무수당</th>
+
+                                            <th name="pension" style="min-width: 100px;">국민연금</th>
+                                            <th name="health" style="min-width: 100px;">건강보험</th>
+                                            <th name="emp" style="min-width: 100px;">고용보험</th>
+                                            <th name="acc" style="min-width: 100px;">산재보험</th>
+                                            <th name="fee" style="min-width: 100px;">수수료</th>
+                                            <th>청구금액</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let customer_id = {% if customer %} {{ customer.id }} {% else %} null {% endif %};
+let monthly_sales_id = {% if monthly_sales %} {{ monthly_sales.id }} {% else %} null {% endif %};
+let sch_year = {% if year %} {{ year }} {% else %} null {% endif %};
+let sch_month = {% if month %} {{ month }} {% else %} null {% endif %};
+let all_sch;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('daily_price_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('daily_price_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+
+    a_search_ready();
+}
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    all_sch = $('#all_sch').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&price=true";
+    if (customer_id) { query += "&customer_id=" + customer_id; }
+    if (sch_year) { query += "&sch_year=" + sch_year; }
+    if (sch_month) { query += "&sch_month=" + sch_month; }
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+
+    fetch_gp("/daily_worker_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        $('#a_tbody').html(`
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 근무내역이 없습니다.<br>[청구월] 혹은 [센터] 정보를 다시 확인해주세요.</td>
+        </tr>`);
+
+        const all_fields = [
+            "basic_start_time", "basic_end_time",
+            "basic_work_dur", "late_dur", "early_dur", "total_dur",
+            "late", "ot", "night", "late_ot_night", "wk", "meal", "tran", "early", "full", "title",
+            "cdc", "extra", "special", "promo", "work", "pension", "health", "emp", "acc", "fee"
+        ];
+        
+        all_fields.forEach(field => {
+            $(`th[name='${field}'], td[name='${field}']`).hide();
+        });
+
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        const hidden = (field) => item.customer_field?.includes(field) ? '' : 'display: none;';
+
+        rows += `
+        <tr id="${item.id}" class="align-middle text-nowrap">
+            <td>${num + i}</td>
+            <td>${item.work_order_date || ""}</td>
+            <td>${item.user.job_title || ""}</td>
+            <td>${item.subsidiary_name || ""}</td>
+            <td>${item.user.name || ""}</td>
+
+            <td name="basic_start_time">${item.basic_start_time || ''}</td>
+            <td>${item.start_time || ''}</td>
+            <td name="basic_end_time">${item.basic_end_time || ''}</td>
+            <td style="border-right: 1px solid #dee2e6;">${item.end_time || ''}</td>
+
+            <td name="basic_work_dur">${item.basic_work_dur || ''}</td>
+            <td>${item.work_dur || ''}</td>
+            <td>${item.ext_dur || ''}</td>
+            <td>${item.night_dur || ''}</td>
+            <td name="late_dur">${item.late_dur || ''}</td>
+            <td name="early_dur">${item.early_dur || ''}</td>
+            <td name="total_dur">${item.total_dur || ''}</td>
+
+            <td name="base_salary" style="border-left: 1px solid #dee2e6;">${formatNumber(item.base_salary || '', 2)}</td>
+            <td name="late">${formatNumber(item.late || '', 2)}</td>
+            <td name="ot">${formatNumber(item.ot || '', 2)}</td>
+            <td name="night">${formatNumber(item.night || '', 2)}</td>
+            <td name="late_ot_night">${formatNumber(item.late_ot_night || '', 2)}</td>
+            <td name="wk">${formatNumber(item.wk || '', 2)}</td>
+            <td name="meal">${formatNumber(item.meal || '', 2)}</td>
+            <td name="tran">${formatNumber(item.tran || '', 2)}</td>
+            <td name="early">${formatNumber(item.early || '', 2)}</td>
+            <td name="full">${formatNumber(item.full || '', 2)}</td>
+            <td name="title">${formatNumber(item.title || '', 2)}</td>
+            <td name="cdc">${formatNumber(item.cdc || '', 2)}</td>
+            <td name="extra">${formatNumber(item.extra || '', 2)}</td>
+            <td name="special">${formatNumber(item.special || '', 2)}</td>
+            <td name="promo">${formatNumber(item.promo || '', 2)}</td>
+            <td name="work">${formatNumber(item.work || '', 2)}</td>
+
+            <td name="pension">${formatNumber(item.pension || '', 2)}</td>
+            <td name="health">${formatNumber(item.health || '', 2)}</td>
+            <td name="emp">${formatNumber(item.emp || '', 2)}</td>
+            <td name="acc">${formatNumber(item.acc || '', 2)}</td>
+            <td name="fee">${formatNumber(item.fee || '', 2)}</td>
+            <td name="total" >${formatNumber(item.total || '', 2)}</td>
+        </tr>`;
+    }
+
+    // 합계 추가
+    rows += `
+        <tr style="background: #f8f8f8; border-top: 1px solid #d9dee3" id="tr_total_price_amount">
+            <td colspan="4" class="fw-bold text-center">총 근무건 수</td>
+            <td colspan="1" class="fw-bold text-start" id="total_worker"></td>
+            <td name="basic_start_time"></td>
+            <td></td>
+            <td name="basic_end_time"></td>
+            <td style="border-right: 1px solid #dee2e6;"></td>
+
+            <td name="basic_work_dur"></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td name="late_dur"></td>
+            <td name="early_dur"></td>
+            <td name="total_dur"></td>
+
+            <td class="fw-bold text-start" id="total_base_salary" style="border-left: 1px solid #dee2e6;"></td>
+            <td name="late" class="fw-bold text-start" id="total_late"></td>
+            <td name="ot" class="fw-bold text-start" id="total_ot"></td>
+            <td name="night" class="fw-bold text-start" id="total_night"></td>
+            <td name="late_ot_night" class="fw-bold text-start" id="total_late_ot_night"></td>
+            <td name="wk" class="fw-bold text-start" id="total_wk"></td>
+            <td name="meal" class="fw-bold text-start" id="total_meal"></td>
+            <td name="tran" class="fw-bold text-start" id="total_tran"></td>
+            <td name="early" class="fw-bold text-start" id="total_early"></td>
+            <td name="full" class="fw-bold text-start" id="total_full"></td>
+            <td name="title" class="fw-bold text-start" id="total_title"></td>
+            <td name="cdc" class="fw-bold text-start" id="total_cdc"></td>
+            <td name="extra" class="fw-bold text-start" id="total_extra"></td>
+            <td name="special" class="fw-bold text-start" id="total_special"></td>
+            <td name="promo" class="fw-bold text-start" id="total_promo"></td>
+            <td name="work" class="fw-bold text-start" id="total_work"></td>
+
+            <td name="pension" class="fw-bold text-start" id="total_pension"></td>
+            <td name="health" class="fw-bold text-start" id="total_health"></td>
+            <td name="emp" class="fw-bold text-start" id="total_emp"></td>
+            <td name="acc" class="fw-bold text-start" id="total_acc"></td>
+            <td name="fee" class="fw-bold text-start" id="total_fee"></td>
+            <td name="total" class="fw-bold text-start" id="total_total" style="border-right: 1px solid #dee2e6;"></td>
+        </tr>`;
+
+    $('#a_tbody').html(rows);
+
+    $('#a_tbody tr').not('#tr_total_price_amount').each(function () {
+        calc_row($(this).find('td').first()[0]); // 첫번째 td 기준
+    });
+
+    // 1. 숨김필드 리스트
+    let hidden_fields = [];
+    if (data.length > 0 && data[0].customer_field) {
+        const all_fields = [
+            "basic_start_time", "basic_end_time",
+            "basic_work_dur", "late_dur", "early_dur", "total_dur",
+            "late", "ot", "night", "late_ot_night", "wk", "meal", "tran", "early", "full", "title",
+            "cdc", "extra", "special", "promo", "work", "pension", "health", "emp", "acc", "fee" ];
+        hidden_fields = all_fields.filter(f => !data[0].customer_field.includes(f));
+    }
+
+    // 2. <th>와 #tr_total_price_amount의 <td>에 일괄 적용
+    hidden_fields.forEach(field => {
+        $(`th[name='${field}'], td[name='${field}']`).hide();
+    });
+
+    update_total_amounts();
+    a_nation.nation_display(done);
+}
+
+// 청구금액 합산 대상 필드 id 접미사
+const CHARGE_FIELDS = [
+  'base_salary','late','ot','night','late_ot_night','wk','meal','tran',
+  'early','full','title','cdc','extra','special','promo','work',
+  'pension','health','emp','acc','fee'
+];
+
+function getNumById(row, idSuffix) {
+  const workerId = row.attr('id');
+  const $td = row.find(`td[name='${idSuffix}']`);
+  const raw = $td.length ? $td.text().trim() : '';
+  return parseFloat(del_comma(raw)) || 0;
+}
+
+function setFormattedById(row, idSuffix, val, fixed=0) {
+  const $td = row.find(`td[name='${idSuffix}']`);
+  if ($td.length) {
+    $td.text(formatNumber(val, fixed));
+  }
+}
+
+function calc_row(tdElem) {
+    const $row = $(tdElem).closest('tr');
+
+    // 1) 청구금액(= 모든 수당/공제/수수료 포함 합계)
+    let total = 0;
+    for (const key of CHARGE_FIELDS) {
+        total += getNumById($row, key);
+    }
+    setFormattedById($row, 'total', Math.round(total)); // 청구금액은 정수 반올림
+
+    // 4) 전체 합계 갱신
+    update_total_amounts();
+}
+
+function update_total_amounts() {
+    const $rows = $('#a_tbody tr').not('#tr_total_price_amount');
+    const sums = {};  // 항목별 합계
+
+    // 초기화
+    for (const key of CHARGE_FIELDS.concat(['total'])) {
+        sums[key] = 0;
+    }
+
+    $rows.each(function () {
+        const $row = $(this);
+        for (const key of Object.keys(sums)) {
+            sums[key] += getNumById($row, key);
+        }
+    });
+
+    $('#total_worker').text(`${$rows.length}건`);
+
+    // 합계 적용
+    for (const key of Object.keys(sums)) {
+        const selector = `#total_${key}`;
+        $(selector).text(formatNumber(sums[key]));
+    }
+}
+
+
+function save_salary() {
+    let api_data = new FormData();
+        api_data.append("pk", monthly_sales_id);
+        api_data.append("total_total", del_comma($('#total_total').text().trim()));
+        api_data.append("total_fee", del_comma($('#total_fee').text().trim()));
+
+    fetch_gp('/sales_monthly_daily_price_fn/', 'post', true, api_data, (done) => {
+        a_search();
+        alert(txt.update_ed);
+    });
+}
+
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+function exportToExcel() {
+    const tbody = document.querySelector('#a_tbody');
+    const thead = document.querySelector('table thead');
+    if (!tbody || !thead) return;
+
+    let wb = XLSX.utils.book_new();
+    let ws_data = [];
+
+    // 숨겨진 column index 추적
+    let hiddenIndexes = [];
+
+    // 헤더 수집
+    let headerRow = [];
+    thead.querySelectorAll('th').forEach((th, idx) => {
+        if (th.offsetParent === null || th.classList.contains('d-none')) {
+            hiddenIndexes.push(idx);  // 숨김 처리된 열
+        } else {
+            headerRow.push(th.innerText.trim());
+        }
+    });
+    ws_data.push(headerRow);
+
+    // 바디 수집
+    tbody.querySelectorAll('tr').forEach(row => {
+        let rowData = [];
+        row.querySelectorAll('td').forEach((cell, idx) => {
+            if (!hiddenIndexes.includes(idx)) {  // 숨김 index 제외
+                rowData.push(cell.innerText.trim());
+            }
+        });
+        if (rowData.length > 0) {
+            ws_data.push(rowData);
+        }
+    });
+
+    let ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "{{ customer.name }}");
+    XLSX.writeFile(wb, "단기직 근무내역_{{ year }}년 {{ month }}월_{{ customer.name }}.xlsx");
+}
+
+// 팝업창 닫힘신호 전송
+window.onunload = function() {
+    if (window.opener && !window.opener.closed) {
+        // 부모창의 특정 함수 실행
+        window.opener.a_search();
+    }
+};
+</script>

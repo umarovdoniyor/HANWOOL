@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 상단 타이틀 -->
+    <div class="col-xxl-12">
+        <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="window.location.href = '{% url 'tost_notice_list_page' %}'">
+            <i class="fa-solid fa-bread-slice me-2"></i>토스트 공지
+            <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+               title="토스트 오피스의 공지사항으로 사용하는 페이지입니다.<br>사용자분들과의 소통을 통해 더 나은 그룹웨어로 거듭나겠습니다."></i>
+        </div>
+    </div>
+
+    <!-- 좌측 게시글 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+            
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="card border border-light">
+                    <div class="card-body d-flex justify-content-between p-3">
+                        <div class="d-flex p-0">
+                            <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                 data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </div>
+                            
+                            <div class="search-box me-1">
+                                <form method="GET" action="{% url 'tost_notice_list_page' %}" class="search-box me-1 d-flex">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary"
+                                               id="all_sch" name="all_sch" value="{{ all_sch }}"
+                                               placeholder="검색어 입력" autocomplete="off">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                    <button type="submit" class="btn btn-secondary text-nowrap ms-1 px-2.5">
+                                        <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex p-0">
+                            {% if notice.id %}
+                                <button class="btn btn-primary text-nowrap ms-1 px-2.5" onclick="a_board_update('{{ notice.id }}')">
+                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">확인</span>
+                                </button>
+                            {% else %}
+                                <button class="btn btn-primary text-nowrap ms-1 px-2.5" onclick="a_board_create()">
+                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">확인</span>
+                                </button>
+                            {% endif %}
+                            <button class="btn btn-secondary text-nowrap ms-1 px-2.5" onclick="confirmCancel()">
+                                <i class="fa-solid fa-xmark fa-lg"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">취소</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 게시물 -->
+            <div class="col-xxl-12">
+                <div class="card border border-light">
+                    <div class="card-body">
+                        <form id="notice-form" method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+
+                            <input type="hidden" name="notice_id" value="{{ notice.id|default_if_none:'' }}">
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold" for="board_title">제목</label>
+                                    <input type="text" name="title" id="board_title" class="form-control div_required" value="{{ notice.title|default_if_none:'' }}">
+                                </div>
+                            
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="board_category">카테고리
+                                        <button class="btn btn-sm px-1 py-0" onclick="openCodePage('board_category', 'create')">
+                                            <i class="fa-solid fa-gear"></i>
+                                        </button>
+                                    </label>
+                                    <select name="category" id="board_category" class="form-select"></select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" for="summernote">내용</label>
+                                <textarea name="content" id="summernote" class="form-control">{{ notice.content|default_if_none:'' }}</textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" for="board_file">첨부파일</label>
+                                <input type="file" name="file" id="board_file" class="form-control">
+
+                                {% if notice.upload_file %}
+                                    <p class="mt-2">
+                                        현재 파일:
+                                        <a href="{{ notice.upload_file.url }}" download>{{ notice.upload_file.name }}</a>
+                                        <i class="fa-solid fa-xmark text-danger fa-lg ms-2" id="remove-file-icon" style="cursor: pointer;" onclick="removeAttachedFile()"></i>
+                                    </p>
+                                {% endif %}
+
+                                <input type="hidden" name="remove_file" id="remove_file" value="0">
+                            </div>
+                        
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold" for="board_subject">블로그 요약</label>
+                                    <input type="text" name="board_subject" id="board_subject" class="form-control" value="{{ notice.subject|default_if_none:'' }}">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold" for="board_is_blog">블로그 노출</label>
+                                    <select name="board_is_blog" class="form-select" id="board_is_blog">
+                                        <option value="false" {% if notice.is_blog == False %}selected{% endif %}>비노출</option>
+                                        <option value="true" {% if notice.is_blog == True %}selected{% endif %}>노출</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold" for="title_image">대표 이미지</label>
+                                    <input type="file" name="title_image" id="title_image" class="form-control">
+
+                                    {% if notice.title_image %}
+                                        <p class="mt-2">
+                                            현재 파일:
+                                            <a href="{{ notice.title_image.url }}" download>{{ notice.title_image.name }}</a>
+                                            <i class="fa-solid fa-xmark text-danger fa-lg ms-2" id="remove-image-icon" style="cursor: pointer;" onclick="removeAttachedImage()"></i>
+                                        </p>
+                                    {% endif %}
+
+                                    <input type="hidden" name="remove_image" id="remove_image" value="0">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let boardId = '{{ notice.id }}';
+let boardCategory = '{{ notice.category.id }}';
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_Select2('#board_category', '선택', '/sel2_code_board_category/', {id: 'id', txt: item => `${item.text}`}, boardCategory);
+}
+
+$(document).ready(function () {
+    $('#summernote').summernote({
+        height: 'auto', // 에디터 높이
+        width: '100%',
+        minHeight: '250px', // 최소 높이
+        maxHeight: null, // 최대 높이
+        focus: false, // 에디터 로딩후 포커스를 맞출지 여부
+        lang: 'ko-KR', // 한글 설정
+        tabDisable: true,
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+            ['fontstyle', ['fontname', 'fontsize', 'color']],
+            ['para', ['paragraph']],
+            ['height', ['height']],
+            ['table', ['table']],
+            ['insert', ['hr', 'link', 'picture', 'video']],
+            ['view', ['help']]
+        ],
+    });
+});
+
+function a_board_create() {
+    if (is_empty($('#board_title').val())) {
+        alert("제목을 입력하세요.");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    formData.append('title', nullapply($('#board_title').val()));
+    formData.append('content', $('#summernote').summernote('code'));
+    formData.append('category', nullapply($('#board_category').val()));
+    formData.append('subject', nullapply($('#board_subject').val()));
+    formData.append('is_blog', $('#board_is_blog').val());
+    let fileInput = $('#board_file')[0].files;
+    if (fileInput.length > 0) {
+        formData.append('file', fileInput[0]);
+    }
+    let imageInput = $('#title_image')[0].files;
+    if (imageInput.length > 0) {
+        formData.append('title_image', imageInput[0]);
+    }
+
+    $.ajax({
+        url: '{% url 'tost_notice_create_fn' %}',
+        type: 'POST',
+        data: formData,
+        processData: false, // FormData 사용 시 필요
+        contentType: false, // FormData 사용 시 필요
+        success: function (response) {
+            alert("등록되었습니다.");
+            location.href='{% url 'tost_notice_list_page' %}'
+        },
+        error: function (error) {
+            console.error(error);
+            alert("등록 중 오류가 발생했습니다. 다시 시도해주세요.");
+        }
+    });
+}
+
+function a_board_update(noticeId) {
+    if (is_empty($('#board_title').val())) {
+        alert("제목을 입력하세요.");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    formData.append('id', noticeId);
+    formData.append('title', nullapply($('#board_title').val()));
+    formData.append('content', $('#summernote').summernote('code'));
+    formData.append('category', nullapply($('#board_category').val()));
+    formData.append('subject', nullapply($('#board_subject').val()));
+    formData.append('is_blog', $('#board_is_blog').val());
+    formData.append("remove_file", $('#remove_file').val());
+    formData.append("remove_image", $('#remove_image').val());
+
+    let fileInput = $('#board_file')[0].files;
+    if (fileInput.length > 0) {
+        formData.append('file', fileInput[0]);
+    }
+    let imageInput = $('#title_image')[0].files;
+    if (imageInput.length > 0) {
+        formData.append('title_image', imageInput[0]);
+    }
+
+    $.ajax({
+        url: `/tost_notice_update_fn/`,
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (response) {
+            alert("게시물이 수정되었습니다.");
+            location.href = `/tost_notice/read/${response.id}/`;
+        },
+        error: function (error) {
+            console.error(error);
+            alert("수정 중 오류가 발생했습니다. 다시 시도해주세요.");
+        }
+    });
+}
+
+function removeAttachedFile() {
+    if (confirm("첨부된 파일을 삭제하시겠습니까?")) {
+        document.getElementById("remove_file").value = "1";
+        document.getElementById("remove-file-icon").parentElement.innerHTML = "<p class='text-muted'>첨부파일이 삭제되었습니다.</p>";
+    }
+}
+
+function removeAttachedImage() {
+    if (confirm("첨부된 파일을 삭제하시겠습니까?")) {
+        document.getElementById("remove_image").value = "1";
+        document.getElementById("remove-image-icon").parentElement.innerHTML = "<p class='text-muted'>첨부파일이 삭제되었습니다.</p>";
+    }
+}
+
+function confirmCancel() {
+    if (confirm("작성을 취소하고 이전 페이지로 이동합니까?")) {
+        if (boardId) {
+            location.href = `/tost_notice/read/${boardId}/`;
+        } else {
+            location.href = "{% url 'tost_notice_list_page' %}";
+        }
+    }
+}
+
+</script>

@@ -1,0 +1,1256 @@
+<!-- 팩토리 > 환경설정 > 거래처정보 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+<style>
+/* select2 컨테이너 너비 지정 */
+#sch_customer + .select2-container, #sch_customer_class + .select2-container, #sch_subsidiary + .select2-container {
+    width: 200px !important;
+}
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_customer + .select2-container .select2-selection--single, #sch_customer_class + .select2-container .select2-selection--single, #sch_subsidiary + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+/* 선택된 항목 텍스트 정렬 */
+#sch_customer + .select2-container .select2-selection__rendered, #sch_customer_class + .select2-container .select2-selection__rendered, #sch_subsidiary + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+/* 화살표 위치 조정 */
+#sch_customer + .select2-container .select2-selection__arrow, #sch_customer_class + .select2-container .select2-selection__arrow, #sch_subsidiary + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+/* 클리어버튼 위치 조정 */
+#sch_customer + .select2-container .select2-selection__clear, #sch_customer_class + .select2-container .select2-selection__clear, #sch_subsidiary + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-handshake me-2"></i>거래처정보
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 공급처와 고객사, 협력사를 관리하는 페이지 입니다.<br>• 거래처 목록에 등록된 업체는 발주, 견적, 납품 등에서 바로 불러와 선택할 수 있습니다.<br>• 수정하려는 항목에서 더블클릭하면 수정 팝업이 열립니다."></i>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+                                
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="거래처 대분류 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_customer_class"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+                                
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="거래처 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_customer"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+                                
+                                <div class="d-none d-md-flex input-group input-daterange w-auto me-1" data-toggle="tooltip" data-placement="top" title="소속관리법인 검색">
+                                    <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_subsidiary"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1" data-toggle="tooltip" data-placement="top" title="담당자명, 주소, 업태, 종목 등 검색">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-info text-nowrap ms-1 px-2.5" onclick="a_popup_open()">
+                                    <i class="fa-solid fa-check"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">급여항목설정</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="d-flex flex-column flex-lg-row justify-content-between">
+                            <div class="col-12 col-lg-7">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <!-- 거래처 목록 -->
+                                        <div class="d-flex justify-content-between align-items-center fw-bold mb-2" style="font-size: 16px; color: #2a3040;">거래처 목록
+                                            <div class="d-flex p-0">
+                                                <button class="btn btn-sm btn-success text-nowrap ms-1 px-2.5" onclick="a_create_modal_in()">
+                                                    <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-warning text-nowrap ms-1 px-2.5" onclick="a_update_modal_in()">
+                                                    <i class="fa-solid fa-pen"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">수정</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">삭제</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="custom_table table-responsive">
+                                            <table class="table">
+                                                <thead class="thead-light">
+                                                    <tr class="text-nowrap">
+                                                        <th>순번</th>
+                                                        <th>대분류</th>
+                                                        <th>이름</th>
+                                                        <th>담당자</th>
+                                                        <th>담당자 연락처</th>
+                                                        <th>센터 매니저</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="a_tbody"></tbody>
+                                            </table>
+                                        </div>
+                                        <div class="div_center mt-3" id="a_nation_id"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-lg-5 ps-0 ps-lg-2">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <!-- 거래처 정보 -->
+                                        <div class="d-flex fw-bold mb-2" style="font-size: 16px; color: #2a3040;">거래처 정보</div>
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <colgroup>
+                                                    <col style="width: 10%;">
+                                                    <col style="width: 25%;">
+                                                    <col style="width: 10%;">
+                                                    <col style="width: 25%;">
+                                                </colgroup>
+                                                <tbody class="text-nowrap">
+                                                    <tr class="border-top">
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">등록번호</th>
+                                                        <td class="p-2 ps-3"><span id="code"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">대분류</th>
+                                                        <td class="p-2 ps-3"><span id="customer_class_name"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">이름</th>
+                                                        <td class="p-2 ps-3"><span id="name" style="display: inline-block; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">사업자번호</th>
+                                                        <td class="p-1 ps-3 align-middle"><span id="license"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">대표자</th>
+                                                        <td class="p-2 ps-3"><span class="text-wrap" id="owner_name"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">업태</th>
+                                                        <td class="p-2 ps-3"><span class="text-wrap" id="type"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">전화</th>
+                                                        <td class="p-2 ps-3"><span class="text-wrap" id="tel"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">종목</th>
+                                                        <td class="p-2 ps-3"><span id="item"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">팩스</th>
+                                                        <td class="p-2 ps-3"><span id="fax"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">메일</th>
+                                                        <td class="p-2 ps-3"><span id="email"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">담당자</th>
+                                                        <td class="p-2 ps-3"><span id="charge_name"></span></td>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">담당자 연락처</th>
+                                                        <td class="p-2 ps-3"><span id="mobile"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">주소</th>
+                                                        <td class="p-2 ps-3" colspan="3"><span id="address" class="d-inline text-wrap"></span></td>
+                                                    </tr>
+                                                    {% comment %}<tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">근무시간</th>
+                                                        <td class="p-2 ps-3" colspan="3"><span id="desc2" class="d-inline text-wrap"></span></td>
+                                                    </tr>{% endcomment %}
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">업무내용</th>
+                                                        <td class="p-2 ps-3" colspan="3"><span id="desc3" class="d-inline text-wrap"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">휴게시간</th>
+                                                        <td class="p-2 ps-3" colspan="3"><span id="desc4" class="d-inline text-wrap"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">표준일급</th>
+                                                        <td class="p-2 ps-3" colspan="3"><span id="default_wage" class="d-inline text-wrap"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="p-2 ps-3" style="background-color: #fafafa;">은행/계좌</th>
+                                                        <td class="p-2 ps-3" colspan="3"><span id="desc1" class="d-inline text-wrap"></span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_create_modal -->
+<div class="modal fade" id="a_create_modal" tabindex="-1" role="dialog" aria-labelledby="a_create_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">거래처 관리 <i class="fa-solid fa-angle-right px-1"></i> 등록</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_create"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_create_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-6 col-md-4 mb-3 d-flex align-items-end">
+                        <div class="col-10 m-0">
+                            <label for="code" class="form-label fw-bold d-block">등록번호</label>
+                            <input type="text" class="form-control div_required" id="code" placeholder="자동 생성" disabled>
+                        </div>
+                        <div class="col-1 m-0 d-flex align-items-center ms-2">
+                            <input class="form-check-input mb-2" style="width: 20px; height: 20px;" type="checkbox" id="auto_id_code" checked>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="name" class="form-label fw-bold">거래처 이름</label>
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 관리법인 및 센터를 의미합니다."></i>
+                        <input type="text" class="form-control div_required" id="name">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="customer_class" class="form-label">거래처 대분류
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 관리법인 대분류 및 거래처 대분류를 의미합니다."></i>
+                        </label>
+                        <button class="btn btn-sm px-1 py-0" onclick="openCodePage('customer_class', 'create')">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+                        <select class="form-control" id="customer_class"></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="license" class="form-label">사업자등록번호</label>
+                        <input type="text" class="form-control" id="license">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="type" class="form-label">업태</label>
+                        <input type="text" class="form-control" id="type">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="item" class="form-label">종목</label>
+                        <input type="text" class="form-control" id="item">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="owner_name" class="form-label">대표자 이름</label>
+                        <input type="text" class="form-control" id="owner_name">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="tel" class="form-label">사무실 전화</label>
+                        <input type="text" class="form-control" id="tel">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="fax" class="form-label">사무실 팩스</label>
+                        <input type="text" class="form-control" id="fax">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="charge_name" class="form-label">담당자 이름</label>
+                        <input type="text" class="form-control" id="charge_name">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="mobile" class="form-label">담당자 연락처</label>
+                        <input type="text" class="form-control" id="mobile">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="email" class="form-label">이메일</label>
+                        <input type="text" class="form-control" id="email">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="address" class="form-label">주소
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 근로계약서 및 청구서 등에 표시되는 항목입니다."></i>
+                       </label>
+                        <input type="text" class="form-control" id="address">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="general_work_type" class="form-label">제조/물류 구분
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 정규직 급여정산시 제조직과 물류직의 양식을 다르게 보여주는 기준항목입니다."></i>
+                        </label>
+                        <select class="form-select" id="general_work_type">
+                            <option value="제조직">제조직</option>
+                            <option value="물류직">물류직</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="manager" class="form-label">센터 매니저
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 각종 통계자료에 활용되는 기준항목입니다."></i>
+                        </label>
+                        <select class="form-select" id="manager"></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc3" class="form-label">업무내용
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 일용직 근로계약서에 표시되는 항목입니다."></i>
+                       </label>
+                        <input type="text" class="form-control" id="desc3">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc2" class="form-label">근무시간
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 정규직 근로계약서에 표시되는 항목입니다."></i>
+                       </label>
+                        <input type="text" class="form-control" id="desc2">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc4" class="form-label">휴게시간
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 정규직 및 일용직 근로계약서에 표시되는 항목입니다."></i>
+                       </label>
+                        <input type="text" class="form-control" id="desc4">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="default_wage" class="form-label">표준 일급
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 일용직 근로계약에서 초기에 보여주는 표준값입니다."></i>
+                        </label>
+                        <button class="btn btn-sm px-1 py-0" onclick="openCodePage('daily_wage', 'create')">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+                        <select class="form-control" id="default_wage"></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="is_valid" class="form-label">투입현황 사용여부
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• [투입현황]에 표시될 센터를 설정할 수 있습니다."></i>
+                        </label>
+                        <select class="text-left form-select" id="is_valid">
+                            <option value="true">사용</option>
+                            <option value="false">미사용</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc1" class="form-label">은행/계좌
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 청구서에 표시되는 관리법인의 계좌 정보입니다."></i>
+                        </label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="subsidiary" class="form-label">관리법인</label>
+                        <select class="form-control" id="subsidiary"></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 d-flex flex-column mb-3">
+                        <label for="image" class="form-label">법인 도장
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 근로계약서 및 청구서에 표시되는 관리법인의 도장 이미지입니다."></i>
+                        </label>
+                        <div class="d-flex">
+                            <input type="file" class="form-control" id="image" accept="image/*">
+                            <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="image_clear_btn('a_create_modal')">
+                                <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">제거</span>
+                            </button>
+                        </div>
+                        <span id="image_filename" class="text-secondary small text-truncate" style="max-width: 100%;"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_create_submit()">등록</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- a_update_modal -->
+<div class="modal fade" id="a_update_modal" tabindex="-1" role="dialog" aria-labelledby="a_update_modal"
+     data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title mx-2">거래처 관리 <i class="fa-solid fa-angle-right px-1"></i> 수정</h5>
+                <div>
+                    <i class="fa-solid fa-expand fa-lg text-white mx-2" title="전체화면" style="cursor: pointer;" id="md_fullscreen_update"></i>
+                    <i class="fa-solid fa-rotate-right fa-lg text-white mx-2" title="초기화" style="cursor: pointer;" onclick="a_update_modal_reset()"></i>
+                    <i class="fa-solid fa-xmark fa-xl text-white mx-2" title="닫기" style="cursor: pointer;" data-bs-dismiss="modal"></i>
+                </div>
+            </div>
+
+            <div class="modal-body w-100 p-4">
+                <div class="row">
+                    <div class="col-6 col-md-4 mb-3 d-flex align-items-end">
+                        <div class="col-10 m-0">
+                            <label for="code" class="form-label fw-bold d-block">등록번호</label>
+                            <input type="text" class="form-control div_required" id="code" placeholder="자동 생성" disabled>
+                        </div>
+                        <div class="col-1 m-0 d-flex align-items-center ms-2">
+                            <input class="form-check-input mb-2" style="width: 20px; height: 20px;" type="checkbox" id="auto_id_code" checked>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="name" class="form-label fw-bold">거래처 이름</label>
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 관리법인 및 센터를 의미합니다."></i>
+                        <input type="text" class="form-control div_required" id="name">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="customer_class" class="form-label">거래처 대분류
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 관리법인 대분류 및 거래처 대분류를 의미합니다."></i>
+                        </label>
+                        <button class="btn btn-sm px-1 py-0" onclick="openCodePage('customer_class', 'create')">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+                        <select class="form-control" id="customer_class"></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="license" class="form-label">사업자등록번호</label>
+                        <input type="text" class="form-control" id="license">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="type" class="form-label">업태</label>
+                        <input type="text" class="form-control" id="type">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="item" class="form-label">종목</label>
+                        <input type="text" class="form-control" id="item">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="owner_name" class="form-label">대표자 이름</label>
+                        <input type="text" class="form-control" id="owner_name">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="tel" class="form-label">사무실 전화</label>
+                        <input type="text" class="form-control" id="tel">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="fax" class="form-label">사무실 팩스</label>
+                        <input type="text" class="form-control" id="fax">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="charge_name" class="form-label">담당자 이름</label>
+                        <input type="text" class="form-control" id="charge_name">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="mobile" class="form-label">담당자 연락처</label>
+                        <input type="text" class="form-control" id="mobile">
+                    </div>
+
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="email" class="form-label">이메일</label>
+                        <input type="text" class="form-control" id="email">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="address" class="form-label">주소
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 근로계약서 및 청구서 등에 표시되는 항목입니다."></i>
+                       </label>
+                        <input type="text" class="form-control" id="address">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="general_work_type" class="form-label">제조/물류 구분
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 정규직 급여정산시 제조직과 물류직의 양식을 다르게 보여주는 기준항목입니다."></i>
+                        </label>
+                        <select class="form-select" id="general_work_type">
+                            <option value="제조직">제조직</option>
+                            <option value="물류직">물류직</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="manager" class="form-label">센터 매니저
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 각종 통계자료에 활용되는 기준항목입니다."></i>
+                        </label>
+                        <select class="form-select" id="manager"></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc3" class="form-label">업무내용
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 일용직 근로계약서에 표시되는 항목입니다."></i>
+                       </label>
+                        <input type="text" class="form-control" id="desc3">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc2" class="form-label">근무시간
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 정규직 근로계약서에 표시되는 항목입니다."></i>
+                       </label>
+                        <input type="text" class="form-control" id="desc2">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc4" class="form-label">휴게시간
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 정규직 및 일용직 근로계약서에 표시되는 항목입니다."></i>
+                       </label>
+                        <input type="text" class="form-control" id="desc4">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="default_wage" class="form-label">표준 일급
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 일용직 근로계약에서 초기에 보여주는 표준값입니다."></i>
+                        </label>
+                        <button class="btn btn-sm px-1 py-0" onclick="openCodePage('daily_wage', 'create')">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+                        <select class="form-control" id="default_wage"></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="is_valid" class="form-label">투입현황 사용여부
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• [투입현황]에 표시될 센터를 설정할 수 있습니다."></i>
+                        </label>
+                        <select class="text-left form-select" id="is_valid">
+                            <option value="true">사용</option>
+                            <option value="false">미사용</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="desc1" class="form-label">은행/계좌
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 청구서에 표시되는 관리법인의 계좌 정보입니다."></i>
+                        </label>
+                        <input type="text" class="form-control" id="desc1">
+                    </div>
+                    
+                    <div class="col-6 col-md-4 mb-3">
+                        <label for="subsidiary" class="form-label">관리법인</label>
+                        <select class="form-control" id="subsidiary"></select>
+                    </div>
+                    
+                    <div class="col-6 col-md-4 d-flex flex-column mb-3">
+                        <label for="image" class="form-label">법인 도장
+                            <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                               title="• 근로계약서 및 청구서에 표시되는 관리법인의 도장 이미지입니다."></i>
+                        </label>
+                        <div class="d-flex">
+                            <input type="file" class="form-control" id="image" accept="image/*">
+                            <button class="btn btn-sm btn-danger text-nowrap ms-1 px-2.5" onclick="image_clear_btn('a_update_modal')">
+                                <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">제거</span>
+                            </button>
+                        </div>
+                        <span id="image_filename" class="text-secondary small text-truncate" style="max-width: 100%;"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-end">
+                <div class="col-8 d-flex justify-content-end">
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_modal_reset()">초기화</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" onclick="a_update_submit()">수정</div>
+                    <div class="btn btn-secondary text-nowrap mx-1 px-3" data-bs-dismiss="modal">닫기</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_code;
+let a_click_name;
+let a_click_license;
+let a_click_owner_name;
+let a_click_address;
+let a_click_type;
+let a_click_item;
+let a_click_tel;
+let a_click_fax;
+let a_click_email;
+let a_click_charge_name;
+let a_click_mobile;
+{% comment %}let a_click_customer_type;{% endcomment %}
+let a_click_desc1;
+let a_click_desc2;
+let a_click_desc3;
+let a_click_desc4;
+let a_click_general_work_type;
+let a_click_customer_class_id;
+let a_click_customer_class_name;
+let a_click_default_wage_id;
+let a_click_default_wage_name;
+let a_click_default_wage_desc1;
+let a_click_file_name;
+let image_clear_flag = false;  // a_update 이미지 제거 플래그
+let a_click_manager_id;
+let a_click_manager_name;
+let a_click_is_valid;
+let a_click_subsidiary_id;
+let a_click_subsidiary_name;
+
+let a_click_created_at;
+let a_click_updated_at;
+let a_click_created_by_id;
+let a_click_created_by_name;
+let a_click_updated_by_id;
+let a_click_updated_by_name;
+
+let all_sch;
+let sch_customer;
+let sch_customer_class;
+let sch_subsidiary;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('factory_customer_list_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('factory_customer_list_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_customer_class', '거래처 대분류 검색', '/sel2_code_customer_class/', {id: 'id', txt: item => `${item.text}`});
+    {% comment %}init_Select2('#sch_customer', '거래처 소분류 검색', '/sel2_factory_all_customer/', {id: 'id', txt: item => `${item.text}`});{% endcomment %}
+    
+    $('#sch_customer').select2({
+        ajax: {
+            url: '/sel2_factory_all_customer/',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term || '',
+                    page: params.page || 1,
+                    customer_class_id: $('#sch_customer_class').val() || '' // 대분류 ID 동적전달
+                };
+            },
+            processResults: function (data) {
+                return data;
+            }
+        },
+        placeholder: '거래처 소분류 검색',
+        allowClear: true,
+        width: '200px'
+    });
+    
+    init_Select2('#sch_subsidiary', '소속 관리법인 검색', '/sel2_code_subsidiary/', {id: 'id', txt: item => `${item.text}`});
+
+    a_search_ready();
+}
+
+$('#sch_customer_class').on('change', function() {
+    $('#sch_customer').val(null).trigger('change');  // 선택값 초기화
+});
+
+// 선택대상 초기화 : 주로 create, delete 후 호출
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    all_sch = $('#all_sch').val();
+    sch_customer = $('#sch_customer').val();
+    sch_customer_class = $('#sch_customer_class').val();
+    sch_subsidiary = $('#sch_subsidiary').val();
+
+    a_search();
+}
+
+// 선택대상 유지 : 주로 update 후 호출
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_customer) { query += "&sch_customer=" + sch_customer; }
+    if (sch_customer_class) { query += "&sch_customer_class=" + sch_customer_class; }
+    if (sch_subsidiary) { query += "&sch_subsidiary=" + sch_subsidiary; }
+
+    fetch_gp("/factory_customer_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td>${num + i}</td>
+            <td name='customer_class_name'>${item.customer_class_name || ""}</td>
+            <td name='name' class='text-truncate' style="max-width: 200px;">${item.name || ""}</td>
+            <td name='charge_name'>${item.charge_name || ""}</td>
+            <td name='mobile'>${item.mobile || ""}</td>
+            <td name='manager_name'>${item.manager.name || ""}</td>
+
+            <td name='manager_id' class='d-none'>${item.manager.id || ""}</td>
+            <td name='desc1' class='d-none'>${item.desc1 || ""}</td>
+            <td name='customer_class_id' class='d-none'>${item.customer_class_id || ""}</td>            
+            <td name='code' class='d-none'>${item.code || ""}</td>
+            <td name='license' class='d-none'>${item.license || ""}</td>
+            <td name='owner_name' class='d-none'>${item.owner_name || ""}</td>
+            <td name='address' class='d-none'>${item.address || ""}</td>
+            <td name='type' class='d-none'>${item.type || ""}</td>
+            <td name='item' class='d-none'>${item.item || ""}</td>
+            <td name='tel' class='d-none'>${item.tel || ""}</td>
+            <td name='fax' class='d-none'>${item.fax || ""}</td>
+            <td name='email' class='d-none'>${item.email || ""}</td>
+            <td name='desc2' class='d-none'>${item.desc2 || ""}</td>
+            <td name='desc3' class='d-none'>${item.desc3 || ""}</td>
+            <td name='desc4' class='d-none'>${item.desc4 || ""}</td>
+            <td name='general_work_type' class='d-none'>${item.general_work_type || ""}</td>
+            <td name='is_valid' class='d-none'>${item.is_valid || ""}</td>
+
+            <td name='default_wage_id' class='d-none'>${item.default_wage_id || ""}</td>
+            <td name='default_wage_name' class='d-none'>${item.default_wage_name || ""}</td>
+            <td name='default_wage_desc1' class='d-none'>${item.default_wage_desc1 || ""}</td>
+            <td name='file_name' class='d-none'>
+                기존 첨부파일 : ${item.image ? decodeURIComponent(item.image.split('/').pop()) : "없음"}
+            </td>
+            <td name='subsidiary_id' class='d-none'>${item.subsidiary_id || ""}</td>
+            <td name='subsidiary_name' class='d-none'>${item.subsidiary_name || ""}</td>
+
+            <td name='created_at' class='d-none'>${item.created_at}</td>
+            <td name='updated_at' class='d-none'>${item.updated_at}</td>
+            <td name='created_by_id' class='d-none'>${item.created_by.id}</td>
+            <td name='created_by_name' class='d-none'>${item.created_by.name}</td>
+            <td name='updated_by_id' class='d-none'>${item.updated_by.id}</td>
+            <td name='updated_by_name' class='d-none'>${item.updated_by.name}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_code = $(this).find("[name='code']").text();
+        a_click_name = $(this).find("[name='name']").text();
+        a_click_license = $(this).find("[name='license']").text();
+        a_click_owner_name = $(this).find("[name='owner_name']").text();
+        a_click_address = $(this).find("[name='address']").text();
+        a_click_type = $(this).find("[name='type']").text();
+        a_click_item = $(this).find("[name='item']").text();
+        a_click_tel = $(this).find("[name='tel']").text();
+        a_click_fax = $(this).find("[name='fax']").text();
+        a_click_email = $(this).find("[name='email']").text();
+        a_click_charge_name = $(this).find("[name='charge_name']").text();
+        a_click_mobile = $(this).find("[name='mobile']").text();
+        a_click_customer_class_id = $(this).find("[name='customer_class_id']").text();
+        a_click_customer_class_name = $(this).find("[name='customer_class_name']").text();
+        a_click_default_wage_id = $(this).find("[name='default_wage_id']").text();
+        a_click_default_wage_name = $(this).find("[name='default_wage_name']").text();
+        a_click_default_wage_desc1 = $(this).find("[name='default_wage_desc1']").text();
+        a_click_desc1 = $(this).find("[name='desc1']").text();
+        a_click_desc2 = $(this).find("[name='desc2']").text();
+        a_click_desc3 = $(this).find("[name='desc3']").text();
+        a_click_desc4 = $(this).find("[name='desc4']").text();
+        a_click_general_work_type = $(this).find("[name='general_work_type']").text();
+        a_click_file_name = $(this).find("[name='file_name']").text();
+        a_click_manager_id = $(this).find("[name='manager_id']").text();
+        a_click_manager_name = $(this).find("[name='manager_name']").text();
+        a_click_is_valid = $(this).find("[name='is_valid']").text();
+        a_click_subsidiary_id = $(this).find("[name='subsidiary_id']").text();
+        a_click_subsidiary_name = $(this).find("[name='subsidiary_name']").text();
+
+        a_click_created_at = $(this).find("[name='created_at']").text();
+        a_click_updated_at = $(this).find("[name='updated_at']").text();
+        a_click_created_by_id = $(this).find("[name='created_by_id']").text();
+        a_click_created_by_name = $(this).find("[name='created_by_name']").text();
+        a_click_updated_by_id = $(this).find("[name='updated_by_id']").text();
+        a_click_updated_by_name = $(this).find("[name='updated_by_name']").text();
+
+        b_draw_table();
+    });
+
+    $('#a_tbody > tr').on('dblclick', function () {
+        a_update_modal_in();
+    });
+}
+
+function a_create_modal_in() {
+    a_create_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_create').trigger('click');
+    }
+
+    $('#a_create_modal').modal("show");
+}
+
+function a_create_modal_reset(popup_off) {
+    $('#a_create_modal #code').prop('disabled', true).attr('placeholder', '자동 생성').val('');
+    $('#a_create_modal #auto_id_code').prop('checked', true);
+    $("#a_create_modal #name").val('');
+    $("#a_create_modal #license").val('');
+    $("#a_create_modal #type").val('');
+    $("#a_create_modal #item").val('');
+    $("#a_create_modal #owner_name").val('');
+    $("#a_create_modal #tel").val('');
+    $("#a_create_modal #fax").val('');
+    $("#a_create_modal #charge_name").val('');
+    $("#a_create_modal #mobile").val('');
+    $("#a_create_modal #email").val('');
+    $("#a_create_modal #desc1").val('');
+    $("#a_create_modal #desc2").val('');
+    $("#a_create_modal #desc3").val('');
+    $("#a_create_modal #desc4").val('');
+    $("#a_create_modal #general_work_type").val('');
+    $("#a_create_modal #address").val('');
+    $("#a_create_modal #image").val('');
+    $("#a_create_modal #is_valid").val('true');
+    
+    init_Select2_modal('#a_create_modal #customer_class', '선택', '/sel2_code_customer_class/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #default_wage', '선택', '/sel2_code_daily_wage/', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #manager', '선택', '/sel2_user_manager/?me=true', {id: 'id', txt: item => `${item.text}`});
+    init_Select2_modal('#a_create_modal #subsidiary', '선택', '/sel2_code_subsidiary/', {id: 'id', txt: item => `${item.text}`});
+
+    modal_toast(popup_off, '#a_create_modal');
+}
+
+function a_create_submit() {
+    if (is_empty($('#a_create_modal #name').val()) === true) {
+        alert("[거래처 이름] 항목을 입력하세요.");
+        return;
+    }
+    
+    let Image = $('#a_create_modal #image')[0].files[0];
+    
+    let api_data = new FormData();
+        api_data.append("code", nullapply($('#a_create_modal #code').val()));
+        api_data.append("name", nullapply($('#a_create_modal #name').val()));
+        api_data.append("customer_class", nullapply($('#a_create_modal #customer_class').val()));
+        api_data.append("license", nullapply($('#a_create_modal #license').val()));
+        api_data.append("type", nullapply($('#a_create_modal #type').val()));
+        api_data.append("item", nullapply($('#a_create_modal #item').val()));
+        api_data.append("owner_name", nullapply($('#a_create_modal #owner_name').val()));
+        api_data.append("tel", nullapply($('#a_create_modal #tel').val()));
+        api_data.append("fax", nullapply($('#a_create_modal #fax').val()));
+        api_data.append("charge_name", nullapply($('#a_create_modal #charge_name').val()));
+        api_data.append("mobile", nullapply($('#a_create_modal #mobile').val()));
+        api_data.append("email", nullapply($('#a_create_modal #email').val()));
+        api_data.append("desc1", nullapply($('#a_create_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#a_create_modal #desc2').val()));
+        api_data.append("desc3", nullapply($('#a_create_modal #desc3').val()));
+        api_data.append("desc4", nullapply($('#a_create_modal #desc4').val()));
+        api_data.append("general_work_type", nullapply($('#a_create_modal #general_work_type').val()));
+        api_data.append("default_wage", nullapply($('#a_create_modal #default_wage').val()));
+        api_data.append("address", nullapply($('#a_create_modal #address').val()));
+        api_data.append("manager", nullapply($('#a_create_modal #manager').val()));
+        api_data.append("is_valid", nullapply($('#a_create_modal #is_valid').val()));
+        api_data.append("subsidiary", nullapply($('#a_create_modal #subsidiary').val()));
+        
+        if (Image) api_data.append("image", Image);
+
+    fetch_gp('/factory_customer_create_fn/', 'post', true, api_data, (done) => {
+        $('#a_create_modal').modal("hide");
+        a_search_ready();
+        alert(txt.create_ed);
+    });
+}
+
+function a_update_modal_in() {
+    if (a_click_id == null) {
+        alert(txt.update_select);
+        return;
+    }
+
+    a_update_modal_reset('popup_off');
+
+    if (window.matchMedia('(max-width: 1200px)').matches) {
+        $('#md_fullscreen_update').trigger('click');
+    }
+
+    $('#a_update_modal').modal("show");
+}
+
+function a_update_modal_reset(popup_off) {
+    $('#a_update_modal #code').prop('disabled', false).val(a_click_code);
+    $('#a_update_modal #auto_id_code').prop('checked', false);
+    $("#a_update_modal #name").val(a_click_name);
+    $("#a_update_modal #license").val(a_click_license);
+    $("#a_update_modal #type").val(a_click_type);
+    $("#a_update_modal #item").val(a_click_item);
+    $("#a_update_modal #owner_name").val(a_click_owner_name);
+    $("#a_update_modal #tel").val(a_click_tel);
+    $("#a_update_modal #fax").val(a_click_fax);
+    $("#a_update_modal #charge_name").val(a_click_charge_name);
+    $("#a_update_modal #mobile").val(a_click_mobile);
+    $("#a_update_modal #email").val(a_click_email);
+    $("#a_update_modal #desc1").val(a_click_desc1);
+    $("#a_update_modal #desc2").val(a_click_desc2);
+    $("#a_update_modal #desc3").val(a_click_desc3);
+    $("#a_update_modal #desc4").val(a_click_desc4);
+    $("#a_update_modal #general_work_type").val(a_click_general_work_type);
+    $("#a_update_modal #address").val(a_click_address);
+    $("#a_update_modal #is_valid").val(a_click_is_valid ? "true" : "false");
+    
+    
+    $("#a_update_modal #image").val('');
+    if (a_click_file_name) {
+        $("#a_update_modal #image_filename").text(a_click_file_name);
+    } else {
+        $("#a_update_modal #image_filename").text('');
+    }
+    
+    init_Select2_modal('#a_update_modal #customer_class', '선택', '/sel2_code_customer_class/', {id: 'id', txt: item => `${item.text}`}, a_click_customer_class_id);
+    init_Select2_modal('#a_update_modal #default_wage', '선택', '/sel2_code_daily_wage/', {id: 'id', txt: item => `${item.text}`}, a_click_default_wage_id);
+    init_Select2_modal('#a_update_modal #manager', '선택', '/sel2_user_manager/?me=true', {id: 'id', txt: item => `${item.text}`}, a_click_manager_id);
+    init_Select2_modal('#a_update_modal #subsidiary', '선택', '/sel2_code_subsidiary/', {id: 'id', txt: item => `${item.text}`}, a_click_subsidiary_id);
+    
+    modal_toast(popup_off, '#a_update_modal');
+}
+
+function a_update_submit() {
+    if (is_empty($('#a_update_modal #name').val()) === true) {
+        alert("[거래처 이름] 항목을 입력하세요.");
+        return;
+    }
+    
+    let Image = $('#a_update_modal #image')[0].files[0];
+    
+    let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("code", nullapply($('#a_update_modal #code').val()));
+        api_data.append("name", nullapply($('#a_update_modal #name').val()));
+        api_data.append("customer_class", nullapply($('#a_update_modal #customer_class').val()));
+        api_data.append("license", nullapply($('#a_update_modal #license').val()));
+        api_data.append("type", nullapply($('#a_update_modal #type').val()));
+        api_data.append("item", nullapply($('#a_update_modal #item').val()));
+        api_data.append("owner_name", nullapply($('#a_update_modal #owner_name').val()));
+        api_data.append("tel", nullapply($('#a_update_modal #tel').val()));
+        api_data.append("fax", nullapply($('#a_update_modal #fax').val()));
+        api_data.append("charge_name", nullapply($('#a_update_modal #charge_name').val()));
+        api_data.append("mobile", nullapply($('#a_update_modal #mobile').val()));
+        api_data.append("email", nullapply($('#a_update_modal #email').val()));
+        api_data.append("desc1", nullapply($('#a_update_modal #desc1').val()));
+        api_data.append("desc2", nullapply($('#a_update_modal #desc2').val()));
+        api_data.append("desc3", nullapply($('#a_update_modal #desc3').val()));
+        api_data.append("desc4", nullapply($('#a_update_modal #desc4').val()));
+        api_data.append("general_work_type", nullapply($('#a_update_modal #general_work_type').val()));
+        api_data.append("manager", nullapply($('#a_update_modal #manager').val()));
+        api_data.append("default_wage", nullapply($('#a_update_modal #default_wage').val()));
+        api_data.append("address", nullapply($('#a_update_modal #address').val()));
+        api_data.append("image_clear", image_clear_flag ? "true" : "false");
+        api_data.append("is_valid", nullapply($('#a_update_modal #is_valid').val()));
+        api_data.append("subsidiary", nullapply($('#a_update_modal #subsidiary').val()));
+        
+        if (Image) api_data.append("image", Image);
+
+    fetch_gp('/factory_customer_update_fn/', 'post', true, api_data, (done) => {
+        $('#a_update_modal').modal("hide");
+        a_search();
+        alert(txt.update_ed);
+        image_clear_flag = false;  // 이미지 제거 플래그 초기화
+
+        b_draw_table(done);
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt("거래처를 삭제하시겠습니까?\n\n" +
+        txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/factory_customer_delete_fn/', 'post', true, api_data, (done) => {
+            a_nation.page = 1;
+            a_click_id = null;
+
+            a_search_ready();
+            b_draw_table('none');
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+
+// B_MODAL_AREA --------------------------------------------------------------------------------------------------------
+function b_draw_table(done) {
+    // a_delete 직후 보여줄 데이터
+    if (done === 'none') {
+        $('#code').text('');
+        $('#customer_class_name').text('');
+        $('#name').text('');
+        $('#license').text('');
+        $('#owner_name').text('');
+        $('#type').text('');
+        $('#tel').text('');
+        $('#item').text('');
+        $('#fax').text('');
+        $('#email').text('');
+        $('#charge_name').text('');
+        $('#mobile').text('');
+        $('#address').text('');
+        $('#desc1').text('');
+        $('#desc2').text('');
+        $('#desc3').text('');
+        $('#desc4').text('');
+        $('#default_wage').text('');
+    }
+
+    // a_update 직후 보여줄 데이터
+    if (done) {
+        $('#code').text(done.code);
+        $('#customer_class_name').text(done.customer_class_name);
+        $('#name').text(done.name);
+        $('#license').text(done.license);
+        $('#owner_name').text(done.owner_name);
+        $('#type').text(done.type);
+        $('#tel').text(done.tel);
+        $('#item').text(done.item);
+        $('#fax').text(done.fax);
+        $('#email').text(done.email);
+        $('#charge_name').text(done.charge_name);
+        $('#mobile').text(done.mobile);
+        $('#address').text(done.address);
+        $('#desc1').text(done.desc1);
+        $('#desc2').text(done.desc2);
+        $('#desc3').text(done.desc3);
+        $('#desc4').text(done.desc4);
+        $('#default_wage').text(
+            done.default_wage_name + (done.default_wage_desc1 ? ' (' + done.default_wage_desc1 + ')' : '')
+        );
+    }
+
+    // a_click 직후 보여줄 데이터
+    else {
+        $('#code').text(a_click_code);
+        $('#customer_class_name').text(a_click_customer_class_name);
+        $('#name').text(a_click_name);
+        $('#license').text(a_click_license);
+        $('#owner_name').text(a_click_owner_name);
+        $('#type').text(a_click_type);
+        $('#tel').text(a_click_tel);
+        $('#item').text(a_click_item);
+        $('#fax').text(a_click_fax);
+        $('#email').text(a_click_email);
+        $('#charge_name').text(a_click_charge_name);
+        $('#mobile').text(a_click_mobile);
+        $('#address').text(a_click_address);
+        $('#desc1').text(a_click_desc1);
+        $('#desc2').text(a_click_desc2);
+        $('#desc3').text(a_click_desc3);
+        $('#desc4').text(a_click_desc4);
+        $('#manager').text(a_click_manager_name);
+        $('#default_wage').text(
+            a_click_default_wage_name + (a_click_default_wage_desc1 ? ' (' + a_click_default_wage_desc1 + ')' : '')
+        );
+    }
+}
+
+
+function image_clear_btn(modalId) {
+    $(`#${modalId} #image`).val('');
+    $(`#${modalId} #image_filename`).text('삭제 예정');
+    image_clear_flag = true;  // 이미지 제거 플래그 활성화
+}
+
+
+// 급여항목설정 팝업
+function a_popup_open() {
+    let popupUrl = `/factory/customer/salary/`;
+
+    const popup = window.open(
+        popupUrl,
+        'customerSalaryPopup',
+        `width=${screen.width},height=${screen.height},top=0,left=0,scrollbars=yes,resizable=yes`
+    );
+
+    if (popup) {
+        popup.moveTo(0, 0);
+        popup.resizeTo(screen.width, screen.height);
+        popup.focus();
+    }
+}
+
+
+const modalConfigs = [
+    { modalId: 'a_create_modal', iconId: 'md_fullscreen_create' },
+    { modalId: 'a_update_modal', iconId: 'md_fullscreen_update' },
+];
+
+modalConfigs.forEach(({ modalId, iconId }) => {
+    const modalElement = document.getElementById(modalId);
+    const iconElement = document.getElementById(iconId);
+
+    if (modalElement && iconElement) {
+        iconElement.addEventListener('click', () => {
+            toggleModalFullscreen(modalElement, iconElement);
+        });
+
+        $(`#${modalId}`).on('hidden.bs.modal', () => {
+            resetModalFullscreen(modalElement, iconElement);
+        });
+    }
+});
+
+document.querySelectorAll('.modal-header').forEach(header => {
+    header.addEventListener('dblclick', function () {
+        const modalElement = this.closest('.modal');
+        const iconElement = this.querySelector('.fa-expand, .fa-compress');
+        if (modalElement && iconElement) {
+            toggleModalFullscreen(modalElement, iconElement);
+        }
+    });
+});
+
+</script>

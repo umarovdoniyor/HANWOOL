@@ -1,0 +1,405 @@
+<!-- 근태관리 > 근태통계 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+#a_table_id {
+    border-right:1px solid #d9dee3;
+}
+#a_table_id thead th {
+    border-top: 1px solid #d9dee3;
+    border-bottom: 1px solid #d9dee3;
+    position: relative;
+    font-size: 12px;
+    background-color: #f8f8f8 !important;
+}
+
+#a_table_id th.name {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #f8f8f8 !important;
+}
+
+#a_table_id td.name {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: white !important;
+}
+#a_table_id .bg_weekend {
+    background: #fef5f5 !important;
+}
+
+/* select2 컨테이너 너비 지정 */
+#sch_team + .select2-container {
+    width: 180px !important;
+}
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_team + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+/* 선택된 항목 텍스트 정렬 */
+#sch_team + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+/* 화살표 위치 조정 */
+#sch_team + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+/* 클리어버튼 위치 조정 */
+#sch_team + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+</style>
+
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-chalkboard-user me-2"></i>근태통계
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 연간 월별 근태 데이터 통계정보를 확인할 수 있는 페이지입니다.<br>• 주 52시간을 초과한 근무시간은 보여주지 않습니다."></i>
+                </div>
+            </div>
+        
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+                                
+                                {% comment %}<select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>{% endcomment %}
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_year_filter" onchange="a_search_ready()">
+                                    {% for year in year_range %}
+                                        <option value="{{ year }}" {% if year == default_year %}selected{% endif %}>{{ year }}년</option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <select class="page_size form-select form-select-sm me-1" id="a_month_filter" onchange="a_search_ready()">
+                                    <option value="1">1월</option>
+                                    <option value="2">2월</option>
+                                    <option value="3">3월</option>
+                                    <option value="4">4월</option>
+                                    <option value="5">5월</option>
+                                    <option value="6">6월</option>
+                                    <option value="7">7월</option>
+                                    <option value="8">8월</option>
+                                    <option value="9">9월</option>
+                                    <option value="10">10월</option>
+                                    <option value="11">11월</option>
+                                    <option value="12">12월</option>
+                                </select>
+                            
+                                <div class="d-none d-xl-flex w-auto me-1" data-toggle="tooltip" data-placement="top" title="부서별 검색">
+                                    <select class="page_size form-select form-select-sm me-1" id="sch_team"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-none d-lg-flex p-0">
+                                <div class="d-flex justify-content-center align-items-center text-nowrap" style="width: 100%; height: 100%;">
+                                    <div class="rounded bg-success d-inline-block me-1" style="width: 14px; height: 14px;"></div>정상
+                                </div>
+                                <div class="d-flex justify-content-center align-items-center text-nowrap ms-3" style="width: 100%; height: 100%;">
+                                    <div class="rounded bg-warning d-inline-block me-1" style="width: 14px; height: 14px;"></div>지각
+                                </div>
+                                <div class="d-flex justify-content-center align-items-center text-nowrap ms-3" style="width: 100%; height: 100%;">
+                                    <div class="rounded bg-primary d-inline-block me-1" style="width: 14px; height: 14px;"></div>조퇴
+                                </div>
+                                <div class="d-flex justify-content-center align-items-center text-nowrap ms-3" style="width: 100%; height: 100%;">
+                                    <div class="rounded bg-info d-inline-block me-1" style="width: 14px; height: 14px;"></div>휴가
+                                </div>
+                                <div class="d-flex justify-content-center align-items-center text-nowrap ms-3" style="width: 100%; height: 100%;">
+                                    <div class="rounded bg-secondary d-inline-block me-1" style="width: 14px; height: 14px;"></div>퇴근미실시
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive text-nowrap">
+                            <table class="table" id="a_table_id">
+                                <thead class="">
+                                    <tr class="text-nowrap" id="a_table_head_row"></tr>
+                                </thead>
+                                <tbody id="a_tbody"></tbody>
+                            </table>
+                            {% comment %}<div class="div_center" id="a_nation_id"></div>{% endcomment %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_year_filter;
+let a_month_filter;
+let all_sch;
+let sch_team;
+let weekendIndexes = [];
+
+{% comment %}let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});{% endcomment %}
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    select_this_year_month();
+    init_Select2('#sch_team', '부서 선택', '/sel2_code_team/', {id: 'id', txt: item => `${item.text}`});
+    
+    a_search_ready();
+}
+
+function select_this_year_month() {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1; // JS는 0~11 이므로 +1
+
+    const yearSelect = document.getElementById("a_year_filter");
+    const monthSelect = document.getElementById("a_month_filter");
+
+    // 올해 선택
+    for (let i = 0; i < yearSelect.options.length; i++) {
+        if (parseInt(yearSelect.options[i].value) === currentYear) {
+            yearSelect.selectedIndex = i;
+            break;
+        }
+    }
+
+    // 이번 달 선택
+    for (let i = 0; i < monthSelect.options.length; i++) {
+        if (parseInt(monthSelect.options[i].value) === currentMonth) {
+            monthSelect.selectedIndex = i;
+            break;
+        }
+    }
+}
+    
+function a_search_ready() {
+    {% comment %}a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();{% endcomment %}
+    
+    all_sch = $('#all_sch').val();
+    sch_team = $('#sch_team').val();
+    a_year_filter = $("#a_year_filter").val();
+    a_month_filter = $("#a_month_filter").val();
+
+    a_search();
+}
+
+function a_search() {
+    {% comment %}let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&all_sch=" + all_sch;{% endcomment %}
+    
+    let query = "?year_sch=" + a_year_filter;
+    query += "&month_sch=" + a_month_filter;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_team) { query += "&sch_team=" + sch_team; }
+
+    fetch_gp("/worktime_report_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    renderTableHead(parseInt(a_year_filter), parseInt(a_month_filter));
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <tr><td colspan="99" style="background-color: white; text-align:center;">등록된 데이터가 없습니다.</td></tr>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = {% comment %}((a_nation.page - 1) * a_nation_data.page_size) +{% endcomment %} 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        
+        let profileImage = item.profile_image
+            ? `<img src="${item.profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">`
+            : "";
+
+        let workdayBar = renderProgressBar(item.month_workdays, item.total_workdays, "일", 'bg-success');
+        let workhourBar = renderProgressBar(item.month_workhours, item.total_workhours, "시간", 'bg-info');
+
+        let row = `
+        <tr id='${item.user_id}' class='align-middle'>
+            <td class="d-none d-md-table-cell">${num + i}</td>
+            <td name='user_info' class="name py-2">${item.profile_image ? `<img src="${item.profile_image}" class="rounded-circle me-2" width="24" height="24">` : ""} ${item.user_name} ${item.job_level || ""}</td>
+            <td name='team' class="d-none d-md-table-cell">${item.team || ""}</td>
+            <td>${workdayBar}</td>
+            <td>${workhourBar}</td>
+            ${renderDayStatuses(item.details)}
+        </tr>
+        `;
+        rows += row;
+    }
+
+    {% comment %}a_nation.nation_display(done);{% endcomment %}
+    $('#a_tbody').html(rows);
+    $('[data-toggle="tooltip"]').tooltip({
+        html: true
+    });
+}
+
+function renderTableHead(year, month) {
+    const daysInMonth = new Date(year, month, 0).getDate();  // 월은 1-based
+    const headRow = document.getElementById("a_table_head_row");
+    weekendIndexes = [];  // 초기화
+
+    let headHTML = `
+        <th class="d-none d-md-table-cell min_width text-center align-middle py-2 px-1 ">순번</th>
+        <th class="name text-start align-middle py-2 px-1">이름</th>
+        <th class="d-none d-md-table-cell text-start align-middle py-2 px-1">부서</th>
+        <th class="text-start align-middle py-2 px-1">월 근무일수</th>
+        <th class="text-start align-middle py-2 px-1">월 근무시간</th>
+    `;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);  // JS는 0-based month
+        const isWeekend = (date.getDay() === 0 || date.getDay() === 6); // 일, 토
+
+        if (isWeekend) weekendIndexes.push(day - 1);  // 0-based index 저장
+
+        const dayClass = isWeekend ? 'bg_weekend' : '';
+        headHTML += `
+            <th class="text-center align-middle py-2 px-0 ${dayClass}" style="border-left: 1px solid #d9dee3; width: 26px; min-width: 26px; max-width: 26px;">
+                ${day}
+            </th>`;
+    }
+
+    headRow.innerHTML = headHTML;
+}
+
+function renderDayStatuses(details) {
+    return details.map((info, idx) => {
+        const isWeekend = weekendIndexes.includes(idx);  // 인덱스로 판별
+        const weekendClass = isWeekend ? "bg_weekend" : "";
+
+        if (!info || !info.status) {
+            return `<td class="p-1 text-center align-middle ${weekendClass}" style="border-left: 1px solid #d9dee3;"></td>`;
+        }
+
+        const { status, date, weekday, check_in, check_out, work_time } = info;
+
+        let colorClass = "";
+        if (status === "정상") colorClass = "bg-success";
+        else if (status === "지각" || status === "지각+조퇴") colorClass = "bg-warning";
+        else if (status === "조퇴") colorClass = "bg-primary";
+        else if (status === "미출근") colorClass = "bg-danger";
+        else if (status === "퇴근미처리") colorClass = "bg-secondary";
+        else if (status === "휴가") colorClass = "bg-info";
+
+        let tooltip = `${date} (${weekday})<br>[${status}]<br><br>출근시간: ${check_in || "-"}<br>퇴근시간: ${check_out || "미실시"}<br>근무시간: ${work_time || "-"}`;
+        if (status === "휴가") {
+            tooltip = `${date} (${weekday})<br>[${status}]`;
+        }
+
+        return `
+            <td class="text-center align-middle py-2 px-1" style="border-left:1px solid #d9dee3;">
+                <div class="d-flex justify-content-center align-items-center"
+                     style="width: 100%; height: 100%;">
+                    <div class="rounded ${colorClass} d-inline-block"
+                         style="width: 14px; height: 14px;"
+                         data-toggle="tooltip"
+                         data-placement="top"
+                         title="${tooltip}">
+                    </div>
+                </div>
+            </td>`;
+    }).join('');
+}
+
+function renderProgressBar(current, total, unit, color = 'bg-primary') {
+    const percent = Math.min(Math.round((current / total) * 100), 100);
+    return `
+        <div class="text-nowrap" style="font-size: 12px; margin-bottom: 2px;">${current}${unit} / ${total}${unit} (${percent}%)</div>
+        <div class="progress" style="height: 6px;">
+            <div class="progress-bar ${color}" role="progressbar" style="width: ${percent}%;" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+    `;
+}
+
+</script>

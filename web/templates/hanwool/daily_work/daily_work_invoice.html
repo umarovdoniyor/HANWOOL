@@ -1,0 +1,651 @@
+<!-- 거래처/현장관리 > 일일근무관리 > 급여정산 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-users me-2"></i>일일근무관리 <i class="fa-solid fa-angle-right px-1"></i> 급여정산
+                    <i class="fa-solid fa-angle-right px-1"></i> [{{ work_order.code }}] {{ work_order.date }} {{ work_order.customer.name }}
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1" data-toggle="tooltip" data-placement="top" title="기타 텍스트 검색">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="save_salary()">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">급여정산 저장</span>
+                                </button>
+                                <button class="btn btn-secondary text-nowrap ms-1 px-2.5" onclick="window.close()">
+                                    <i class="fa-solid fa-xmark"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">창닫기</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th><input type="checkbox" id="chkAll" onclick="check_all()"></th>
+                                            <th>순번</th>
+                                            <th>근무자</th>
+                                            <th>연락처</th>
+                                            <th style="border-right: 1px solid #dee2e6;">근로계약</th>
+
+                                            <th name="basic_start_time" style="min-width: 80px;">기준출근</th>
+                                            <th style="min-width: 80px;">
+                                                출근시간<br>
+                                                <input type="text" style="width:80px" class="form-control form-control-sm timepicker" oninput="copy_data(this)">
+                                            </th>
+                                            <th name="basic_end_time" style="min-width: 80px;">기준퇴근</th>
+                                            <th style="min-width: 80px; border-right: 1px solid #dee2e6;">
+                                                퇴근시간<br>
+                                                <input type="text" style="width:80px" class="form-control form-control-sm timepicker" oninput="copy_data(this)">
+                                            </th>
+
+                                            <th name="basic_work_dur">기준근무</th>
+                                            <th>
+                                                근무시간<br>
+                                                <input type="number" style="width:80px" class="form-control form-control-sm" oninput="copy_data(this)" onkeyup="checkNumber(this, 2)">
+                                            </th>
+                                            <th>
+                                                연장시간<br>
+                                                <input type="number" style="width:80px" class="form-control form-control-sm" oninput="copy_data(this)" onkeyup="checkNumber(this, 2)">
+                                            </th>
+                                            <th>
+                                                야간시간<br>
+                                                <input type="number" style="width:80px" class="form-control form-control-sm" oninput="copy_data(this)" onkeyup="checkNumber(this, 2)">
+                                            </th>
+                                            <th name="late_dur">지각시간</th>
+                                            <th name="early_dur">조출시간</th>
+                                            <th name="total_dur">총근무시간</th>
+
+                                            <th style="min-width: 100px; border-left: 1px solid #dee2e6;">
+                                                기본급<br>
+                                                <input type="text" style="width:80px" class="form-control form-control-sm" oninput="copy_data(this)" onkeyup="checkNumber(this, 2)">
+                                            </th>
+                                            <th name="late" style="min-width: 100px;">지각금</th>
+                                            <th name="ot" style="min-width: 100px;">연장수당</th>
+                                            <th name="night" style="min-width: 100px;">야간수당</th>
+                                            <th name="late_ot_night" style="min-width: 100px;">OT/지각금액</th>
+                                            <th name="wk" style="min-width: 100px;">주휴수당</th>
+                                            <th name="meal" style="min-width: 100px;">식대</th>
+                                            <th name="tran" style="min-width: 100px;">교통비</th>
+                                            <th name="early" style="min-width: 100px;">조출수당</th>
+                                            <th name="full" style="min-width: 100px;">만근수당</th>
+                                            <th name="title" style="min-width: 100px;">직책수당</th>
+                                            <th name="cdc" style="min-width: 100px;">CDC</th>
+                                            <th name="extra" style="min-width: 100px;">추가지급액</th>
+                                            <th name="special" style="min-width: 100px;">특별수당</th>
+                                            <th name="promo" style="min-width: 100px;">프로모션</th>
+                                            <th name="work" style="min-width: 100px;">업무수당</th>
+
+                                            <th name="pension" style="min-width: 100px;">국민연금</th>
+                                            <th name="health" style="min-width: 100px;">건강보험</th>
+                                            <th name="emp" style="min-width: 100px;">고용보험</th>
+                                            <th name="acc" style="min-width: 100px;">산재보험</th>
+                                            <th name="fee" style="min-width: 100px;">
+                                                수수료<br>
+                                                <input type="text" style="width:80px" class="form-control form-control-sm" oninput="copy_data(this)" onkeyup="checkNumber(this, 2)">
+                                            </th>
+                                            <th style="min-width: 100px; border-right: 1px solid #dee2e6;">청구금액</th>
+
+                                            <th style="min-width: 100px;">자체수당
+                                                <i class="fa-regular fa-circle-question fa-sm" style="vertical-align: super;" data-toggle="tooltip" data-placement="top"
+                                                   title="• 센터에 청구하지는 않지만 관리법인에서 근로자에게 지급하는 추가수당<br>• [고정/변동비]에서 별도의 비용으로 처리하지 않으면 이익계산에 오차가 발생할 수 있습니다."></i><br>
+                                                <input type="text" style="width:80px" class="form-control form-control-sm" oninput="copy_data(this)" onkeyup="checkNumber(this, 2)">
+                                            </th>  
+                                            <th style="min-width: 100px;">지급합계</th>
+                                            <th style="min-width: 100px;">공제금(3.3%)</th>
+                                            <th style="min-width: 100px;">지급금액</th>
+                                            <th style="min-width: 120px;">
+                                                입금일자<br>
+                                                <input type="text" style="width:80px" class="form-control form-control-sm date_flatpickr" oninput="copy_data(this)">
+                                            </th>
+                                            <th style="min-width: 150px;">
+                                                비고<br>
+                                                <input type="text" style="width:80px" class="form-control form-control-sm" oninput="copy_data(this)">
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let work_order_id = {% if work_order %} {{ work_order.id }} {% else %} null {% endif %};
+let COMPANY_HOURLY_RATE = {{ work_order.company.company_info.first.hourly_rate|default_if_none:0 }};
+let all_sch;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('daily_worker_invoice_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function copy_data(obj) {
+    let idx = $(obj).parent().index();
+    $("input[type='checkbox']:checked").each(function() {
+        let tr = $(this).closest("tr");
+        let td = tr.find(`td:eq('${idx}')`);
+        let input = td.find("input");
+        if (input.hasClass('date_flatpickr')) {
+            const fp = input.flatpickr();
+            fp.setDate($(obj).val());
+        } else {
+            input.val($(obj).val());
+            calc_row(input);
+        };
+    })
+}
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('daily_worker_invoice_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+
+    main();
+});
+
+function check_all() {
+    console.log("chkItem:", $(".check-item"));
+    $(".check-item").each(function () {
+        $(this).prop("checked", $("#chkAll").is(":checked"));
+    });
+}
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+
+    a_search_ready();
+}
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    all_sch = $('#all_sch').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&DOID=" + work_order_id;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+
+    fetch_gp("/daily_worker_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        $('#a_tbody').html(`
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 근무인원이 없습니다.<br>[일일근무관리]에서 근무인원을 편성해주세요.</td>
+        </tr>`);
+
+        const all_fields = [
+            "basic_start_time", "basic_end_time",
+            "basic_work_dur", "late_dur", "early_dur", "total_dur",
+            "late", "ot", "night", "late_ot_night", "wk", "meal", "tran", "early", "full", "title",
+            "cdc", "extra", "special", "promo", "work", "pension", "health", "emp", "acc"
+        ];
+        
+        all_fields.forEach(field => {
+            $(`th[name='${field}'], td[name='${field}']`).hide();
+        });
+
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+
+        const hidden = (field) => item.customer_field?.includes(field) ? '' : 'display: none;';
+
+        rows += `
+        <tr id="${item.id}" class="align-middle text-nowrap">
+            <td><input type="checkbox" class="check-item"></td>
+            <td>${num + i}</td>
+            <td>${item.user.name || ""}</td>
+            <td>${item.user.phone || ""}</td>
+            <td style="border-right: 1px solid #dee2e6 !important;">
+                <span class="badge ${item.status === "완료" ? 'bg-success' : 'bg-primary'} font-size-12 px-2 py-1">
+                    ${item.status === "완료" ? '완료' : '진행'}
+                </span>
+            </td>
+
+            <td name="basic_start_time"><input type="text" class="form-control form-control-sm timepicker basic_start_time" value="${item.basic_start_time || ''}"></td>
+            <td><input type="text" class="form-control form-control-sm timepicker start_time" value="${item.start_time || ''}"></td>
+            <td name="basic_end_time"><input type="text" class="form-control form-control-sm timepicker basic_end_time" value="${item.basic_end_time || ''}"></td>
+            <td style="border-right: 1px solid #dee2e6;"><input type="text" class="form-control form-control-sm timepicker end_time" value="${item.end_time || ''}"></td>
+
+            <td name="basic_work_dur"><input type="text" class="form-control form-control-sm basic_work_dur" value="${item.basic_work_dur || ''}"></td>
+            <td><input type="text" class="form-control form-control-sm work_dur" value="${item.work_dur || ''}"></td>
+            <td><input type="text" class="form-control form-control-sm ext_dur" value="${item.ext_dur || ''}" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td><input type="text" class="form-control form-control-sm night_dur" value="${item.night_dur || ''}" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="late_dur"><input type="text" class="form-control form-control-sm late_dur" value="${item.late_dur || ''}"></td>
+            <td name="early_dur"><input type="text" class="form-control form-control-sm early_dur" value="${item.early_dur || ''}"></td>
+            <td name="total_dur"><input type="text" class="form-control form-control-sm total_dur" value="${item.total_dur || ''}"></td>
+
+            <td style="border-left: 1px solid #dee2e6;"><input id="base_salary_${item.id}" type="text" value="${formatNumber(item.base_salary, 2)}" class="form-control form-control-sm base_salary" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="late"><input id="late_${item.id}" type="text" value="${formatNumber(item.late || '', 2)}" class="form-control form-control-sm late" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="ot"><input id="ot_${item.id}" type="text" value="${formatNumber(item.ot || '', 2)}" class="form-control form-control-sm ot" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="night"><input id="night_${item.id}" type="text" value="${formatNumber(item.night || '', 2)}" class="form-control form-control-sm night" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="late_ot_night"><input id="late_ot_night_${item.id}" type="text" value="${formatNumber(item.late_ot_night || '', 2)}" class="form-control form-control-sm late_ot_night" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="wk"><input id="wk_${item.id}" type="text" value="${formatNumber(item.wk || '', 2)}" class="form-control form-control-sm wk" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="meal"><input id="meal_${item.id}" type="text" value="${formatNumber(item.meal || '', 2)}" class="form-control form-control-sm meal" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="tran"><input id="tran_${item.id}" type="text" value="${formatNumber(item.tran || '', 2)}" class="form-control form-control-sm tran" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="early"><input id="early_${item.id}" type="text" value="${formatNumber(item.early || '', 2)}" class="form-control form-control-sm early" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="full"><input id="full_${item.id}" type="text" value="${formatNumber(item.full || '', 2)}" class="form-control form-control-sm full" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="title"><input id="title_${item.id}" type="text" value="${formatNumber(item.title || '', 2)}" class="form-control form-control-sm title" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="cdc"><input id="cdc_${item.id}" type="text" value="${formatNumber(item.cdc || '', 2)}" class="form-control form-control-sm cdc" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="extra"><input id="extra_${item.id}" type="text" value="${formatNumber(item.extra || '', 2)}" class="form-control form-control-sm extra" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="special"><input id="special_${item.id}" type="text" value="${formatNumber(item.special || '', 2)}" class="form-control form-control-sm special" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="promo"><input id="promo_${item.id}" type="text" value="${formatNumber(item.promo || '', 2)}" class="form-control form-control-sm promo" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="work"><input id="work_${item.id}" type="text" value="${formatNumber(item.work || '', 2)}" class="form-control form-control-sm work" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+
+            <td name="pension"><input id="pension_${item.id}" type="text" value="${formatNumber(item.pension || '', 2)}" class="form-control form-control-sm pension" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="health"><input id="health_${item.id}" type="text" value="${formatNumber(item.health || '', 2)}" class="form-control form-control-sm health" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="emp"><input id="emp_${item.id}" type="text" value="${formatNumber(item.emp || '', 2)}" class="form-control form-control-sm emp" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="acc"><input id="acc_${item.id}" type="text" value="${formatNumber(item.acc || '', 2)}" class="form-control form-control-sm acc" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td name="fee"><input id="fee_${item.id}" type="text" value="${formatNumber(item.fee || '', 2)}" class="form-control form-control-sm fee" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td style="border-right: 1px solid #dee2e6;"><input id="total_${item.id}" type="text" value="${formatNumber(item.total || '', 2)}" class="form-control form-control-sm total" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)" disabled></td>
+
+            <td><input id="hanwool_${item.id}" type="text" value="${formatNumber(item.hanwool || '', 2)}" class="form-control form-control-sm hanwool" oninput="calc_row(this)" onkeyup="checkNumber(this, 2)"></td>
+            <td><input id="pre_result_price_${item.id}" type="text" class="form-control form-control-sm pre_result_price" onkeyup="checkNumber(this, 2)" disabled></td>
+            <td><input id="tax_${item.id}" type="text" value="${formatNumber(item.tax || '', 2)}" class="form-control form-control-sm tax" onkeyup="checkNumber(this, 2)" disabled></td>
+            <td><input id="result_price_${item.id}" type="text" value="${formatNumber(item.result_price || '', 2)}" class="form-control form-control-sm result_price" onkeyup="checkNumber(this, 2)" disabled></td>
+
+            <td><input type="text" value="${item.salary_date || ''}" class="form-control form-control-sm date_flatpickr"></td>
+            <td><input type="text" value="${item.desc1 || ''}" class="form-control form-control-sm"></td>
+        </tr>`;
+    }
+
+    // 합계 추가
+    rows += `
+        <tr style="background: #f8f8f8; border-top: 1px solid #d9dee3" id="tr_total_price_amount">
+            <td colspan="4" class="fw-bold text-center">총 근무인원</td>
+            <td colspan="1" class="fw-bold text-start" id="total_worker" style="border-right: 1px solid #dee2e6;"></td>
+            <td name="basic_start_time"></td>
+            <td></td>
+            <td name="basic_end_time"></td>
+            <td style="border-right: 1px solid #dee2e6;"></td>
+
+            <td name="basic_work_dur"></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td name="late_dur"></td>
+            <td name="early_dur"></td>
+            <td name="total_dur"></td>
+
+            <td class="fw-bold text-start" id="total_base_salary" style="border-left: 1px solid #dee2e6;"></td>
+            <td name="late" class="fw-bold text-start" id="total_late"></td>
+            <td name="ot" class="fw-bold text-start" id="total_ot"></td>
+            <td name="night" class="fw-bold text-start" id="total_night"></td>
+            <td name="late_ot_night" class="fw-bold text-start" id="total_late_ot_night"></td>
+            <td name="wk" class="fw-bold text-start" id="total_wk"></td>
+            <td name="meal" class="fw-bold text-start" id="total_meal"></td>
+            <td name="tran" class="fw-bold text-start" id="total_tran"></td>
+            <td name="early" class="fw-bold text-start" id="total_early"></td>
+            <td name="full" class="fw-bold text-start" id="total_full"></td>
+            <td name="title" class="fw-bold text-start" id="total_title"></td>
+            <td name="cdc" class="fw-bold text-start" id="total_cdc"></td>
+            <td name="extra" class="fw-bold text-start" id="total_extra"></td>
+            <td name="special" class="fw-bold text-start" id="total_special"></td>
+            <td name="promo" class="fw-bold text-start" id="total_promo"></td>
+            <td name="work" class="fw-bold text-start" id="total_work"></td>
+
+            <td name="pension" class="fw-bold text-start" id="total_pension"></td>
+            <td name="health" class="fw-bold text-start" id="total_health"></td>
+            <td name="emp" class="fw-bold text-start" id="total_emp"></td>
+            <td name="acc" class="fw-bold text-start" id="total_acc"></td>
+            <td name="fee" class="fw-bold text-start" id="total_fee"></td>
+            <td class="fw-bold text-start" id="total_total" style="border-right: 1px solid #dee2e6;"></td>
+
+            <td class="fw-bold text-start" id="total_hanwool"></td>            
+            <td class="fw-bold text-start" id="total_pre_result_price"></td>
+            <td class="fw-bold text-start" id="total_tax"></td>
+            <td class="fw-bold text-start" id="total_result_price"></td>
+            <td colspan="2"></td>
+        </tr>`;
+
+    $('#a_tbody').html(rows);
+
+    $('#a_tbody tr').not('#tr_total_price_amount').each(function () {
+        calc_row($(this).find('input.result_price')[0]);
+    });
+
+    // 1. 숨김필드 리스트
+    let hidden_fields = [];
+    if (data.length > 0 && data[0].customer_field) {
+        const all_fields = [
+            "basic_start_time", "basic_end_time",
+            "basic_work_dur", "late_dur", "early_dur", "total_dur",
+            "late", "ot", "night", "late_ot_night", "wk", "meal", "tran", "early", "full", "title",
+            "cdc", "extra", "special", "promo", "work", "pension", "health", "emp", "acc" ];
+        hidden_fields = all_fields.filter(f => !data[0].customer_field.includes(f));
+    }
+
+    // 2. <th>와 #tr_total_price_amount의 <td>에 일괄 적용
+    hidden_fields.forEach(field => {
+        $(`th[name='${field}'], td[name='${field}']`).hide();
+    });
+
+    update_total_amounts();
+    init_date_flatpickr();
+    flatpickr(".timepicker", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+    a_nation.nation_display(done);
+}
+
+// 청구금액 합산 대상 필드 id 접미사
+const CHARGE_FIELDS = [
+  'base_salary','late','ot','night','late_ot_night','wk','meal','tran',
+  'early','full','title','cdc','extra','special','promo','work',
+  'pension','health','emp','acc','fee'
+];
+
+function getNumById(row, idSuffix) {
+  const workerId = row.attr('id');
+  const $input = row.find(`#${idSuffix}_${workerId}`);
+  const raw = $input.length ? $input.val() : '';
+  return parseFloat(del_comma(raw)) || 0;
+}
+
+function setFormattedById(row, idSuffix, val, fixed=0) {
+  const workerId = row.attr('id');
+  row.find(`#${idSuffix}_${workerId}`).val(formatNumber(val, fixed));
+}
+
+
+function calc_row(input) {
+    const $row = $(input).closest('tr');
+    const workerId = $row.attr('id');
+
+    const extDur = parseFloat(del_comma($row.find('.ext_dur').val())) || 0;
+    const nightDur = parseFloat(del_comma($row.find('.night_dur').val())) || 0;
+
+    // === 1) 연장수당 계산 (0일 때도 반영) ===
+    if (COMPANY_HOURLY_RATE > 0) {
+        const otVal = extDur * COMPANY_HOURLY_RATE * 1.5;
+        $(`#ot_${workerId}`).val(formatNumber(Math.round(otVal), 0));
+    } else {
+        $(`#ot_${workerId}`).val('0');
+    }
+
+    // === 2) 야간수당 계산 (0일 때도 반영) ===
+    if (COMPANY_HOURLY_RATE > 0) {
+        const nightVal = nightDur * COMPANY_HOURLY_RATE * 0.5;
+        $(`#night_${workerId}`).val(formatNumber(Math.round(nightVal), 0));
+    } else {
+        $(`#night_${workerId}`).val('0');
+    }
+
+    // === 3) 청구금액 합산 ===
+    let total = 0;
+    for (const key of CHARGE_FIELDS) {
+        total += getNumById($row, key);
+    }
+    setFormattedById($row, 'total', Math.round(total));
+
+    // === 4) 공제 및 지급 계산 ===
+    const pension = getNumById($row, 'pension');
+    const health = getNumById($row, 'health');
+    const emp = getNumById($row, 'emp');
+    const acc = getNumById($row, 'acc');
+    const fee = getNumById($row, 'fee');
+    const hanwool = getNumById($row, 'hanwool');
+
+    const preResult = Math.round(total - pension - health - emp - acc - fee + hanwool);
+    setFormattedById($row, 'pre_result_price', preResult);
+
+    const tax = Math.round(preResult * 0.033);
+    const result = Math.round(preResult - tax);
+    setFormattedById($row, 'tax', tax);
+    setFormattedById($row, 'result_price', result);
+
+    // === 5) 전체 합계 갱신 ===
+    update_total_amounts();
+}
+
+
+function update_total_amounts() {
+    const $rows = $('#a_tbody tr').not('#tr_total_price_amount');
+    const sums = {};  // 항목별 합계
+
+    // 초기화
+    for (const key of CHARGE_FIELDS.concat(['total', 'hanwool', 'pre_result_price', 'tax', 'result_price'])) {
+        sums[key] = 0;
+    }
+
+    $rows.each(function () {
+        const $row = $(this);
+        const workerId = $row.attr('id');
+
+        for (const key of Object.keys(sums)) {
+            const val = parseFloat(del_comma($(`#${key}_${workerId}`).val())) || 0;
+            sums[key] += val;
+        }
+    });
+
+    $('#total_worker').text(`${$rows.length}명`);
+
+    // 합계 적용
+    for (const key of Object.keys(sums)) {
+        const selector = `#total_${key}`;
+        $(selector).text(formatNumber(sums[key]));
+    }
+}
+
+
+function save_salary() {
+    let salaryData = [];
+
+    $('#a_tbody tr').not('#tr_total_price_amount').each(function () {
+        const $row = $(this);
+        const workerId = $row.attr('id');
+
+        function getVal(id) {
+            const val = $row.find(`#${id}_${workerId}`).val();
+            return val === '' ? null : del_comma(val);
+        }
+
+        function getRaw(id, selector = 'input') {
+            const val = $row.find(`${selector}.${id}`).val();
+            return val === '' ? null : val;
+        }
+
+        salaryData.push({
+            worker_id: workerId,
+
+            // 시간 필드 (HH:mm)
+            basic_start_time: getRaw('basic_start_time'),
+            start_time: getRaw('start_time'),
+            basic_end_time: getRaw('basic_end_time'),
+            end_time: getRaw('end_time'),
+
+            // Duration 필드
+            basic_work_dur: getRaw('basic_work_dur'),
+            work_dur: getRaw('work_dur'),
+            ext_dur: getRaw('ext_dur'),
+            night_dur: getRaw('night_dur'),
+            late_dur: getRaw('late_dur'),
+            early_dur: getRaw('early_dur'),
+            total_dur: getRaw('total_dur'),
+
+            // 급여 및 수당
+            base_salary: getVal('base_salary'),
+            late: getVal('late'),
+            ot: getVal('ot'),
+            night: getVal('night'),
+            late_ot_night: getVal('late_ot_night'),
+            wk: getVal('wk'),
+            meal: getVal('meal'),
+            tran: getVal('tran'),
+            early: getVal('early'),
+            full: getVal('full'),
+            title: getVal('title'),
+            cdc: getVal('cdc'),
+            extra: getVal('extra'),
+            special: getVal('special'),
+            promo: getVal('promo'),
+            work: getVal('work'),
+
+            // 공제
+            pension: getVal('pension'),
+            health: getVal('health'),
+            emp: getVal('emp'),
+            acc: getVal('acc'),
+            fee: getVal('fee'),
+            total: getVal('total'),
+
+            // 지급
+            hanwool: getVal('hanwool'),
+            pre_result_price: getVal('pre_result_price'),
+            tax: getVal('tax'),
+            result_price: getVal('result_price'),
+
+            // 기타
+            salary_date: $row.find('.date_flatpickr').val() || null,
+            desc1: $row.find('input[type="text"]').last().val() || ''
+        });
+    });
+
+    if (salaryData.length === 0) {
+        alert("저장할 데이터가 없습니다.");
+        return;
+    }
+
+    let api_data = new FormData();
+    api_data.append('salary_data', JSON.stringify(salaryData));
+    api_data.append('work_order_id', work_order_id);
+
+    fetch_gp('/daily_worker_save_salary_fn/', 'post', true, api_data, (done) => {
+        a_search();
+        alert(txt.update_ed);
+    });
+}
+
+
+function checkNumber(obj, cnt = 0) {
+    let val = $(obj).val().replace(/[^0-9.\-]/g, '');
+
+    if (val.startsWith('-')) {
+        val = '-' + val.slice(1).replace(/-/g, '');
+    } else {
+        val = val.replace(/-/g, '');
+    }
+
+    obj.value = formatNumber(val, cnt);
+}
+
+function formatNumber(val, cnt = 0) {
+    if (val == null) return '';  // null, undefined 방지
+    val = String(val);           // 문자열 강제 변환
+
+    if (!val || val === '-' || val === '.' || val === '-.') return val;
+
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // 사용자가 소수점 입력했을 때만 소수점 표시
+    if (val.includes('.') && cnt > 0) {
+        return `${intFormatted}.${(decPart || '').slice(0, cnt)}`;
+    }
+
+    return intFormatted;
+}
+
+function del_comma(val) {
+    return typeof val === 'string' ? val.replace(/,/g, '') : val;
+}
+
+</script>

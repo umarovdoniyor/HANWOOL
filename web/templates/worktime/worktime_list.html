@@ -1,0 +1,552 @@
+<!-- 근태관리 > 근태기록 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+/* select2 컨테이너 너비 지정 */
+#sch_team + .select2-container {
+    width: 180px !important;
+}
+/* select2 선택창 높이 및 스타일 form-select-sm과 동일하게 */
+#sch_team + .select2-container .select2-selection--single {
+    height: 36.53px !important;
+    line-height: 32px !important;
+    padding: 0.25rem 0.5rem !important;
+    border: 1px solid #6c757d !important; /* border-secondary */
+    border-radius: 0.2rem !important;
+    position: relative;
+}
+/* 선택된 항목 텍스트 정렬 */
+#sch_team + .select2-container .select2-selection__rendered {
+    line-height: 30px !important;
+    padding-left: 0 !important;
+}
+/* 화살표 위치 조정 */
+#sch_team + .select2-container .select2-selection__arrow {
+    height: 36.53px !important;
+    top: 0 !important;
+}
+/* 클리어버튼 위치 조정 */
+#sch_team + .select2-container .select2-selection__clear {
+    right: 2.5rem !important;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 10;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-house-user me-2"></i>근태기록
+                    <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+                    title="• 출퇴근 등록 데이터가 목록으로 정리된 페이지 입니다.<br>• 구성원의 일일 출퇴근 기록을 확인하고 관리할 수 있습니다."></i>
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <div class="d-none d-md-flex input-group input-daterange position-relative w-auto me-1"
+                                     id="date_filter" data-toggle="tooltip" data-placement="top" title="근무일 검색">
+                                    <input id="fr_date" type="text" placeholder="시작일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px;">
+                                    <input id="to_date" type="text" placeholder="종료일 검색" onchange="a_search_ready()" autocomplete="off"
+                                           class="form-control date_flatpickr border border-secondary" style="max-width: 120px; border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
+
+                                    <div id="date_dropdown" class="d-none position-absolute bg-light border border-secondary-subtle rounded shadow-sm p-1"
+                                         style="top: 100%; left: 0; z-index: 1000; min-width: 150px;">
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('yesterday')">어제</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('today')">오늘</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('tomorrow')">내일</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_week')">지난주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_week')">이번주</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_week')">다음주</button>
+                                        </div>
+                                        <div class="d-flex align-items-center my-2">
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('last_month')">지난달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('this_month')">이번달</button>
+                                            <button class="btn btn-sm btn-secondary text-nowrap mx-1 px-2.5" style="width: 60px;" onclick="set_date_range('next_month')">다음달</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-none d-xl-flex w-auto me-1" data-toggle="tooltip" data-placement="top" title="부서별 검색">
+                                    <select class="page_size form-select form-select-sm me-1" id="sch_team"
+                                            onchange="a_search_ready()">
+                                    </select>
+                                </div>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                                <div class="position-relative d-inline-block">
+                                    <button class="btn btn-secondary dropdown-toggle text-nowrap me-1 px-2.5" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-filter"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">필터</span>
+                                    </button>
+                                    <ul class="dropdown-menu" style="top: 100%; left: 0;">
+                                        <li>
+                                            <div class="form-check form-check-secondary d-flex align-items-center my-2 mx-3">
+                                                <input class="form-check-input me-2 checkbox_filter" type="checkbox" id="late_time_filter" name="is_staff">
+                                                <label class="form-check-label text-nowrap" for="late_time_filter">지각</label>
+                                            </div>
+                                        </li>
+                                        <li>
+                                            <div class="form-check form-check-secondary d-flex align-items-center my-2 mx-3">
+                                                <input class="form-check-input me-2 checkbox_filter" type="checkbox" id="early_time_filter" name="is_staff">
+                                                <label class="form-check-label text-nowrap" for="early_time_filter">조퇴</label>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                {% if request.user.is_superuser or request.user.is_master %}
+                                <button class="btn btn-info text-nowrap ms-1 px-2.5" onclick="a_checkout_byadmin_submit()">
+                                    <i class="fa-solid fa-stop"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">퇴근 처리</span>
+                                </button>
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="a_checkout_cancel_submit()">
+                                    <i class="fa-solid fa-rotate-right"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">퇴근 취소</span>
+                                </button>
+                                <button class="btn btn-danger text-nowrap ms-1 px-2.5" onclick="a_delete_submit()">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">기록 삭제</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 건별 게시물 -->
+                        <div class="custom_table table-responsive">
+                            <table class="table">
+                                <thead class="thead-light">
+                                    <tr class="text-nowrap">
+                                        <th class="d-none d-md-table-cell min_width">순번</th>
+                                        <th>근무일</th>
+                                        <th>이름</th>
+                                        <th class="d-none d-md-table-cell">부서</th>
+                                        <th>출근 시간</th>
+                                        <th>퇴근 시간</th>
+                                        <th>근무 시간</th>
+                                        <th class="d-none d-md-table-cell">초과근무</th>
+                                        <th class="d-none d-md-table-cell">지각</th>
+                                        <th class="d-none d-md-table-cell">조퇴</th>
+                                        <th class="d-none d-md-table-cell">비고</th>
+                                        <th class="d-none d-md-table-cell">출근 IP</th>
+                                        <th class="d-none d-md-table-cell">퇴근 IP</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="a_tbody"></tbody>
+                            </table>
+                        </div>
+                        <div class="div_center mt-3" id="a_nation_id"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let a_click_id;
+let a_click_work_date;
+let a_click_user_name;
+let a_click_is_checkout;
+
+let fr_date;
+let to_date;
+let all_sch;
+let sch_team;
+let late_time_filter;
+let early_time_filter;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('worktime_list_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('worktime_list_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+    
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+    init_Select2('#sch_team', '부서 선택', '/sel2_code_team/', {id: 'id', txt: item => `${item.text}`});
+    
+    a_search_ready();
+}
+
+$(document).ready(function () {
+    $("#late_time_filter").change(function () {
+        if ($(this).is(":checked")) {
+            $(this).val("true");  // 체크됨 → 지각 기록만
+            a_search_ready();
+        } else {
+            $(this).val("false"); // 체크 해제 → 모든 기록
+            a_search_ready();
+        }
+    });
+
+    $("#early_time_filter").change(function () {
+        if ($(this).is(":checked")) {
+            $(this).val("true");  // 체크됨 → 조퇴 기록만
+            a_search_ready();
+        } else {
+            $(this).val("false"); // 체크 해제 → 모든 기록
+            a_search_ready();
+        }
+    });
+});
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    fr_date = $('#fr_date').val();
+    to_date = $('#to_date').val();
+    all_sch = $('#all_sch').val();
+    sch_team = $('#sch_team').val();
+    late_time_filter = $('#late_time_filter').val();
+    early_time_filter = $('#early_time_filter').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&fr_date=" + fr_date;
+    query += "&to_date=" + to_date;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_team) { query += "&sch_team=" + sch_team; }
+    query += "&late_time_filter=" + late_time_filter;
+    query += "&early_time_filter=" + early_time_filter;
+
+    fetch_gp("/worktime_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    // console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;">등록된 데이터가 없습니다.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        
+        let profileImage = item.created_by.profile_image 
+        ? `<img src="${item.created_by.profile_image}" alt="Profile Image" class="rounded-circle d-none d-md-inline me-2" width="24" height="24">`
+        : "";
+
+        let remark = "";
+        if (item.event) {
+            let leave = parseFloat(item.event.annual_leave_days ?? -1);
+            if (leave === 0.5) {
+                remark = "반차";
+            } else if (leave >= 1) {
+                remark = "연차";
+            } else {
+                remark = item.event.change_type || "";
+            }
+        }
+
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap' style='cursor:pointer;'>
+            <td class="d-none d-md-table-cell">${num + i}</td>
+            <td name='work_date'>${item.work_date}</td>
+            <td>${profileImage} ${item.created_by.name} ${item.created_by.job_level || ""}</td>
+            <td name='user_name' class='d-none'>${item.created_by.name || ""}</td>
+            <td name='team' class="d-none d-md-table-cell">${item.created_by.team || ""}</td>
+            <td name='check_in'>${item.check_in || ""}</td>
+            <td name='check_out'>${item.check_out || ""}</td>
+            <td name='work_time'>${item.work_time || ""}</td>
+            <td name='over_time' class="d-none d-md-table-cell">${item.over_time || ""}</td>
+            <td name='late_time' class="d-none d-md-table-cell">${item.late_time || ""}</td>
+            <td name='early_time' class="d-none d-md-table-cell">${item.early_time || ""}</td>
+            <td name='remark' class="d-none d-md-table-cell">${remark}</td>
+            <td name='check_in_ip' class="d-none d-md-table-cell">
+                ${item.check_in_ip ? 
+                    (item.check_in_ip_place ? `${item.check_in_ip_place} (${item.check_in_ip})` : `미등록 IP (${item.check_in_ip})`) 
+                    : ""}
+            </td>
+            <td name='check_out_ip' class="d-none d-md-table-cell">
+                ${item.check_out_ip ? 
+                    (item.check_out_ip_place ? `${item.check_out_ip_place} (${item.check_out_ip})` : `미등록 IP (${item.check_out_ip})`) 
+                    : ""}
+            </td>
+            <td name='is_checkout' class="d-none">${item.is_checkout}</td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    // 클릭한 행 유지
+    if (a_click_id != null) {
+        $("#a_tbody #" + a_click_id).addClass('clicked');
+    }
+
+    $('#a_tbody > tr').on('click', function () {
+        $('#a_tbody > tr').removeClass('clicked');
+        $(this).addClass('clicked');
+
+        a_click_id = $(this).attr("id");
+        a_click_work_date = $(this).find("[name='work_date']").text();
+        a_click_user_name = $(this).find("[name='user_name']").text();
+        a_click_is_checkout = $(this).find("[name='is_checkout']").text().trim();
+    });
+}
+
+function a_checkin_submit() {
+    fetch_gp('/worktime_checkin_fn/', 'post', true, {}, (done) => {
+        if (done.error) {
+            alert("출근 실패: " + done.message);
+        } else {
+            alert("출근 완료: " + done.message);
+            a_search_ready();
+        }
+    });
+}
+
+function a_checkout_submit() {
+    fetch_gp('/worktime_checkout_fn/', 'post', true, {}, (done) => {
+        if (done.error) {
+            alert("퇴근 실패: " + done.message);
+        } else {
+            alert("퇴근 완료: " + done.message);
+            a_search_ready();
+        }
+    });
+}
+
+function a_delete_submit() {
+    if (a_click_id == null) {
+        alert(txt.delete_select);
+        return;
+    }
+
+    let res = prompt(`${a_click_work_date}에 등록된 ${a_click_user_name}님의 근태 기록을 선택하셨습니다.\n\n` +
+        txt.delete_will_check);
+    if (txt.delete_check.includes(res)) {
+
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+
+        fetch_gp('/worktime_delete_fn/', 'post', true, api_data, (done) => {
+            a_nation.page = 1;
+            a_click_id = null;
+
+            a_search_ready();
+            alert(txt.delete_ed);
+        });
+    } else {
+        alert(txt.cancel);
+    }
+}
+
+function a_checkout_byadmin_submit() {
+    if (a_click_id == null) {
+        alert("퇴근 처리할 항목을 선택하세요.");
+        return;
+    }
+
+    if (a_click_is_checkout === "true") {
+        alert("이미 퇴근 처리가 완료된 항목입니다.");
+        return;
+    }
+
+    let check_out_time = prompt(`${a_click_work_date}에 등록된 ${a_click_user_name}님의 근태 기록을 선택하셨습니다.\n\n` +
+        "해당 기록을 퇴근처리 하시려면 퇴근시간 입력 후 확인을 눌러주세요.\n예시) 오전 10시는 [ 10:00 ], 오후 6시는 [ 18:00 ]");
+
+    if (check_out_time) {
+        // HH:MM 형식 체크 (00~23):(00~59)
+        let timeRegex = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+        if (timeRegex.test(check_out_time)) {
+            let api_data = new FormData();
+                api_data.append("pk", a_click_id);
+                api_data.append("check_out_time", check_out_time);
+                api_data.append("check_out_type", "checkout_byadmin");
+
+            fetch_gp('/worktime_checkout_admin_fn/', 'post', true, api_data, (done) => {
+                a_search_ready();
+                alert("퇴근처리가 완료되었습니다.");
+            });
+        } else {
+            alert("시간 형식이 올바르지 않습니다.\n예시) 오전 10시는 [ 10:00 ], 오후 6시는 [ 18:00 ]");
+        }
+    }
+}
+
+function a_checkout_cancel_submit() {
+    if (a_click_id == null) {
+        alert("퇴근 처리를 취소할 항목을 선택하세요.");
+        return;
+    }
+
+    if (a_click_is_checkout !== "true") {
+        alert("아직 퇴근 처리가 완료되지 않은 항목입니다.");
+        return;
+    }
+
+    let res = confirm(`${a_click_work_date}에 등록된 ${a_click_user_name}님의 근태 기록을 선택하셨습니다.\n\n` +
+        "해당 기록을 퇴근 취소처리 하시겠습니까?");
+
+    if (res) {
+        let api_data = new FormData();
+        api_data.append("pk", a_click_id);
+        api_data.append("check_out_type", "checkout_cancel");
+
+        fetch_gp('/worktime_checkout_admin_fn/', 'post', true, api_data, (done) => {
+            a_search_ready();
+            alert("퇴근처리가 취소되었습니다.");
+        });
+    }
+}
+
+function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+// 데이트 필터 드랍다운 이벤트
+$('#date_filter').on('mouseenter', function () {
+    $('#date_dropdown').removeClass('d-none');
+});
+$('#date_filter').on('mouseleave', function () {
+    $('#date_dropdown').addClass('d-none');
+});
+
+function set_date_range(range) {
+    const today = new Date();
+    let start, end;
+
+    if (range === 'yesterday') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end.setDate(today.getDate() - 1);
+    } else if (range === 'today') {
+        start = end = new Date(today);
+    } else if (range === 'tomorrow') {
+        start = end = new Date(today);
+        start.setDate(today.getDate() + 1);
+        end.setDate(today.getDate() + 1);
+    } else if (range === 'last_week') {
+        const day = today.getDay() || 7;
+        end = new Date(today);
+        end.setDate(today.getDate() - day);
+        start = new Date(end);
+        start.setDate(end.getDate() - 6);
+    } else if (range === 'this_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 1);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'next_week') {
+        const day = today.getDay() || 7;
+        start = new Date(today);
+        start.setDate(today.getDate() - day + 8);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else if (range === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (range === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (range === 'next_month') {
+        start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    }
+
+    $('#fr_date').val(formatDate(start));
+    $('#to_date').val(formatDate(end));
+    a_search_ready();
+}
+
+</script>

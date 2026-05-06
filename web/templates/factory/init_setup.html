@@ -1,0 +1,197 @@
+<!-- 팩토리 > 가이드 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+<style>
+.carousel-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    height: 400px;
+}
+
+.carousel-image {
+    flex: 0 0 auto;
+    opacity: 0.6;
+    transform: scale(0.9);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    width: 350px;
+    height: 350px;
+}
+
+.carousel-image.active {
+    opacity: 1;
+    transform: scale(1);
+    width: 400px;
+    height: 400px;
+    z-index: 1;
+}
+
+.carousel-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+@media (max-width: 767px) {
+    .carousel-container {
+        justify-content: center;
+        height: 400px;
+    }
+
+    .carousel-image {
+        display: none;
+    }
+
+    .carousel-image.active {
+        display: block;
+        width: 100%;
+        max-width: 400px;
+        height: auto;
+        margin: 0 auto;
+    }
+}
+
+.instagram-btn {
+    background: linear-gradient(45deg, #833AB4, #E1306C, #F77737, #FCAF45);
+    background-size: 600% 600%;
+    border: none;
+    color: white;
+    transition: 0.3s ease-in-out;
+    animation: gradientFlow 4s ease infinite;
+}
+
+@keyframes gradientFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.instagram-btn:hover {
+    opacity: 0.8;
+}
+</style>
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-gear fa-spin me-2"></i>[토스트 팩토리] 가동 준비
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+
+                        <div class="mt-5"></div>
+
+                        <!-- 본문 영역 -->
+                        <div class="carousel-container" id="customCarousel">
+                            <div class="carousel-image active">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <img src="{% static 'img/factory_toon_1.JPG' %}" alt="1">
+                                        <div class="d-flex justify-content-start align-items-center my-2" style="font-size: 18px; color: #2a3040;">
+                                            아직도 재고관리를 엑셀로 하시나요?<br>생산일지를 노트에 적어 관리하신다고요?<br>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="carousel-image">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <img src="{% static 'img/factory_toon_2.JPG' %}" alt="2">
+                                        <div class="d-flex justify-content-start align-items-center my-2" style="font-size: 18px; color: #2a3040;">
+                                            이제 공장 관리도 토스트 팩토리에서 쉽고 편하게 시작하세요.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="carousel-image">
+                                <div class="card border border-light">
+                                    <div class="card-body p-3">
+                                        <img src="{% static 'img/factory_toon_3.JPG' %}" alt="3">
+                                        <div class="d-flex justify-content-start align-items-center my-2" style="font-size: 18px; color: #2a3040;">
+                                            재고, 구매, 생산, 견적, 판매 등 공장 운영에 필요한 필수 기능을 지원합니다.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-center align-items-center fw-bold mb-5" style="font-size: 16px; color: #2a3040; margin-top: 100px;">
+                            <button class="btn instagram-btn text-white text-nowrap font-size-18 px-5" onclick="init_setup_factory()">
+                                [토스트 팩토리] 시작하기
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    let baseUrl = window.location.origin + window.location.pathname;
+    window.location.href = baseUrl;
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+}
+
+const items = document.querySelectorAll('#customCarousel .carousel-image');
+let activeIndex = 0;
+
+setInterval(() => {
+    items.forEach((el, i) => {
+        el.classList.remove('active');
+    });
+    activeIndex = (activeIndex + 1) % items.length;
+    items[activeIndex].classList.add('active');
+}, 2000);
+
+function init_setup_factory() {
+    fetch_gp('/factory_init_setup_fn/?factory=start', 'POST', true, '', (done) => {
+        window.open("{% url 'factory_index_page' %}", '_blank', 'noopener,noreferrer');
+    });
+}
+
+</script>

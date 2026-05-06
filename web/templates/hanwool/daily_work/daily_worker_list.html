@@ -1,0 +1,512 @@
+<!-- 거래처/현장관리 > 일일근무관리 > 근로계약 -->
+
+<!DOCTYPE html>
+<html style="overflow-x: hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<style>
+html {
+    overflow-y:hidden;
+}
+.table-container {
+  max-height: 100;
+  overflow-y: auto;
+}
+
+.table-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-container table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #fff; /* Required to cover rows scrolling beneath */
+  z-index: 1000;
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); /* Optional: visual separation */
+}
+</style>
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 게시물 목록 -->
+    <div class="col-12">
+        <div class="row gx-4">
+
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+                    <i class="fa-solid fa-users me-2"></i>일일근무관리 <i class="fa-solid fa-angle-right px-1"></i> 근로계약
+                    <i class="fa-solid fa-angle-right px-1"></i> [{{ work_order.code }}] {{ work_order.date }} {{ work_order.customer.name }}
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border border-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex p-0">
+                                <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                     data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </div>
+
+                                <select class="page_size form-select form-select-sm me-1" id="a_page_size"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="리스트에서 표시할 수량">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                    <option value="200">200개</option>
+                                    <option value="500">500개</option>
+                                </select>
+
+                                <select class="d-none d-md-inline page_size form-select form-select-sm me-1" id="sch_status"
+                                        onchange="a_search_ready()" data-toggle="tooltip" data-placement="top" title="근로계약 상태로 검색">
+                                    <option value="" selected>모두</option>
+                                    <option value="진행">진행</option>
+                                    <option value="완료">완료</option>
+                                </select>
+
+                                <div class="search-box d-flex me-1">
+                                    <div class="position-relative flex-grow-1" data-toggle="tooltip" data-placement="top"
+                                         title="기타 텍스트 검색">
+                                        <input type="text" class="form-control rounded border-secondary" id="all_sch" placeholder="검색어 입력">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-secondary text-nowrap me-1 px-2.5" onclick="a_search_ready()">
+                                    <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                </button>
+                            </div>
+
+                            <div class="d-flex p-0">
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="save_completed()">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">강제 완료처리</span>
+                                </button>
+                                <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="save_wage(true, false)">
+                                    <i class="fa-solid fa-gear"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">일급설정 저장</span>
+                                </button>
+                                <button class="btn btn-warning text-nowrap ms-1 px-2.5" onclick="send_contract()">
+                                    <i class="fa-solid fa-comment"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">근로계약 발송</span>
+                                </button>
+                                <button class="btn btn-secondary text-nowrap ms-1 px-2.5" onclick="window.close()">
+                                    <i class="fa-solid fa-xmark"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">창닫기</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 본문 영역 -->
+                        <div class="col-xxl-12">
+                            <div class="custom_table table-responsive table-container">
+                                <table class="table table-hover">
+                                    <colgroup>
+                                        <col style="width: 2%"/>
+                                        <col style="width: 2%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 10%"/>
+                                        <col style="width: 10%"/>
+                                        <col style="width: 30%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 5%"/>
+                                        <col style="width: 5%"/>
+                                    </colgroup>
+
+                                    <thead class="thead-light">
+                                        <tr class="text-nowrap">
+                                            <th id="check_box" style="text-align: center; vertical-align: middle;" class="form-check-info min_width">
+                                            <input class="form-check-input checkbox_lg" type="checkbox" id="select_all"></th>
+                                            <th>순번</th>
+                                            <th>근무자</th>
+                                            <th>연락처</th>
+                                            <th class="text-center">근무 시간</th>
+                                            <th>일급 선택</th>
+                                            <th class="d-none d-xl-table-cell">일급 내용</th>
+                                            <th>근로계약 현황</th>
+                                            <th>전자서명</th>
+                                            <th>서명일자</th>
+                                            <th>근로계약서</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="a_tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="div_center mt-3" id="a_nation_id"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let work_order_id = {% if work_order %} {{ work_order.id }} {% else %} null {% endif %};
+
+let all_sch;
+let sch_status;
+
+let a_nation_data = {
+    cname: 'a_nation',  // 인스턴스 명과 일치해야함
+    nation_id: 'a_nation_id',
+    range: 5,
+    page_size: 20,  // 세로 Row 수
+};
+let a_nation = new Nations(a_nation_data, a_search); // 인스턴스 명
+a_nation.nation_display({});
+
+$('#a_page_size').on('change', function () {
+    localStorage.setItem('daily_worker_list_page_size', $(this).val());
+});
+
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+document.getElementById("all_sch").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        a_search_ready();
+    }
+});
+
+function refresh() {
+    window.location.href = window.location.href
+}
+
+$(function () {
+    let savedPageSize = localStorage.getItem('daily_worker_list_page_size');
+    if (savedPageSize) { $('#a_page_size').val(savedPageSize);}
+
+    main();
+
+    let container = document.querySelector(".table-container");
+    let rect = container.getBoundingClientRect();
+    container.style.maxHeight = `${window.innerHeight - (rect.top + rect.height)}px`;
+});
+
+function main() {
+    set_autocomplete('off');
+    init_date_flatpickr();
+
+    a_search_ready();
+}
+
+$(document).ready(function () {
+    $('#select_all').on('change', function (e) {
+        let checked = $(this).is(':checked');
+        $('.td_chk_box').each(function () {
+            $(this).prop('checked', checked);
+            $(this).closest('tr').toggleClass('bg-light', checked);
+        });
+    });
+});
+
+function a_search_ready() {
+    a_click_id = null;
+    a_nation.page = 1;
+    a_nation_data.page_size = $("#a_page_size").val();
+
+    all_sch = $('#all_sch').val();
+    sch_status = $('#sch_status').val();
+
+    a_search();
+}
+
+function a_search() {
+    let query = "?page=" + a_nation.page + "&page_size=" + a_nation_data.page_size;
+    query += "&DOID=" + work_order_id;
+    if (all_sch) { query += "&all_sch=" + all_sch; }
+    if (sch_status) { query += "&sch_status=" + sch_status; }
+
+    fetch_gp("/daily_worker_list_fn/" + query, 'GET', true, {}, (done) => {
+        a_draw_table(done);
+    });
+}
+
+function a_draw_table(done) {
+    console.log("a_draw_table: ", done);
+
+    let data = done.results;
+    if (data.length === 0) {
+        let emptyRow = `
+        <tr>
+            <td colspan="99" style="text-align: center;" class="no_data">등록된 근무인원이 없습니다.<br>[일일근무관리]에서 근무인원을 편성해주세요.</td>
+        </tr>`;
+        $('#a_tbody').html(emptyRow);
+        return;
+    }
+
+    let num = ((a_nation.page - 1) * a_nation_data.page_size) + 1;
+    let rows = "";
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        let profileImage = item.user.profile_image ? `<img src="${item.user.profile_image}" alt="Profile Image" class="rounded-circle me-2" width="24" height="24">` : "";
+        let wage_desc = (item.wage_desc1 || "");
+        if (item.wage_price) {
+            wage_desc = `${item.wage_price.toLocaleString()}원 (${wage_desc})`;
+        }
+        let row = `
+        <tr id='${item.id}' class='align-middle text-nowrap'>
+            <td name="check_box" class="form-check-info" style="text-align: center; vertical-align: middle;">
+                ${item.status === "진행" ? `<input type="checkbox" class="form-check-input checkbox_lg td_chk_box" value="${item.id}">` : ""}
+            </td>
+            <td>${num + i}</td>
+            <td name='user_name'>${profileImage} ${item.user.name || ""}</td>
+            <td>${item.user.phone || ""}</td>
+            <td name='worktime'><select class="form-control" id="worktime_${item.id}" ${item.status === "완료" ? "disabled" : ""}></select></td>
+            <td name='wage'><select class="form-control" id="wage_${item.id}" ${item.status === "완료" ? "disabled" : ""}></select></td>
+            <td name='wage_desc' class="d-none d-xl-table-cell text-wrap py-0">${wage_desc}</td>
+            {% comment %}<td>${item.user.rrn || ""}</td>{% endcomment %}
+            <td name='status_badge'>
+                <span class="badge ${item.status === "완료" ? 'bg-success' : 'bg-primary'} font-size-12 px-2 py-1" style="width: 50px;">
+                    ${item.status === "완료" ? '완료' : '진행'}
+                </span>
+            </td>
+            <td class="py-0">${item.image ? `<img src="${item.image}" style="max-height:40px; height:auto; width:auto;">` : ""}</td>
+            <td name='date'>${item.date || ""}</td>
+            <td class="py-0">
+                <button class="btn btn-info text-nowrap px-2.5" onclick="a_popup_open('${item.status}', '${work_order_id}', '${item.id}', '${item.pdf_url}', this)">
+                    <i class="fa-solid fa-file-contract"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">근로계약서</span>
+                </button>
+            </td>
+        </tr>`;
+        rows += row;
+    }
+
+    a_nation.nation_display(done);
+    $('#a_tbody').html(rows);
+
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        init_Select2_desc1(`#worktime_${item.id}`, '선택', '/sel2_code_daily_worktime/', {
+            id: 'id',
+            txt: item => item.text,
+            markup: item => `<option value="${item.id}" data-desc="${item.desc1}">${item.text}</option>`
+        }, item.worktime_id);
+    }
+
+    for (let i = 0; i < data.length; i++) {
+        let item = data[i];
+        init_Select2_desc1(`#wage_${item.id}`, '선택', '/sel2_code_daily_wage/', {
+            id: 'id',
+            txt: item => item.text,
+            markup: item => `<option value="${item.id}" data-price="${item.price}" data-desc="${item.desc1}">${item.text}</option>`
+        }, item.wage_id);
+    }
+
+    $('#a_tbody').on('click', '.td_chk_box', function (e) {
+        let row = $(this).closest('tr'); // 체크박스가 속한 행 선택
+        if (this.checked) {
+            row.addClass('bg-light');  // 체크되었을 때 배경색 변경
+        } else {
+            row.removeClass('bg-light');  // 체크 해제 시 배경색 제거
+        }
+    });
+}
+
+$('#a_tbody').on('select2:select', "select[id^='wage_']", function (e) {
+    let desc1 = e.params.data.desc1 || '';
+    let price = e.params.data.price || '';
+    if (price) {
+        desc1 = `${price.toLocaleString()}원 (${desc1})`;
+    }
+    const $row = $(this).closest('tr');
+    $row.find("td[name='wage_desc']").text(desc1);
+});
+
+function send_contract() {
+    let checkedBoxes = $('.td_chk_box:checked');
+    if (checkedBoxes.length === 0) {
+        alert("근로계약서를 발송할 대상을 선택하세요.");
+        return;
+    }
+
+    const ret = save_wage(false, true);
+    if (ret) {
+        // 선택된 사용자 ID 목록
+        let ids = checkedBoxes.map(function () {
+            return $(this).val();
+        }).get();
+
+        if (!confirm(ids.length + "명의 근무자에게 근로계약 알림톡을 발송하시겠습니까?")) {
+            return;
+        }
+
+        const api_data = { ids: ids };
+        fetch_gp('/send_kakao_daily/', 'POST', true, api_data,
+            (done) => {
+                let successCount = 0;
+                let failCount = 0;
+                let failNames = [];
+
+                if (done.results && done.results.length > 0) {
+                    done.errors.forEach(r => {
+                        failCount++;
+                        failNames.push(`${r.name} (${r.error})`);
+                    });
+                    successCount = done.results.length - done.errors.length;
+                } else {
+                    alert("서버에서 발송 결과를 받지 못했습니다.");
+                    return;
+                }
+
+                let msg = `알림톡 발송 완료\n성공: ${successCount}건, 실패: ${failCount}건`;
+                if (failNames.length > 0) {
+                    msg += `\n\n실패한 근무자:\n- ${failNames.join('\n- ')}`;
+                }
+
+                alert(msg);
+            },
+            (err) => {
+                console.error("발송 오류:", err);
+                alert("알림톡 발송 중 오류가 발생했습니다.");
+            }
+        );
+    }
+}
+
+
+// 근로계약서 팝업
+function a_popup_open(status, work_order_id, worker_id, pdf_url, obj) {
+    if (status == "완료") {
+        window.open(`/view_daily_contract_document/?pdf_url=${pdf_url}`, '_blank', 'width=1000,height=1000,scrollbars=yes,resizable=yes');
+    } else {
+        const ret = save_wage(false, false, $(obj).closest("tr"));
+        if (ret) {
+            let url = `/daily/con/${work_order_id}/${worker_id}/`;
+            window.open(url, '_blank', 'width=1000,height=1000,scrollbars=yes,resizable=yes');
+        }
+    }
+}
+
+function save_completed() {
+    const checked_list = $("#a_tbody tr td[name='check_box'] input[type='checkbox']:checked");
+    console.log("checked_list:", checked_list);
+    if (checked_list.length == 0) {
+        alert("완료처리하실 근로자를 선택해주세요.");
+        return false;
+    }
+    
+    let workerData = [];
+    let error = false;
+    checked_list.each(function () {
+        const $row = $(this).closest("tr");
+        const workerId = $row.attr('id');  // <tr id='${item.id}'>
+        const workerName = $row.find("td[name='user_name']").text().trim();
+        const wageId = $row.find("select[id^='wage_']").val();
+        const worktimeId = $row.find("select[id^='worktime_']").val();
+
+        if (!worktimeId) {
+            alert(`${workerName}님의 근무시간이 선택되지 않았습니다.`);
+            error = true;
+            return;
+        }
+
+        if (!wageId) {
+            alert(`${workerName}님의 일급이 선택되지 않았습니다.`);
+            error = true;
+            return;
+        }
+        
+        workerData.push({
+            worker_id: workerId,
+            wage_id: wageId,
+            worktime_id: worktimeId
+        });
+    });
+
+    if (!error) {
+        let api_data = new FormData();
+        api_data.append('worker_data', JSON.stringify(workerData));
+        fetch_gp('/daily_worker_save_completed_fn/', 'post', true, api_data, (done) => {
+            if (done.error) {
+                alert("완료처리중 오류가 발생되었습니다.");
+            } else {
+                a_search();
+                if (opener) {
+                    opener.location.href = opener.location.href;
+                }
+                alert("완료처리가 정상적으로 완료되었습니다.");
+            }
+        });
+    }
+}
+
+function save_wage(show_msg, checked_only, $rows) {
+    if (!$rows) {
+        $rows = $('#a_tbody tr');
+    }
+    if ($rows.length === 0 || $rows.find('.no_data').length > 0) {
+        alert("근로자 목록이 없습니다.");
+        return false;
+    }
+    
+    if (show_msg) {
+        if (!confirm("전체 근무자 목록의 일급 설정을 저장 하시겠습니까?")) return false;
+    }
+
+    let wageData = [];
+
+    let error = false;
+    $rows.each(function () {
+        const $row = $(this);
+        const checked = $row.find("td[name='check_box'] input[type='checkbox']").is(":checked");
+        if (!checked_only || checked) {
+            const workerId = $row.attr('id');  // <tr id='${item.id}'>
+            const workerName = $row.find("td[name='user_name']").text().trim();
+            const wageId = $row.find("select[id^='wage_']").val();
+            const worktimeId = $row.find("select[id^='worktime_']").val();
+
+            if (!worktimeId) {
+                alert(`${workerName}님의 근무시간이 선택되지 않았습니다.`);
+                error = true;
+                return false;
+            }
+
+            if (!wageId) {
+                alert(`${workerName}님의 일급이 선택되지 않았습니다.`);
+                error = true;
+                return false;
+            }
+
+            wageData.push({
+                worker_id: workerId,
+                wage_id: wageId,
+                worktime_id: worktimeId
+            });
+        }
+    });
+
+    if (!error) {
+        if (wageData.length === 0) {
+            alert("저장 가능한 항목이 없어 처리를 중단합니다.");
+            return false;
+        }
+        let api_data = new FormData();
+        api_data.append('wage_data', JSON.stringify(wageData));
+
+        fetch_gp('/daily_worker_save_wage_fn/', 'post', true, api_data, (done) => {
+            if (show_msg) {
+                a_search();
+                alert(txt.update_ed);
+            }
+        });
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+</script>

@@ -1,0 +1,252 @@
+<!-- 구버전 공지사항 > 목록 -->
+
+<!DOCTYPE html>
+<html style="overflow-x:hidden;">
+
+{% load static %}
+{% include 'header.html' %}
+{% include 'footer.html' %}
+{% include 'html_lib.html' %}
+
+<!-- Content Area -->
+<div class="row p-4">
+
+    <!-- 상단 타이틀 -->
+    <div class="col-xxl-12">
+        <div class="d-inline-block align-items-center mb-3" style="font-size: 20px; color: #2a3040; cursor: pointer; font-weight: 1000;" onclick="refresh()">
+            <i class="fa-solid fa-volume-high me-2"></i>공지사항
+            <i class="fa-regular fa-circle-question fa-2xs" style="vertical-align: super;" data-toggle="tooltip" data-placement="top" onclick="event.stopPropagation();"
+               title="공지사항 및 게시판으로 사용하는 페이지입니다.<br>카테고리로 게시물을 분류하여 효과적으로 활용하세요.<br>첨부 가능한 파일과 이미지의 총 용량은 10MB입니다."></i>
+        </div>
+    </div>
+
+    <!-- 좌측 게시글 목록 -->
+    <div class="col-12 col-md-8 col-xl-9">
+        <div class="row gx-4">
+        
+            <!-- 상단 메뉴바 -->
+            <div class="col-xxl-12">
+                <div class="card border border-light">
+                    <div class="card-body d-flex justify-content-between p-3">
+                        <div class="d-flex p-0">
+                            <div class="d-none d-md-inline btn btn-secondary text-nowrap me-1 px-2.5" onclick="refresh()"
+                                 data-toggle="tooltip" data-placement="top" title="새로고침 (F5)">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </div>
+                            
+                            <div class="search-box me-1">
+                                <form method="GET" action="{% url 'notice_list_page' %}" class="search-box me-1 d-flex">
+                                    <div class="position-relative flex-grow-1">
+                                        <input type="text" class="form-control rounded border-secondary"
+                                               id="all_sch" name="all_sch" value="{{ all_sch }}"
+                                               placeholder="검색어 입력" autocomplete="off">
+                                        <i class="mdi mdi-magnify search-icon"></i>
+                                    </div>
+                                    <button type="submit" class="btn btn-secondary text-nowrap ms-1 px-2.5">
+                                        <i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">검색</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex p-0">
+                            {% if request.user.is_superuser or request.user.is_master %}
+                            <button class="btn btn-success text-nowrap ms-1 px-2.5" onclick="location.href='{% url 'notice_create_page' %}'">
+                                <i class="fa-solid fa-plus"></i><span class="d-none d-xl-inline m-0 p-0 ms-2">등록</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 건별 게시물 -->
+            <div class="col-xxl-12">
+                {% for obj in notices %}
+                    <a href="{% url 'notice_read_page' obj.id %}">
+                        <div class="card border border-light position-relative" style="cursor: pointer;">
+                            <!-- 스위치 위치 조정 -->
+                            {% if request.user.is_master %}
+                            <div class="position-absolute top-0 end-0 p-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input toggle-fixed-switch" type="checkbox"
+                                           data-id="{{ obj.id }}"
+                                           id="topFixedSwitch{{ obj.id }}"
+                                           {% if obj.top_fixed_flag %}checked{% endif %}>
+                                    <label class="form-check-label" for="topFixedSwitch{{ obj.id }}" style="font-size: 0.75rem;">우측 고정</label>
+                                </div>
+                            </div>
+                            {% endif %}
+            
+                            <div class="card-body">
+                                <p class="mb-2 text-success text-uppercase">{{ obj.category.name|default_if_none:"공지사항" }}</p>
+                                <h5 class="fs-15 text-dark fw-semibold">{{ obj.title }}</h5>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="text-muted">
+                                        <i class="fa-solid fa-user me-1"></i>{{ obj.created_by.name }} {{ obj.created_by.job_level.name|default_if_none:"" }}
+                                        <i class="fa-regular fa-calendar-days ms-3 me-1"></i>{{ obj.created_at|date:"Y년 n월 j일" }}
+                                        <i class="fa-solid fa-eye ms-3 me-1"></i>{{ obj.views_count }}
+                                        <i class="fa-solid fa-comment-dots ms-3 me-1"></i>{{ obj.comment_count }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+
+            <!-- 페이지내이션 -->
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mt-4">
+                    <!-- 처음 페이지 -->
+                    <li class="text-nowrap page-item {% if not notices.has_previous %}disabled{% endif %}">
+                        <a class="page-link" href="?page=1&category={{ category }}&all_sch={{ all_sch }}">
+                            <i class="fa-solid fa-angles-left me-1"></i>처음
+                        </a>
+                    </li>
+
+                    <!-- 이전 페이지 -->
+                    <li class="text-nowrap page-item {% if not notices.has_previous %}disabled{% endif %}">
+                        <a class="page-link" href="{% if notices.has_previous %}?page={{ notices.previous_page_number }}&category={{ category }}&all_sch={{ all_sch }}{% else %}#{% endif %}">
+                            <i class="fa-solid fa-angle-left me-1"></i>이전
+                        </a>
+                    </li>
+
+                    <!-- 페이지 번호 -->
+                    {% for num in notices.paginator.page_range %}
+                        {% if num >= notices.number|add:"-2" and num <= notices.number|add:"2" %}
+                            {% if num == notices.number %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}&category={{ category }}&all_sch={{ all_sch }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    <!-- 다음 페이지 -->
+                    <li class="text-nowrap page-item {% if not notices.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{% if notices.has_next %}?page={{ notices.next_page_number }}&category={{ category }}&all_sch={{ all_sch }}{% else %}#{% endif %}">
+                            다음<i class="fa-solid fa-angle-right ms-1"></i>
+                        </a>
+                    </li>
+
+                    <!-- 마지막 페이지 -->
+                    <li class="text-nowrap page-item {% if not notices.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="?page={{ notices.paginator.num_pages }}&category={{ category }}&all_sch={{ all_sch }}">
+                            끝<i class="fa-solid fa-angles-right ms-1"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+        </div>
+    </div>
+
+    <!-- 우측 메뉴바 -->
+    <div class="d-none d-md-block col-sm-4 col-xl-3">
+        <div class="card border border-light">
+            <div class="card-body p-4">
+                <div>
+                    <div class="fw-bold mb-2">카테고리</div>
+                    <ul class="list-unstyled fw-medium">
+                        <li>
+                            <a href="?category=&all_sch={{ all_sch }}"
+                               class="category_item text-muted fw-bold py-1 d-block {% if not category %}active{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    <i class="fa-solid fa-chevron-right me-2"></i>모든 게시물
+                                    <span class="badge badge-soft-success ms-2 float-end">{{ total_notice_count }}</span>
+                                </div>
+                            </a>
+                        </li>
+                        {% for obj in board_category %}
+                        <li>
+                            <a href="?category={{ obj.name }}&all_sch={{ all_sch }}"
+                               class="category_item text-muted fw-bold py-1 d-block {% if category == obj.name %}active{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    <i class="fa-solid fa-chevron-right me-2"></i>{{ obj.name }}
+                                    <span class="badge badge-soft-success ms-2 float-end">{{ obj.post_count }}</span>
+                                </div>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="mt-4 pt-4 border-top border-dashed border-bottom-0 border-start-0 border-end-0">
+                    {% comment %}<p class="fw-bold mb-2">인기 게시물</p>{% endcomment %}
+                    <p class="fw-bold mb-2">고정된 게시물</p>
+
+                    <div class="list-group list-group-flush">
+                        {% comment %}{% for obj in top_notices %}{% endcomment %}
+                        {% for obj in top_fixed_notices %}
+                        <a href="{% url 'notice_read_page' obj.id %}" class="list-group-item text-muted py-3 px-2">
+                            <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+                                <span class="font-size-13 fw-bold text-truncate">{{ obj.title }}</span>
+                                <div class="d-flex align-items-center">
+                                    <span class="mb-0 text-truncate">
+                                        <i class="fa-regular fa-calendar-days me-1"></i>{{ obj.created_at|date:"Y년 n월 j일" }}
+                                    </span>
+                                    <i class="fa-solid fa-eye ms-3 me-1"></i>{{ obj.views_count }}
+                                    <i class="fa-solid fa-comment-dots ms-3 me-1"></i>{{ obj.comment_count }}
+                                </div>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <li class="list-group-item text-muted py-3 px-2 text-center">
+                            {% comment %}조회수 높은 게시물이 없습니다.{% endcomment %}
+                            고정된 게시물이 없습니다.
+                        </li>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.onkeydown = function (event) {
+    if (event.keyCode == 116) {  // F5
+        event.returnValue = false;
+        refresh();
+    }
+}
+
+function refresh() {
+    window.location.href = '{% url 'notice_list_page' %}'
+    {% comment %}window.location.href = window.location.href{% endcomment %}
+}
+
+$(function () {
+    main();
+});
+
+function main() {
+    set_autocomplete('off');
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const switches = document.querySelectorAll(".toggle-fixed-switch");
+
+    switches.forEach(sw => {
+        sw.addEventListener("change", function() {
+            const boardId = this.dataset.id;
+            const checkbox = this;
+
+            topfix_toggle(boardId, checkbox);
+        });
+    });
+});
+
+function topfix_toggle(boardId, checkbox) {
+    fetch_gp(`/notice_topfix_fn/${boardId}/`, 'post', true, null, (done) => {
+        if (!done.success) {
+            alert("상단고정 상태 변경에 실패했습니다: " + (done.error || ""));
+            checkbox.checked = !checkbox.checked;  // 실패 시 이전 상태로 복구
+        }
+    });
+}
+
+</script>
