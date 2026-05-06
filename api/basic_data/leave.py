@@ -25,6 +25,8 @@ class LeaveManage_List(View):
 
         # 캘린더 이벤트에서 휴가 리스트만 가져오기
         leave_category = CodeMaster.objects.filter(company=request_user.company, name="휴가").last()
+        if leave_category is None:
+            return JsonResponse({'error': True, 'message': "회사에 '휴가' 카테고리가 등록되지 않았습니다. 기초코드에서 '이벤트 카테고리' 그룹에 '휴가'를 추가해주세요."})
         qs = (
             EventMaster.objects.filter(company=request_user.company, category=leave_category)
             .select_related(
@@ -138,6 +140,8 @@ class LeaveManage_Create(View):
 
             change_user = UserMaster.objects.filter(id=change_user).first()
             leave_category = CodeMaster.objects.filter(company=change_user.company, name="휴가").last()
+            if leave_category is None:
+                return JsonResponse({'error': True, 'message': "회사에 '휴가' 카테고리가 등록되지 않았습니다. 기초코드에서 '이벤트 카테고리' 그룹에 '휴가'를 추가해주세요."})
 
             obj = EventMaster.objects.create(
                 start_date=start_date,
@@ -269,6 +273,8 @@ class LeaveReport_List(View):
 
         # 캘린더 이벤트에서 휴가 리스트만 가져오기
         leave_category = CodeMaster.objects.filter(company=request_user.company, name="휴가").last()
+        if leave_category is None:
+            return JsonResponse({'error': True, 'message': "회사에 '휴가' 카테고리가 등록되지 않았습니다. 기초코드에서 '이벤트 카테고리' 그룹에 '휴가'를 추가해주세요."})
         qs = EventMaster.objects.filter(
             company=request_user.company,
             category=leave_category,

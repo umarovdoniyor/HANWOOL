@@ -258,12 +258,13 @@ def worktime_report_page(request):
 
 
 # 휴가관리
+@login_required(login_url='/login/')
 def leave_manage_page(request):
     context = {}
     return render(request, 'leave/leave_manage.html', context)
 
+@login_required(login_url='/login/')
 def leave_report_page(request):
-    company_year = request.user.company.created_at.year
     current_year = date.today().year
     year_range = range(current_year - 4, current_year + 4)  # +3년까지
 
