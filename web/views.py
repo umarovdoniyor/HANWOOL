@@ -224,20 +224,11 @@ def approval_create_page(request, category_id, apv_id=None):
     return render(request, create_template, context)
 
 def approval_progress_page(request, category_id, apv_id):
-    user = get_object_or_404(UserMaster, id=request.user.id)
-    apv_obj = get_object_or_404(ApvMaster, id=apv_id)
-    approver_list = (UserMaster.objects.filter(is_staff='1').exclude(id__in=[user.id]).order_by('team', 'name'))
-    approver_choices = [(approver.team, approver.name, approver.id) for approver in approver_list]
-    leave_choices = ApvMaster.LEAVE_CHOICES
-    comment_count = CommentMaster.objects.filter(approval=apv_id).count()
     detail_template = 'approval/template_' + category_id + '_read.html'
     context = {
         'apv_id': apv_id,
-        'apv_obj': apv_obj,
         'category_id': category_id,
-        'leave_choices': leave_choices,
-        'approver_list': approver_choices,
-        'comment_count': comment_count,
+        'leave_choices': ApvMaster.LEAVE_CHOICES,
     }
     return render(request, detail_template, context)
 
