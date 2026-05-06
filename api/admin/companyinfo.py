@@ -54,7 +54,7 @@ class CompanyInfo_Update(View):
 
             for i in range(1, 6):
                 if f'apv_memo_{i}' in request.POST:
-                    setattr(obj, f'apv_memo_{i}', request.POST.get(f'apv_memo_{i}', ''))
+                    setattr(obj, f'apv_memo_{i}', request.POST.get(f'apv_memo_{i}', '').strip())
 
             if logo_delete:
                 obj.logo.delete(save=False)
@@ -93,7 +93,7 @@ class ApprovalInfo_Update(View):
                 return JsonResponse({"status": "error", "message": "수정 권한이 없습니다."}, status=403)
 
             category = int(request.POST.get('category', ''))
-            apv_memo = request.POST.get('apv_memo', '')
+            apv_memo = request.POST.get('apv_memo', '').strip()
 
             # 동적 필드명
             field_name = f"apv_memo_{category}"
@@ -125,11 +125,11 @@ def get_obj(obj):
         'check_in': obj.check_in.strftime('%H:%M') if obj.check_in else '',
         'check_out': obj.check_out.strftime('%H:%M') if obj.check_out else None,
         'hourly_rate': obj.hourly_rate or '',
-        'apv_memo_1': obj.apv_memo_1 or '',
-        'apv_memo_2': obj.apv_memo_2 or '',
-        'apv_memo_3': obj.apv_memo_3 or '',
-        'apv_memo_4': obj.apv_memo_4 or '',
-        'apv_memo_5': obj.apv_memo_5 or '',
+        'apv_memo_1': (obj.apv_memo_1 or '').strip(),
+        'apv_memo_2': (obj.apv_memo_2 or '').strip(),
+        'apv_memo_3': (obj.apv_memo_3 or '').strip(),
+        'apv_memo_4': (obj.apv_memo_4 or '').strip(),
+        'apv_memo_5': (obj.apv_memo_5 or '').strip(),
     }
 
 
