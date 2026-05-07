@@ -453,5 +453,10 @@ function a_search() {
 
 function a_draw_table(data) {
     display_daily_report(data, "#logistics-table-today", "today");
+    // 대시보드는 미리보기 전용 - 편집은 [투입 현황] 헤더 클릭 시 이동하는 /daily/report/ 페이지에서만 가능
+    $("#logistics-table-today input.table-input")
+        .prop("readonly", true)
+        .css("cursor", "default")
+        .attr("title", "투입 현황 편집은 [투입 현황] 헤더를 클릭해 전용 페이지에서 진행하세요.");
 }
 </script>
