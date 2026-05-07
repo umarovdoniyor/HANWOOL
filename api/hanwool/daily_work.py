@@ -276,7 +276,19 @@ class DailyWorker_Read(View):
         fr_date = request.GET.get('fr_date', '')
         to_date = request.GET.get('to_date', '')
 
-        qs = DailyWorker.objects.filter(company=request_user.company).order_by('id')
+        qs = (
+            DailyWorker.objects.filter(company=request_user.company)
+            .select_related(
+                'user', 'user__team', 'user__job_level', 'user__job_title', 'user__bank',
+                'wage', 'worktime',
+                'work_order', 'work_order__subsidiary', 'work_order__customer',
+                'created_by', 'created_by__team', 'created_by__job_level', 'created_by__job_title', 'created_by__bank',
+                'updated_by', 'updated_by__team', 'updated_by__job_level', 'updated_by__job_title', 'updated_by__bank',
+                'company',
+            )
+            .prefetch_related('company__company_info')
+            .order_by('id')
+        )
 
         # 키워드 검색
         all_sch = request.GET.get("all_sch", '')
@@ -476,7 +488,7 @@ def get_obj_worker(obj):
         'created_at': obj.created_at.strftime('%Y-%m-%d') if obj.created_at else '',
         'updated_at': obj.updated_at.strftime('%Y-%m-%d') if obj.updated_at else '',
         'company_id': obj.company.id if obj.company is not None else '',
-        'company_name': obj.company.company_info.first().company_name if obj.company.company_info.exists() else '',
+        'company_name': (lambda ci: ci.company_name if ci else '')(obj.company.company_info.first() if obj.company is not None else None),
     }
 
 
