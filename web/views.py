@@ -119,11 +119,17 @@ def index2_page(request):
     return render(request, "index2.html", context)
 
 
+@login_required(login_url='/login/')
 def dashboard_page(request):
     event_category = (CodeMaster.objects.filter(group=CodeGroup.EVENT_CATEGORY, company=request.user.company).
                       order_by('id').values('id', 'name', 'desc3'))
+    profile_image_url = ''
+    pi = request.user.profile_image
+    if pi and pi.name and pi.storage.exists(pi.name):
+        profile_image_url = pi.url
     context = {
         'event_category': event_category,
+        'profile_image_url': profile_image_url,
     }
     return render(request, "basic/dashboard.html", context)
 

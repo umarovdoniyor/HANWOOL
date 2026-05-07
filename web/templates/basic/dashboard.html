@@ -168,7 +168,7 @@ td.manager-msg-cell {
                             <div class="">
                                 <div style="position: relative; width: 80px; height: 80px;">
                                     <img id="profile_border" src="" style="width: 120px; height: 120px; position: absolute; top: -20px; left: -15px; border-radius: 50%; z-index: 2; display: none;">
-                                    <img src="/data/{{ request.user.profile_image }}" style="width: 80px; height: 80px; border-radius: 100%; position: absolute; top: 0; left: 0; z-index: 1;" alt="profile_image">
+                                    <img src="{{ profile_image_url|default:'/static/img/profile_default.png' }}" style="width: 80px; height: 80px; border-radius: 100%; position: absolute; top: 0; left: 0; z-index: 1;" alt="profile_image">
                                 </div>
                                 <div id="employment_years" class="mt-1" style="font-size: 12px;">&nbsp;</div>
                                 <div class="progress position-relative" id="levelBackground" style="height: 12px; background-color: #eee;">
