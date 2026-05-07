@@ -224,9 +224,19 @@ def approval_create_page(request, category_id, apv_id=None):
     return render(request, create_template, context)
 
 def approval_progress_page(request, category_id, apv_id):
+    apv_obj = ApvMaster.objects.select_related(
+        'created_by', 'created_by__team', 'created_by__job_level'
+    ).filter(id=apv_id).first()
+    creator_avatar_url = ''
+    if apv_obj and apv_obj.created_by and apv_obj.created_by.profile_image \
+            and apv_obj.created_by.profile_image.name \
+            and apv_obj.created_by.profile_image.storage.exists(apv_obj.created_by.profile_image.name):
+        creator_avatar_url = apv_obj.created_by.profile_image.url
     detail_template = 'approval/template_' + category_id + '_read.html'
     context = {
         'apv_id': apv_id,
+        'apv_obj': apv_obj,
+        'creator_avatar_url': creator_avatar_url,
         'category_id': category_id,
         'leave_choices': ApvMaster.LEAVE_CHOICES,
     }

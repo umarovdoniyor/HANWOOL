@@ -30,7 +30,11 @@ def sel2_user(request):
     for user in page_obj:
         name = user.name
         job_level = user.job_level.name if user.job_level else ''
-        avatar_url = user.profile_image.url
+        avatar_url = (
+            user.profile_image.url
+            if user.profile_image and user.profile_image.name and user.profile_image.storage.exists(user.profile_image.name)
+            else ''
+        )
 
         text = f"{name} {job_level}".strip()
         results.append({
@@ -66,7 +70,11 @@ def sel2_user_manager(request):
     for user in page_obj:
         name = user.name
         job_level = user.job_level.name if user.job_level else ''
-        avatar_url = user.profile_image.url
+        avatar_url = (
+            user.profile_image.url
+            if user.profile_image and user.profile_image.name and user.profile_image.storage.exists(user.profile_image.name)
+            else ''
+        )
         monthly_leave = 0
         retire_date = user.retire_date
         if retire_date is None:

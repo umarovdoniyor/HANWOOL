@@ -290,7 +290,7 @@ class Approval_Read(View):
                         data.update({
                             f'approver{i}_id': approver_obj.id,
                             f'approver{i}_name': f"{approver_obj.name} {approver_obj.job_level.name}" if approver_obj.job_level else approver_obj.name,
-                            f'approver{i}_img': approver_obj.profile_image.url if approver_obj.profile_image else None,
+                            f'approver{i}_img': approver_obj.profile_image.url if approver_obj.profile_image and approver_obj.profile_image.storage.exists(approver_obj.profile_image.name) else None,
                             # f'approver{i}_sign': approver_obj.signature_file_path.url if approver_obj.signature_file_path else None,
                             f'approver{i}_team': approver_obj.team.name if approver_obj.team else None,
                             f'approver{i}_status': status,
@@ -319,7 +319,7 @@ class Approval_Read(View):
                 'name': cc.user.name if cc.user else '',
                 'job_level': cc.user.job_level.name if cc.user.job_level else '',
                 'team': cc.user.team.name if cc.user.team else '',
-                'profile_image': cc.user.profile_image.url if cc.user.profile_image else '',
+                'profile_image': cc.user.profile_image.url if cc.user.profile_image and cc.user.profile_image.storage.exists(cc.user.profile_image.name) else '',
             } for cc in cc_list]
 
             # 읽음 상태 업데이트
@@ -914,7 +914,7 @@ def get_obj(obj):
         'created_by': {
             'id': obj.created_by.id,
             'name': obj.created_by.name,
-            'profile_image': obj.created_by.profile_image.url if obj.created_by.profile_image else '',
+            'profile_image': obj.created_by.profile_image.url if obj.created_by.profile_image and obj.created_by.profile_image.storage.exists(obj.created_by.profile_image.name) else '',
             'team': obj.created_by.team.name if obj.created_by.team else '',
             'job_level': obj.created_by.job_level.name if obj.created_by.job_level else '',
             # 'signature_file_path': obj.created_by.signature_file_path.url if obj.created_by.signature_file_path else '',

@@ -83,7 +83,7 @@
                             <div class="col-3 col-xxl-2 d-flex justify-content-end justify-content-md-center align-items-center">
                                 <div class="d-flex justify-content-start align-items-center flex-md-row flex-column">
                                     <div class="flex-shrink-0 mb-1">
-                                         <img src="{{ apv_obj.created_by.profile_image.url }}" alt="{{ apv_obj.created_by }}" class="avatar-sm p-1" style="border-radius: 8px;">
+                                         <img src="{{ creator_avatar_url|default:'/static/img/profile_default.png' }}" alt="{{ apv_obj.created_by }}" class="avatar-sm p-1" style="border-radius: 8px;">
                                     </div>
                                     <div class="d-inline text-start ms-1" style="font-size: 11px;">
                                         <h6 class="fw-bold text-nowrap" style="margin-bottom: 2px;">{{ apv_obj.created_by.name }} {{ apv_obj.created_by.job_level.name|default_if_none:"" }}</h6>
@@ -317,7 +317,7 @@ function draw_apv_approval_flow(data) {
         return `
         <div class="d-flex flex-md-row flex-column align-items-center px-1">
             <div class="position-relative">
-                <img class="rounded-circle" src="${imageSrc}" alt="${name}"
+                <img class="rounded-circle" src="${imageSrc || '/static/img/profile_default.png'}" alt="${name}"
                      style="width: 60px; height: 60px; object-fit: cover; margin: 0 auto; ${imageStyle}">
                 <div class="position-absolute" style="bottom: 0; right: 0; background-color: ${getStatusColor(status)}; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 14px;">
                     <i class="${checkIcon}"></i>
