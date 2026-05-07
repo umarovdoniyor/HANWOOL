@@ -322,7 +322,7 @@ function a_draw_table(done) {
                     ${item.status === "완료" ? '완료' : '진행'}
                 </span>
             </td>
-            <td class="py-0">${item.image ? `<img src="${item.image}" style="max-height:40px; height:auto; width:auto;">` : ""}</td>
+            <td class="py-0">${item.image ? `<img src="${item.image}" style="max-height:40px; height:auto; width:auto;">` : `<span class="d-inline-flex align-items-center justify-content-center text-muted" style="height:40px; min-width:80px; border:1px dashed #ccc; border-radius:4px; font-size:11px;">미서명</span>`}</td>
             <td name='date'>${item.date || ""}</td>
             <td class="py-0">
                 <button class="btn btn-primary text-nowrap px-2.5" onclick="a_popup_open(${item.work_order_id})">
