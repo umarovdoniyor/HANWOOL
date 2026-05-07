@@ -198,9 +198,11 @@ def calendar_page(request):
 
 
 # 전자결재
+@login_required(login_url='/login/')
 def approval_list_page(request):
     return render(request, 'approval/apv_list.html')
 
+@login_required(login_url='/login/')
 def approval_create_page(request, category_id, apv_id=None):
     if apv_id:
         # 수정 가능 조건:
@@ -229,6 +231,7 @@ def approval_create_page(request, category_id, apv_id=None):
     }
     return render(request, create_template, context)
 
+@login_required(login_url='/login/')
 def approval_progress_page(request, category_id, apv_id):
     apv_obj = ApvMaster.objects.select_related(
         'created_by', 'created_by__team', 'created_by__job_level'
@@ -248,6 +251,7 @@ def approval_progress_page(request, category_id, apv_id):
     }
     return render(request, detail_template, context)
 
+@login_required(login_url='/login/')
 def approval_cost_page(request):
     return render(request, 'approval/apv_cost.html')
 
