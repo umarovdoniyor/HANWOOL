@@ -485,6 +485,10 @@
 
     $(function () {
         main();
+        // Pre-populate worker signature on already-signed contracts
+        {% if signature_url %}
+        $(".sign-image").attr("src", "{{ signature_url }}").removeClass("d-none");
+        {% endif %}
     });
 
     function main() {
