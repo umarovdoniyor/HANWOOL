@@ -73,7 +73,11 @@ class Employee_Read(View):
                         Q(employee_code__icontains=keyword) |
                         Q(name__icontains=keyword) |
                         Q(user_id__icontains=keyword) |
+                        Q(team__name__icontains=keyword) |
                         Q(job_title__name__icontains=keyword) |
+                        Q(job_level__name__icontains=keyword) |
+                        Q(work_type__icontains=keyword) |
+                        Q(email__icontains=keyword) |
                         Q(hire_type__icontains=keyword) |
                         Q(phone__icontains=keyword) |
                         Q(remark__icontains=keyword)

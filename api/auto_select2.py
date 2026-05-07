@@ -695,16 +695,10 @@ def sel2_factory_all_customer(request):
 
 def sel2_hanwool_subsidiary(request):
     company = request.user.company
-    print("company:", company)
     query = request.GET.get('q', '')  # 검색어
-    print("query:", query)
     page = int(request.GET.get('page', 1))
-    print("page:", page)
 
     options = FactoryCustomer.objects.filter(customer_class__name="관리법인", company=company, name__icontains=query).order_by('order', 'name')
-    print("options:", options)
-    options2 = FactoryCustomer.objects.filter(company=company, name__icontains=query).order_by('order', 'name')
-    print("options:", options2)
 
     paginator = Paginator(options, 300)
     page_obj = paginator.get_page(page)
@@ -713,7 +707,6 @@ def sel2_hanwool_subsidiary(request):
         'id': item.id,
         'text': f"{item.name}",
     } for item in page_obj]
-    print("results:", results)
 
     return JsonResponse({'results': results, 'pagination': {'more': page_obj.has_next()}})
 

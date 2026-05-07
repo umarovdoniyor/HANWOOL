@@ -1123,7 +1123,6 @@ function a_create_modal_in() {
     a_create_modal_reset('popup_off');
 
     fetch_gp("/sel2_code_menu/", 'GET', true, {}, (done) => {
-        console.log("done:", done);
         for (let i = 0; i < done.results.length; i++) {
             let item = done.results[i];
             if (item.desc1 && (item.desc2 || item.desc4)) {
@@ -1273,7 +1272,7 @@ function a_update_modal_in(idx) {
             menu_access = JSON.parse(user_list[idx].menu_access);
         }
     } catch (error) {
-        console.log("error:", error)
+        // ignore - menu_access not set or malformed JSON
     }
     $("#a_update_modal #menu_list .menu-item").remove();
     fetch_gp("/sel2_code_menu/", 'GET', true, {}, (done) => {
