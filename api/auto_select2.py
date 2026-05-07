@@ -14,7 +14,7 @@ def sel2_user(request):
     # sel2_user_avatar/?me=true
     withme = request.GET.get('me', 'false').lower() == 'true'  # "true"일 때만 본인 포함
 
-    options = UserMaster.objects.filter(company=company, name__icontains=query)
+    options = UserMaster.objects.filter(company=company, name__icontains=query).select_related('job_level')
 
     if not withme:
         options = options.exclude(Q(id=request.user.id) | Q(is_staff=False))  # 본인 제외
@@ -50,7 +50,7 @@ def sel2_user_manager(request):
     # sel2_user_avatar/?me=true
     withme = request.GET.get('me', 'false').lower() == 'true'  # "true"일 때만 본인 포함
 
-    options = UserMaster.objects.filter(work_type="관리직", company=company, name__icontains=query)
+    options = UserMaster.objects.filter(work_type="관리직", company=company, name__icontains=query).select_related('job_level')
 
     if not withme:
         options = options.exclude(Q(id=request.user.id) | Q(is_staff=False))  # 본인 제외
