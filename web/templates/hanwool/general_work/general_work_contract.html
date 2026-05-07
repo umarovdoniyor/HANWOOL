@@ -9,8 +9,8 @@
 {% include 'footer.html' %}
 {% include 'html_lib.html' %}
 
-{% if worker.pdf %}
-    <img src="/data/{{ worker.pdf }}" style="width:100%">
+{% if pdf_url %}
+    <iframe src="{{ pdf_url }}" style="width:100%; height:100vh; border:none;"></iframe>
 {% else %}
     <style>
     @media print {

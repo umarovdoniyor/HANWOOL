@@ -564,6 +564,9 @@ def daily_work_contract_page(request, work_order_id=None, worker_id=None):
         wage_price = f"{int(worker.wage.price):,}"
     else:
         wage_price = 0
+    pdf_url = ''
+    if worker.pdf and worker.pdf.name and worker.pdf.storage.exists(worker.pdf.name):
+        pdf_url = worker.pdf.url
     user_agent_string = request.headers.get('User-Agent')
     device = DeviceDetector(user_agent_string).parse()
     context = {
@@ -571,6 +574,7 @@ def daily_work_contract_page(request, work_order_id=None, worker_id=None):
         'worker': worker,
         'company_info': company_info,
         'wage_price': wage_price,
+        'pdf_url': pdf_url,
         'referer': referer,
         'device_type': device.device_type(),
         'work_order_id': work_order_id,
@@ -657,12 +661,16 @@ def general_work_contract_page(request, work_order_id=None, worker_id=None):
     except Http404:
         return render(request, 'error_page.html', status=404)
 
+    pdf_url = ''
+    if worker.pdf and worker.pdf.name and worker.pdf.storage.exists(worker.pdf.name):
+        pdf_url = worker.pdf.url
     user_agent_string = request.headers.get('User-Agent')
     device = DeviceDetector(user_agent_string).parse()
     context = {
         'work_order': work_order,
         'worker': worker,
         'company_info': company_info,
+        'pdf_url': pdf_url,
         'referer': referer,
         'device_type': device.device_type(),
         'work_order_id': work_order_id,
