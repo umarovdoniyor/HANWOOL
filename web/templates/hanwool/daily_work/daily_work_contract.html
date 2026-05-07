@@ -394,7 +394,9 @@
                                     {% if worker.image and work_order.subsidiary.image %}
                                     <img src="{{ work_order.subsidiary.image.url }}" class="position-absolute d-none" style="right: -20px; top: -10px; width: 70px; height: auto;">
                                     {% endif %}
-                                    <img src="/data/{{ company_info.stamp }}" class="position-absolute" style="right: -40px; top: {% if device_type == 'desktop' %}10px{% else %}0px{%endif %}; width: 50px; height: auto;">
+                                    {% if stamp_url %}
+                                    <img src="{{ stamp_url }}" class="position-absolute" style="right: -40px; top: {% if device_type == 'desktop' %}10px{% else %}0px{%endif %}; width: 50px; height: auto;">
+                                    {% endif %}
                                 </h6>
                             </div>
                         </div>

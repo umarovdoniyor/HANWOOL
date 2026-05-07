@@ -567,6 +567,9 @@ def daily_work_contract_page(request, work_order_id=None, worker_id=None):
     pdf_url = ''
     if worker.pdf and worker.pdf.name and worker.pdf.storage.exists(worker.pdf.name):
         pdf_url = worker.pdf.url
+    stamp_url = ''
+    if company_info and company_info.stamp and company_info.stamp.name and company_info.stamp.storage.exists(company_info.stamp.name):
+        stamp_url = company_info.stamp.url
     user_agent_string = request.headers.get('User-Agent')
     device = DeviceDetector(user_agent_string).parse()
     context = {
@@ -575,6 +578,7 @@ def daily_work_contract_page(request, work_order_id=None, worker_id=None):
         'company_info': company_info,
         'wage_price': wage_price,
         'pdf_url': pdf_url,
+        'stamp_url': stamp_url,
         'referer': referer,
         'device_type': device.device_type(),
         'work_order_id': work_order_id,
@@ -664,6 +668,9 @@ def general_work_contract_page(request, work_order_id=None, worker_id=None):
     pdf_url = ''
     if worker.pdf and worker.pdf.name and worker.pdf.storage.exists(worker.pdf.name):
         pdf_url = worker.pdf.url
+    stamp_url = ''
+    if company_info and company_info.stamp and company_info.stamp.name and company_info.stamp.storage.exists(company_info.stamp.name):
+        stamp_url = company_info.stamp.url
     user_agent_string = request.headers.get('User-Agent')
     device = DeviceDetector(user_agent_string).parse()
     context = {
@@ -671,6 +678,7 @@ def general_work_contract_page(request, work_order_id=None, worker_id=None):
         'worker': worker,
         'company_info': company_info,
         'pdf_url': pdf_url,
+        'stamp_url': stamp_url,
         'referer': referer,
         'device_type': device.device_type(),
         'work_order_id': work_order_id,

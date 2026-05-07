@@ -416,7 +416,9 @@
                                             <img src="{{ work_order.subsidiary.image.url }}" class="position-absolute d-none"
                                                 style="left: 100px; bottom: 20px; width: 70px; height: auto;">
                                         {% endif %}
-                                        <img src="/data/{{ company_info.stamp }}" class="position-absolute" style="left: 150px; bottom: {% if device_type == 'desktop' %}-15px{% else %}-10px{%endif %}; width: 50px; height: auto;">
+                                        {% if stamp_url %}
+                                        <img src="{{ stamp_url }}" class="position-absolute" style="left: 150px; bottom: {% if device_type == 'desktop' %}-15px{% else %}-10px{%endif %}; width: 50px; height: auto;">
+                                        {% endif %}
                                     </div>
                                     <div class="col-6 text-black position-relative">
                                         <div class="mb-2">( 근 로 자 )</div>
