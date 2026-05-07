@@ -418,9 +418,9 @@ def get_obj_worker(obj):
         'date': obj.date.strftime('%Y-%m-%d %H:%M') if obj.date else '',
         'desc1': obj.desc1 or '',
         'status': obj.sign_status or '',
-        'image': obj.image.url if obj.image and obj.image.name else '',
-        'pdf_url': obj.pdf.url if obj.pdf and obj.pdf.name else '',
-        'pdf_name': obj.pdf.name if obj.pdf and obj.pdf.name else '',
+        'image': obj.image.url if obj.image and obj.image.name and obj.image.storage.exists(obj.image.name) else '',
+        'pdf_url': obj.pdf.url if obj.pdf and obj.pdf.name and obj.pdf.storage.exists(obj.pdf.name) else '',
+        'pdf_name': obj.pdf.name if obj.pdf and obj.pdf.name and obj.pdf.storage.exists(obj.pdf.name) else '',
 
         'wage_id': obj.wage.id if obj.wage is not None else '',
         'wage_name': obj.wage.name if obj.wage is not None else '',
