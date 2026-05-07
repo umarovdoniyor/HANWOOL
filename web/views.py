@@ -990,5 +990,5 @@ def view_general_contract_document(request):
     context = {
         'pdf_url': request.GET.get("pdf_url")
     }
-    return render(request, 'hanwool/general_work/view_daily_contract.html', context)
+    return render(request, 'hanwool/general_work/view_general_contract.html', context)
 

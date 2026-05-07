@@ -42,7 +42,13 @@
         </tr>
         <tr>
             <td>
-                <img src="{{ pdf_url }}" style="width:95%">
+                {% if pdf_url %}
+                    <iframe src="{{ pdf_url }}" style="width:95%; height:90vh; border:none;"></iframe>
+                {% else %}
+                    <div class="d-flex align-items-center justify-content-center text-muted" style="height:90vh; border:1px dashed #ccc; border-radius:4px;">
+                        <span>저장된 근로계약서 파일이 없습니다.</span>
+                    </div>
+                {% endif %}
             </td>
         </tr>
     </table>
