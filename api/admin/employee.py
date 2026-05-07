@@ -17,6 +17,14 @@ from datetime import datetime, date, time
 import json
 from dateutil.relativedelta import relativedelta
 
+# FKs accessed by get_obj() per row - keep in sync with the FK reads below.
+_EMPLOYEE_RELATED_FKS = (
+    'team', 'job_title', 'job_level', 'bank',
+    'company_card', 'customer', 'subsidiary',
+    'created_by', 'company',
+)
+
+
 class Employee_Read(View):
     def get(self, request, *args, **kwargs):
         request_user = request.user
@@ -39,6 +47,8 @@ class Employee_Read(View):
         org_chart = request.GET.get('org_chart', '')
         if org_chart == 'true':
             qs = (UserMaster.objects.filter(company=request_user_company, is_staff=1, is_delete=0, is_superuser=0)
+                  .select_related(*_EMPLOYEE_RELATED_FKS)
+                  .prefetch_related('company__company_info')
                   .order_by('team_id', F('seq_order').asc(nulls_last=True), 'join_date'))
             results = [get_obj(row) for row in qs]
             context = {
@@ -97,6 +107,8 @@ class Employee_Read(View):
         select = request.GET.get('select', '')
         if select:
             qs = UserMaster.objects.filter(id=select, company=request_user.company)
+
+        qs = qs.select_related(*_EMPLOYEE_RELATED_FKS).prefetch_related('company__company_info')
 
         # Pagination
         _page = int(request.GET.get('page', 1)) if request.GET.get('page', '1').isdigit() else 1
@@ -541,7 +553,7 @@ def get_obj(obj):
         'created_by_name': obj.created_by.name if obj.created_by is not None else '',
         'created_at': obj.created_at if obj.created_at is not None else '',
         'company_id': obj.company.id if obj.company is not None else '',
-        'company_name': obj.company.company_info.first().company_name if obj.company.company_info.exists() else '',
+        'company_name': (lambda ci: ci.company_name if ci else '')(obj.company.company_info.first() if obj.company is not None else None),
     
         'menu_access': obj.menu_access if obj.menu_access is not None else '',
     }
