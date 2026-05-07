@@ -336,10 +336,12 @@ def admin_company_list_page(request):
     context = {}
     return render(request, 'admin/admin_company_list.html', context)
 
+@login_required(login_url='/login/')
 def admin_code_page(request):
     context = {}
     return render(request, 'admin/admin_code.html', context)
 
+@login_required(login_url='/login/')
 def admin_setting_page(request):
     context = {}
     return render(request, 'admin/admin_setting.html', context)

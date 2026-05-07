@@ -13,49 +13,23 @@ class Codemaster_Read(View):
         request_user = request.user
         group_filter = request.GET.get('group_filter', '')
 
-        if request_user.is_superuser:
-            qs = CodeMaster.objects.filter(
-                group__in=[
-                    CodeGroup.TEAM,
-                    CodeGroup.JOB_TITLE,
-                    CodeGroup.JOB_LEVEL,
-                    CodeGroup.BANK,
-                    CodeGroup.CARD_ACCOUNT,
-                    CodeGroup.COST_ACCOUNT,
-                    CodeGroup.CUSTOMER_CLASS,
-                    CodeGroup.RECRUIT_SITE,
-                    CodeGroup.BOARD_CATEGORY,
-                    CodeGroup.EVENT_CATEGORY,
-                    CodeGroup.PROJECT_CATEGORY,
-                    CodeGroup.ASSET_CATEGORY,
-                    CodeGroup.IP_ADDRESS,
-                    CodeGroup.DAILY_WAGE,
-                    CodeGroup.DAILY_WORKTIME,
-                    CodeGroup.MENU,
-                ],
-            ).order_by('group', 'id')
-        else:
-            qs = CodeMaster.objects.filter(
-                group__in=[
-                    CodeGroup.TEAM,
-                    CodeGroup.JOB_TITLE,
-                    CodeGroup.JOB_LEVEL,
-                    CodeGroup.BANK,
-                    CodeGroup.CARD_ACCOUNT,
-                    CodeGroup.COST_ACCOUNT,
-                    CodeGroup.CUSTOMER_CLASS,
-                    CodeGroup.RECRUIT_SITE,
-                    CodeGroup.BOARD_CATEGORY,
-                    CodeGroup.EVENT_CATEGORY,
-                    CodeGroup.PROJECT_CATEGORY,
-                    CodeGroup.ASSET_CATEGORY,
-                    CodeGroup.IP_ADDRESS,
-                    CodeGroup.DAILY_WAGE,
-                    CodeGroup.DAILY_WORKTIME,
-                    CodeGroup.MENU,
-                ],
-                company=request_user.company
-            ).order_by('group', 'id')
+        ALLOWED_GROUPS = [
+            CodeGroup.TEAM, CodeGroup.JOB_TITLE, CodeGroup.JOB_LEVEL,
+            CodeGroup.BANK, CodeGroup.CARD_ACCOUNT, CodeGroup.COST_ACCOUNT,
+            CodeGroup.CUSTOMER_CLASS, CodeGroup.RECRUIT_SITE,
+            CodeGroup.BOARD_CATEGORY, CodeGroup.EVENT_CATEGORY,
+            CodeGroup.PROJECT_CATEGORY, CodeGroup.ASSET_CATEGORY,
+            CodeGroup.IP_ADDRESS, CodeGroup.DAILY_WAGE,
+            CodeGroup.DAILY_WORKTIME, CodeGroup.MENU,
+        ]
+        qs = (
+            CodeMaster.objects.filter(group__in=ALLOWED_GROUPS)
+            .select_related('created_by', 'updated_by', 'company')
+            .prefetch_related('company__company_info')
+            .order_by('group', 'id')
+        )
+        if not request_user.is_superuser:
+            qs = qs.filter(company=request_user.company)
             # 출장, 휴가는 전자결재에서 자동생성되는 필수값이기 때문에 수정 불가
             qs = qs.exclude(is_default=True)
 
@@ -235,7 +209,7 @@ def get_obj(obj):
         'updated_by_name': obj.updated_by.name if obj.updated_by is not None else '',
         'updated_at': obj.updated_at.date() if obj.updated_at is not None else '',
         'company_id': obj.company.id if obj.company is not None else '',
-        'company_name': obj.company.company_info.first().company_name if obj.company.company_info.exists() else '',
+        'company_name': (lambda ci: ci.company_name if ci else '')(obj.company.company_info.first() if obj.company is not None else None),
     }
 
 
