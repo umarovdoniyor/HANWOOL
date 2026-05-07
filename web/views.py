@@ -315,10 +315,12 @@ def org_chart_page(request):
 
 
 # 설정관리
+@login_required(login_url='/login/')
 def admin_employee_list_page(request):
     context = {}
     return render(request, 'admin/admin_employee_list.html', context)
 
+@login_required(login_url='/login/')
 def admin_employee_cert_page(request, u):
     user = get_object_or_404(UserMaster, id=u)
     if user.company.id != request.user.company.id:
