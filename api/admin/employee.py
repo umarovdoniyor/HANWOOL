@@ -184,8 +184,6 @@ class Employee_Create(View):
             is_staff = request.POST.get('is_staff', '').lower() == 'true'
             is_master = request.POST.get('is_master', '').lower() == 'true'
             leave_manage_access = request.POST.get('leave_manage_access', '').lower() == 'true'
-            salary_manage_access = request.POST.get('salary_manage_access', '').lower() == 'true'
-            company_card_access = request.POST.get('company_card_access', '').lower() == 'true'
 
             created_at = timezone.now()
 
@@ -214,8 +212,6 @@ class Employee_Create(View):
                 )
                 obj.is_master = is_master
                 obj.leave_manage_access = leave_manage_access
-                obj.salary_manage_access = salary_manage_access
-                obj.company_card_access = company_card_access
                 obj.employee_code = employee_code  # 사번
                 obj.join_date = join_date
                 obj.retire_date = retire_date
@@ -315,8 +311,6 @@ class Employee_Update(View):
             is_staff = request.POST.get('is_staff', '').lower() == 'true'
             is_master = request.POST.get('is_master', '').lower() == 'true'
             leave_manage_access = request.POST.get('leave_manage_access', '').lower() == 'true'
-            salary_manage_access = request.POST.get('salary_manage_access', '').lower() == 'true'
-            company_card_access = request.POST.get('company_card_access', '').lower() == 'true'
             menu_access = request.POST.get('menu_access', '')
 
             updated_at = timezone.now()
@@ -354,8 +348,6 @@ class Employee_Update(View):
             obj.name = name
             obj.is_master = is_master
             obj.leave_manage_access = leave_manage_access
-            obj.salary_manage_access = salary_manage_access
-            obj.company_card_access = company_card_access
             obj.employee_code = employee_code  # 사번
             obj.join_date = join_date
             obj.retire_date = retire_date
@@ -524,8 +516,6 @@ def get_obj(obj):
         'is_staff': obj.is_staff if obj.is_staff is not None else '',
         'is_master': obj.is_master if obj.is_master is not None else '',
         'leave_manage_access': obj.leave_manage_access if obj.leave_manage_access is not None else '',
-        'salary_manage_access': obj.salary_manage_access if obj.salary_manage_access is not None else '',
-        'company_card_access': obj.company_card_access if obj.company_card_access is not None else '',
         'profile_image': obj.profile_image.url if obj.profile_image and obj.profile_image.name else '',
         'seq_order': obj.seq_order if obj.seq_order is not None else '',
         'last_login': obj.last_login.strftime('%Y-%m-%d %H:%M') if obj.last_login else '',

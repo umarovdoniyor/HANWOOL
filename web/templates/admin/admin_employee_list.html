@@ -289,7 +289,6 @@
                                     <option value="true">관리자</option>
                                 </select>
                             </div>
-                            <!--
                             <div class="col-md-4 mb-3">
                                 <label for="leave_manage_access" class="form-label">연차관리 메뉴권한</label>
                                 <select class="form-select" id="leave_manage_access">
@@ -297,23 +296,6 @@
                                     <option value="true">권한있음</option>
                                 </select>
                             </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label for="salary_manage_access" class="form-label">급여관리 메뉴권한</label>
-                                <select class="form-select" id="salary_manage_access">
-                                    <option value="false" selected>해당없음</option>
-                                    <option value="true">권한있음</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label for="company_card_access" class="form-label">광고경비 메뉴권한</label>
-                                <select class="form-select" id="company_card_access">
-                                    <option value="false" selected>해당없음</option>
-                                    <option value="true">권한있음</option>
-                                </select>
-                            </div>
-                            -->
                         </div>
                     </div>
 
@@ -588,7 +570,6 @@
                                     <option value="true">관리자</option>
                                 </select>
                             </div>
-                            <!--
                             <div class="col-md-4 mb-3">
                                 <label for="leave_manage_access" class="form-label">연차관리 메뉴권한</label>
                                 <select class="form-select" id="leave_manage_access">
@@ -596,23 +577,6 @@
                                     <option value="true">권한있음</option>
                                 </select>
                             </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label for="salary_manage_access" class="form-label">급여관리 메뉴권한</label>
-                                <select class="form-select" id="salary_manage_access">
-                                    <option value="false" selected>해당없음</option>
-                                    <option value="true">권한있음</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label for="company_card_access" class="form-label">광고경비 메뉴권한</label>
-                                <select class="form-select" id="company_card_access">
-                                    <option value="false" selected>해당없음</option>
-                                    <option value="true">권한있음</option>
-                                </select>
-                            </div>
-                            -->
                         </div>
                     </div>
 
@@ -830,8 +794,6 @@ let a_click_is_active;
 let a_click_is_staff;
 let a_click_is_master;
 let a_click_leave_manage_access;
-let a_click_salary_manage_access;
-let a_click_company_card_access;
 let a_click_is_delete;
 let a_click_profile_image;
 let a_click_team_id;
@@ -1040,8 +1002,6 @@ function a_draw_table(done) {
             <td name='is_staff' class='d-none'>${item.is_staff}</td>
             <td name='is_master' class='d-none'>${item.is_master}</td>
             <td name='leave_manage_access' class='d-none'>${item.leave_manage_access}</td>
-            <td name='salary_manage_access' class='d-none'>${item.salary_manage_access}</td>
-            <td name='company_card_access' class='d-none'>${item.company_card_access}</td>
             <td name='is_delete' class='d-none'>${item.is_master}</td>
             <td name='profile_image' class='d-none'>${item.profile_image}</td>
             <td name='team_id' class='d-none'>${item.team_id}</td>
@@ -1088,8 +1048,6 @@ function a_draw_table(done) {
         a_click_is_staff = $(this).find("[name='is_staff']").text();
         a_click_is_master = $(this).find("[name='is_master']").text();
         a_click_leave_manage_access = $(this).find("[name='leave_manage_access']").text();
-        a_click_salary_manage_access = $(this).find("[name='salary_manage_access']").text();
-        a_click_company_card_access = $(this).find("[name='company_card_access']").text();
         a_click_is_delete = $(this).find("[name='is_delete']").text();
         a_click_profile_image = $(this).find("[name='profile_image']").text();
         a_click_team_id = $(this).find("[name='team_id']").text();
@@ -1167,8 +1125,6 @@ function a_create_modal_reset(popup_off) {
     $("#a_create_modal #is_staff").val('true');
     $("#a_create_modal #is_master").val('false');
     $("#a_create_modal #leave_manage_access").val('false');
-    $("#a_create_modal #salary_manage_access").val('false');
-    $("#a_create_modal #company_card_access").val('false');
 
     $("#a_create_modal #gender").val('남자').trigger('change');
     $("#a_create_modal #rrn").val('');
@@ -1227,8 +1183,6 @@ function a_create_submit() {
     api_data.append("address", nullapply($('#a_create_modal #address').val()));
     api_data.append("is_master", nullapply($('#a_create_modal #is_master').val()));
     api_data.append("leave_manage_access", nullapply($('#a_create_modal #leave_manage_access').val()));
-    api_data.append("salary_manage_access", nullapply($('#a_create_modal #salary_manage_access').val()));
-    api_data.append("company_card_access", nullapply($('#a_create_modal #company_card_access').val()));
     api_data.append("remark", nullapply($('#a_create_modal #remark').val()));
 
     api_data.append("gender", nullapply($('#a_create_modal #gender').val()));
@@ -1328,8 +1282,6 @@ function a_update_modal_reset(popup_off) {
     $("#a_update_modal #address").val(a_click_address);
     $("#a_update_modal #is_master").val(a_click_is_master);
     $("#a_update_modal #leave_manage_access").val(a_click_leave_manage_access);
-    $("#a_update_modal #salary_manage_access").val(a_click_salary_manage_access);
-    $("#a_update_modal #company_card_access").val(a_click_company_card_access);
     $("#a_update_modal #remark").val(a_click_remark);
 
     $("#a_update_modal #gender").val(a_click_gender);
@@ -1386,8 +1338,6 @@ function a_update_submit() {
     api_data.append("address", nullapply($('#a_update_modal #address').val()));
     api_data.append("is_master", nullapply($('#a_update_modal #is_master').val()));
     api_data.append("leave_manage_access", nullapply($('#a_update_modal #leave_manage_access').val()));
-    api_data.append("salary_manage_access", nullapply($('#a_update_modal #salary_manage_access').val()));
-    api_data.append("company_card_access", nullapply($('#a_update_modal #company_card_access').val()));
     api_data.append("remark", nullapply($('#a_update_modal #remark').val()));
 
     api_data.append("gender", nullapply($('#a_update_modal #gender').val()));
