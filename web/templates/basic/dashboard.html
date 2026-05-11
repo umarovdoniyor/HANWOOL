@@ -36,115 +36,6 @@
     border-radius: 6px;
     cursor: pointer;
 }
-
-/* 투입현황 */
-.table-fixed {
-    table-layout: fixed;   /* 셀 너비 고정 */
-    width: auto !important;  /* 부모 사이즈와 상관없이 내용대로 */
-    max-width: none !important;
-}
-
-.table-fixed td,
-.table-fixed th {
-    border: 1px solid #73778c !important;
-}
-
-/* 기본적으로 tr 안의 border는 제거 */
-.table-fixed tr {
-    border: none !important;
-}
-
-/* 값이 있는 셀만 border 유지 */
-.table-fixed td:has(input[value]:not([value=""])) {
-    border: 1px solid #73778c !important;
-}
-
-td.customer-cell {
-    width: 100px !important;
-    min-width: 100px !important;
-    text-align: center;
-    padding: 4px;
-    font-size: 12px;
-}
-
-td.center-head {
-    width: 120px !important;
-    text-align: center;
-    padding: 4px;
-    font-size: 12px;
-    border-right: 2px solid #73778c;
-}
-
-td.center-cell-text {
-    width: 45px;
-    min-width: 45px;
-    text-align: center;
-    padding: 0;
-    font-size: 10px;
-    white-space: nowrap;
-}
-
-td.center-cell {
-    width: 25px;
-    min-width: 25px;
-    text-align: center;
-    padding: 0;
-    font-size: 10px;
-    white-space: nowrap;
-}
-
-.table-input {
-    border: none;
-    outline: none;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    margin: 0;
-    text-align: center;
-    font-size: 10px;
-    background: transparent;  /* 셀 색상 유지 */
-}
-
-td.total_header {
-    background-color: #e1e2e6;
-    width: 100px !important;
-    text-align: center;
-    padding: 4px;
-    font-size: 12px;
-    font-weight: bold;
-}
-td.total_body {
-    width: 100px !important;
-    text-align: center;
-    padding: 4px;
-    font-size: 12px;
-}
-
-/* 기본 (데스크탑) */
-td.manager-msg-cell {
-    width: 600px;
-}
-
-/* md 이하(<=768px)에서는 좁게 표시 */
-@media (max-width: 768px) {
-    td.customer-cell {
-        display: none;
-    }
-    td.center-head {
-        width: 90px !important;
-    }
-    td.center-cell-text {
-        width: 35px !important;
-        min-width: 35px !important;
-    }
-    td.center-cell {
-        width: 23px !important;
-        min-width: 23px !important;
-    }
-    td.manager-msg-cell {
-        width: 213px;
-    }
-}
 </style>
 
 
@@ -152,7 +43,7 @@ td.manager-msg-cell {
 <div class="row p-4">
 
     <!-- 게시물 목록 -->
-    <div class="col-12 col-xl-4 col-md-5">
+    <div class="col-12">
         <div class="row gx-4">
 
             <!-- 프로필카드 -->
@@ -264,47 +155,6 @@ td.manager-msg-cell {
         </div>
     </div>
 
-    <div class="col-12 col-xl-8 col-md-7">
-        <div class="row">
-            <div class="col-12 mb-3">
-                <div class="card border border-light m-0">
-                    <div class="card-body">
-                        <div class="fw-bold mb-3" style="color: #2a3041;">
-                            <div class="d-inline-block font-size-16" onclick="url_click_request('{% url 'daily_report_page' %}')" style="cursor: pointer;">
-                                <i class="fa-solid fa-calendar-days me-2"></i>투입 현황
-                            </div>
-                        </div>
-
-                        <div class="col-12 mb-3">
-                            <!-- 테이블 영역 -->
-                            <div class="fw-bold my-2" style="font-size: 16px;">
-                                ■ <span id="today_date_div"></span>
-                            </div>
-
-                            <div class="table-responsive">
-                                <table class="table border border-2 border-secondary table-fixed">
-                                    <tr>
-                                        <td class="total_header">총 요청인원</td>
-                                        <td class="total_header">총 투입인원</td>
-                                        <td class="total_header">총 신규인원</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="total_body"><span id="today_request"></span></td>
-                                        <td class="total_body"><span id="today_real"></span></td>
-                                        <td class="total_body text-info"><span id="today_new"></span></td>
-                                    </tr>
-                                </table>
-                            </div>
-
-                            <div class="table-responsive">
-                                <table class="table" id="logistics-table-today"></table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 
@@ -332,7 +182,6 @@ function main() {
 
     profile_card_fn();  // 프로필카드 이니시
     approval_list_fn();  // 나의결재 이니시
-    a_search_ready();  // 투입현황
 }
 
 
@@ -422,41 +271,4 @@ function updateApprovalBox(selector, count) {
 }
 
 
-function a_search_ready() {
-    a_click_id = null;
-    fr_date = date_today_str;
-
-    // 오늘 날짜 객체
-    let fr_date_base = new Date(fr_date);
-
-    // 오늘 날짜 포맷
-    let formatted_fr_date = fr_date_base.toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        weekday: "long"
-    });
-
-    $('#today_date_div').text(formatted_fr_date);
-
-    a_search();
-}
-
-function a_search() {
-    let query = "?";
-    if (fr_date) { query += "&fr_date=" + fr_date; }
-
-    fetch_gp("/daily_report_list_fn/" + query, 'GET', true, {}, (done) => {
-        a_draw_table(done);
-    });
-}
-
-function a_draw_table(data) {
-    display_daily_report(data, "#logistics-table-today", "today");
-    // 대시보드는 미리보기 전용 - 편집은 [투입 현황] 헤더 클릭 시 이동하는 /daily/report/ 페이지에서만 가능
-    $("#logistics-table-today input.table-input")
-        .prop("readonly", true)
-        .css("cursor", "default")
-        .attr("title", "투입 현황 편집은 [투입 현황] 헤더를 클릭해 전용 페이지에서 진행하세요.");
-}
 </script>
