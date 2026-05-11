@@ -164,7 +164,7 @@ fetch_gp("/sel2_code_menu/", 'GET', true, {}, (done) => {
     const SIDEBAR_WHITELIST = {
         "전자결제": null,
         "인사관리": ["연차관리", "연차통계"],
-        "시스템관리": ["총원데이터/권한", "전자계약/서명관리", "기초코드", "환경설정"],
+        "시스템관리": ["총원데이터/권한", "기초코드", "환경설정"],
     };
     for (let i = 0; i < done.results.length; i++) {
         let item = done.results[i];
