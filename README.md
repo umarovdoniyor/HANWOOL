@@ -3,15 +3,37 @@
 - 그 외 라이브러리는 requirements 참조
 
 
-■ Initial install
+■ Initial install (existing deployment)
 - python -m venv venv
 - pip install -r requirements.txt
+- cp .env.example .env  # then fill in DB / SECRET_KEY / email values
 - python manage.py makemigrations api
 - python manage.py migrate (db 복사했으면 --fake 처리)
 
 
-■ initial setup
+■ initial setup (existing deployment)
 - 거래처 대분류에 '관리법인' 등록 후 거래처로 '한울, 이음, JNK' 등록해야함
+
+
+■ New client deployment (fresh DB)
+- Provision an empty MySQL database for the client (any host).
+- cp .env.example .env, then fill in DB_NAME / DB_USER / DB_PASSWORD / DB_HOST + a fresh SECRET_KEY for that environment.
+- python manage.py migrate         # creates the schema
+- python manage.py setup_client    # creates the company + admin user + default codes
+    Accepts CLI args; prompts for any missing:
+        --code ACME-001
+        --name "ACME Corp"
+        --admin-id admin
+        --admin-password "..."   (omit to prompt securely)
+        --admin-email admin@acme.com
+- Hand off the admin credentials. Client logs in at /login/ and self-services from there.
+
+
+■ .env variables
+- SECRET_KEY, DEBUG, ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS, CORS_ALLOWED_ORIGINS
+- DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+- EMAIL_HOST, EMAIL_PORT, EMAIL_USE_TLS, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
+- See .env.example for the full template. .env itself is gitignored — never commit one.
 
 
 ■ Development history
