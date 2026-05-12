@@ -39,19 +39,59 @@
 - 거래처 대분류에 '관리법인' 등록 후 거래처로 '한울, 이음, JNK' 등록해야함
 
 
-■ 신규 클라이언트 배포 (새 DB)
-- 클라이언트용 빈 MySQL 데이터베이스 준비 (호스트 자유)
-- .env.example 을 .env 로 복사 후 DB_NAME / DB_USER / DB_PASSWORD / DB_HOST 입력
-  및 해당 환경용 SECRET_KEY 새로 발급
-- python manage.py migrate         # 스키마 생성
-- python manage.py setup_client    # 회사 + 관리자 계정 + 기본 코드 생성
-    CLI 인자 지원 (누락 시 대화형 프롬프트):
-        --code ACME-001
-        --name "ACME 주식회사"
-        --admin-id admin
-        --admin-password "..."   (생략 시 안전한 프롬프트로 입력)
-        --admin-email admin@acme.com
-- 관리자 계정 정보를 클라이언트에 전달. 클라이언트가 /login/ 으로 접속 후 자체 운영
+■ 신규 빈 DB 로 새 환경 구축 (단계별)
+사내용 신규 DB, 또는 신규 클라이언트 배포 모두 동일한 절차를 따른다.
+서버에 코드(zip)를 풀어둔 상태에서 아래 순서대로 실행한다.
+
+(0) 사전 준비
+- 사용할 MySQL 접속 정보 (CREATE DATABASE 권한이 있는 계정)
+- 새 DB 이름, 회사 코드, 회사 이름, 관리자 ID / 비밀번호 / 이메일 결정
+
+(1) 빈 MySQL 데이터베이스 생성 (반드시 utf8mb4)
+    mysql -u root -p -h 116.125.141.63
+    > CREATE DATABASE `leafy_internal` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    > exit
+- 다른 MySQL 서버를 쓰는 경우 호스트 주소만 변경
+- DB 이름은 환경에 맞게 자유롭게 지정 (예: leafy_internal, acme_corp)
+
+(2) .env 의 DB 정보를 새 DB 로 변경
+    DB_NAME=leafy_internal       # (1) 에서 만든 이름
+    DB_USER=root
+    DB_PASSWORD=...              # 실제 비밀번호
+    DB_HOST=116.125.141.63
+    DB_PORT=3306
+- 클라이언트용으로 별도 환경을 만드는 경우 SECRET_KEY 도 새로 발급 권장:
+    python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+
+(3) Python 의존성 설치 (django-environ 신규 의존성 포함)
+    .\venv\Scripts\python.exe -m pip install -r requirements.txt
+
+(4) 스키마 생성
+    .\venv\Scripts\python.exe manage.py migrate
+- 빈 DB 에 모든 Django 테이블이 생성됨
+
+(5) 회사 + 관리자 + 기본 코드 시드
+    .\venv\Scripts\python.exe manage.py setup_client ^
+      --code LEAFY-001 ^
+      --name "(주)리프데이터솔루션" ^
+      --admin-id admin ^
+      --admin-email admin@leafds.co.kr
+- 비밀번호는 안전한 프롬프트로 입력 (화면에 표시되지 않음, 확인 1회)
+- 누락한 인자는 자동으로 대화형 프롬프트로 물어봄
+- 생성되는 항목:
+    · CompanyMaster 1건 (회사 정보)
+    · UserMaster 1건 (is_master=True 관리자 계정)
+    · CompanyInfo 1건
+    · CodeMaster 22건 (board_category, event_category, job_level, job_title, team 기본값)
+
+(6) IIS / Django 프로세스 재시작
+- 새 .env 값과 새 DB 연결을 적용하기 위해 필수
+
+(7) 동작 확인
+- 브라우저로 서버 URL 접속 → /login/ 으로 자동 이동
+- 위에서 설정한 admin / 비밀번호로 로그인
+- 대시보드가 정상적으로 표시되고, 빈 상태에서 시작되는지 확인
+- 관리자 계정 정보를 사용자(또는 클라이언트)에게 전달
 
 
 ■ .env 변수 목록
