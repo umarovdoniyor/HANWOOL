@@ -121,8 +121,10 @@
                         <!-- item-->
                         <div class="dropdown-item" onclick="url_click('{% url 'myinfo_page' %}')">
                             <i class="fa-solid fa-user-gear me-2"></i>내 정보</div>
+                        {% comment %} 이 버전에서는 급여명세서 비활성화. 소스는 보존 (my_salary_popup_open 함수 + my_salary.html 그대로).
                         <div class="dropdown-item" onclick="my_salary_popup_open()">
                             <i class="fa-solid fa-wallet me-2"></i>급여명세서</div>
+                        {% endcomment %}
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item text-danger" href="/logout" id="logout">
                             <i class="fa-solid fa-power-off me-2"></i>로그아웃</a>
