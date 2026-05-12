@@ -3,37 +3,62 @@
 - 그 외 라이브러리는 requirements 참조
 
 
-■ Initial install (existing deployment)
+■ 최근 변경사항 (2026-05-12)
+- develop 브랜치에 아래 7개 커밋이 반영됨:
+  1. 대시보드 우측 '투입 현황' 패널 제거 (관련 CSS/JS 정리)
+  2. 운영환경 /data/ MEDIA URL 서빙 버그 수정
+     · DEBUG=False 환경에서 업로드된 이미지(회사로고, 프로필, 도장, 서명, 첨부)가
+       /data/ 경로에서 404 반환되던 문제 해결
+  3. 시스템관리 > 전자계약/서명관리 사이드바 항목 숨김 (코드/라우트는 보존)
+  4. 환경변수 기반 settings.py 로 리팩터링
+     · DB 접속정보, SECRET_KEY, DEBUG, ALLOWED_HOSTS, CSRF/CORS, 이메일 정보 등
+       모든 환경별 값을 .env 파일에서 로드 (django-environ 사용)
+     · config/settings.py 는 더 이상 gitignore 대상 아님. 비밀 정보는 .env 에만 존재
+  5. api/admin/company.py 시드 로직을 재사용 헬퍼(create_company_with_defaults)로 분리
+  6. 신규 클라이언트 부트스트랩용 setup_client 매니지먼트 커맨드 추가
+  7. README 신규/기존 배포 워크플로 문서화
+
+- 서버 배포 시 주의사항:
+  · pip install -r requirements.txt 재실행 필수 (django-environ 신규 의존성)
+  · 프로젝트 루트(manage.py 와 동일 위치)에 .env 파일 존재해야 함.
+    없으면 Django 가 SECRET_KEY 누락으로 시작되지 않음
+  · 기존 data/ 폴더는 절대 삭제하지 말 것 (업로드된 미디어 보존)
+  · DB 스키마 변경 없음 — migrate 추가 실행 불필요
+  · 배포 후 IIS / Django 프로세스 재시작 필요
+
+
+■ 기존 환경 설치
 - python -m venv venv
 - pip install -r requirements.txt
-- cp .env.example .env  # then fill in DB / SECRET_KEY / email values
+- .env.example 을 .env 로 복사 후 DB / SECRET_KEY / 이메일 값 입력
 - python manage.py makemigrations api
-- python manage.py migrate (db 복사했으면 --fake 처리)
+- python manage.py migrate  (db 복사했으면 --fake 처리)
 
 
-■ initial setup (existing deployment)
+■ 기존 환경 초기 설정
 - 거래처 대분류에 '관리법인' 등록 후 거래처로 '한울, 이음, JNK' 등록해야함
 
 
-■ New client deployment (fresh DB)
-- Provision an empty MySQL database for the client (any host).
-- cp .env.example .env, then fill in DB_NAME / DB_USER / DB_PASSWORD / DB_HOST + a fresh SECRET_KEY for that environment.
-- python manage.py migrate         # creates the schema
-- python manage.py setup_client    # creates the company + admin user + default codes
-    Accepts CLI args; prompts for any missing:
+■ 신규 클라이언트 배포 (새 DB)
+- 클라이언트용 빈 MySQL 데이터베이스 준비 (호스트 자유)
+- .env.example 을 .env 로 복사 후 DB_NAME / DB_USER / DB_PASSWORD / DB_HOST 입력
+  및 해당 환경용 SECRET_KEY 새로 발급
+- python manage.py migrate         # 스키마 생성
+- python manage.py setup_client    # 회사 + 관리자 계정 + 기본 코드 생성
+    CLI 인자 지원 (누락 시 대화형 프롬프트):
         --code ACME-001
-        --name "ACME Corp"
+        --name "ACME 주식회사"
         --admin-id admin
-        --admin-password "..."   (omit to prompt securely)
+        --admin-password "..."   (생략 시 안전한 프롬프트로 입력)
         --admin-email admin@acme.com
-- Hand off the admin credentials. Client logs in at /login/ and self-services from there.
+- 관리자 계정 정보를 클라이언트에 전달. 클라이언트가 /login/ 으로 접속 후 자체 운영
 
 
-■ .env variables
+■ .env 변수 목록
 - SECRET_KEY, DEBUG, ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS, CORS_ALLOWED_ORIGINS
 - DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 - EMAIL_HOST, EMAIL_PORT, EMAIL_USE_TLS, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
-- See .env.example for the full template. .env itself is gitignored — never commit one.
+- 전체 템플릿은 .env.example 참조. .env 자체는 gitignore 대상이며 커밋 금지
 
 
 ■ Development history
