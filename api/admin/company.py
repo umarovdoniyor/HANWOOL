@@ -55,13 +55,66 @@ class Company_Read(View):
         return JsonResponse(context, safe=False)
 
 
+DEFAULT_JOB_LEVELS = ['사원', '대리', '과장', '차장', '부장', '이사', '대표']
+DEFAULT_JOB_TITLES = ['Project Manager', 'Team Manager', 'Director', 'CEO']
+DEFAULT_TEAMS = ['경영지원팀', '경영기획팀', '개발팀', '생산팀', '영업팀', '구매팀']
+
+
+def create_company_with_defaults(*, code, name, master_id, master_password,
+                                 signup_email='', master_name='관리자',
+                                 created_by=None):
+    """
+    Create a CompanyMaster + admin UserMaster + default CodeMaster seed +
+    CompanyInfo. Caller is responsible for the surrounding transaction.
+
+    Returns (company, master_user).
+    """
+    company = CompanyMaster.objects.create(
+        code=code,
+        name=name,
+        is_valid=True,
+        created_at=timezone.now(),
+        signup_email=signup_email,
+    )
+
+    master_user = UserMaster.objects.create_user(
+        user_id=master_id,
+        password=master_password,
+        name=master_name,
+    )
+    master_user.is_master = True
+    master_user.is_staff = True
+    master_user.email = signup_email
+    master_user.employee_code = code + 'M'
+    master_user.company = company
+    master_user.join_date = timezone.now()
+    if created_by is not None:
+        master_user.created_by = created_by
+        master_user.updated_by = created_by
+    master_user.save()
+
+    CodeMaster.objects.create(group='board_category', name='공지사항', is_default=True, company=company)
+    CodeMaster.objects.create(group='event_category', name='회사 일정', desc3='#0d6efd', is_default=True, company=company)
+    CodeMaster.objects.create(group='event_category', name='회사 휴무', desc3='#dc3545', is_default=True, company=company)
+    CodeMaster.objects.create(group='event_category', name='휴가', desc3='#6c757d', is_default=True, company=company)
+    CodeMaster.objects.create(group='event_category', name='출장', desc3='#198754', is_default=True, company=company)
+    for level in DEFAULT_JOB_LEVELS:
+        CodeMaster.objects.create(group='job_level', name=level, company=company)
+    for title in DEFAULT_JOB_TITLES:
+        CodeMaster.objects.create(group='job_title', name=title, company=company)
+    for team in DEFAULT_TEAMS:
+        CodeMaster.objects.create(group='team', name=team, company=company)
+
+    CompanyInfo.objects.create(ceo=master_user, company=company, company_name=company.name)
+
+    return company, master_user
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class Company_Create(View):
     @transaction.atomic
     def post(self, request):
         try:
-            is_self_signup = request.POST.get('self_signup') == 'True'
-            request_user = request.user
             tost_company_master = UserMaster.objects.filter(is_superuser=True).first()
 
             code = request.POST.get('code', '')
@@ -72,72 +125,27 @@ class Company_Create(View):
             password = request.POST.get('password', 'tost2025')
             signup_email = request.POST.get('signup_email', '')
 
-            # 신규업체 생성
-            new_company_obj = CompanyMaster.objects.create(
+            new_company, master_user = create_company_with_defaults(
                 code=code,
                 name=name,
-                is_valid=True,
-                created_at=timezone.now(),
+                master_id=master_id,
+                master_password=password,
                 signup_email=signup_email,
+                created_by=tost_company_master,
             )
 
-            # 신규업체 관리자 생성
-            new_company = CompanyMaster.objects.get(pk=new_company_obj.id)
-            company_master_code = code+'M'
-            company_master_obj = UserMaster.objects.create_user(
-                user_id=master_id,
-                password=password,
-                name="관리자",
-            )
-            company_master_obj.is_master = True
-            company_master_obj.is_staff = True
-            company_master_obj.email = signup_email
-            company_master_obj.employee_code = company_master_code
-            company_master_obj.company = new_company
-            company_master_obj.join_date = timezone.now()
-            company_master_obj.created_by = tost_company_master
-            company_master_obj.updated_by = tost_company_master
-            company_master_obj.save()
-
-            # 신규업체 기본 코드마스터 생성
-            CodeMaster.objects.create(group='board_category', name='공지사항', is_default=True, company=new_company_obj)
-            CodeMaster.objects.create(group='event_category', name='회사 일정', desc3="#0d6efd", is_default=True, company=new_company_obj)
-            CodeMaster.objects.create(group='event_category', name='회사 휴무', desc3="#dc3545", is_default=True, company=new_company_obj)
-            CodeMaster.objects.create(group='event_category', name='휴가', desc3="#6c757d", is_default=True, company=new_company_obj)
-            CodeMaster.objects.create(group='event_category', name='출장', desc3="#198754", is_default=True, company=new_company_obj)
-            CodeMaster.objects.create(group='job_level', name='사원', company=new_company_obj)
-            CodeMaster.objects.create(group='job_level', name='대리', company=new_company_obj)
-            CodeMaster.objects.create(group='job_level', name='과장', company=new_company_obj)
-            CodeMaster.objects.create(group='job_level', name='차장', company=new_company_obj)
-            CodeMaster.objects.create(group='job_level', name='부장', company=new_company_obj)
-            CodeMaster.objects.create(group='job_level', name='이사', company=new_company_obj)
-            CodeMaster.objects.create(group='job_level', name='대표', company=new_company_obj)
-            CodeMaster.objects.create(group='job_title', name='Project Manager', company=new_company_obj)
-            CodeMaster.objects.create(group='job_title', name='Team Manager', company=new_company_obj)
-            CodeMaster.objects.create(group='job_title', name='Director', company=new_company_obj)
-            CodeMaster.objects.create(group='job_title', name='CEO', company=new_company_obj)
-            CodeMaster.objects.create(group='team', name='경영지원팀', company=new_company_obj)
-            CodeMaster.objects.create(group='team', name='경영기획팀', company=new_company_obj)
-            CodeMaster.objects.create(group='team', name='개발팀', company=new_company_obj)
-            CodeMaster.objects.create(group='team', name='생산팀', company=new_company_obj)
-            CodeMaster.objects.create(group='team', name='영업팀', company=new_company_obj)
-            CodeMaster.objects.create(group='team', name='구매팀', company=new_company_obj)
-            CompanyInfo.objects.create(ceo=company_master_obj, company=new_company_obj, company_name=new_company_obj.name)
-
-            # 알림센터 메세지 전송
             noti_create_fn(
-                content=f"[{new_company_obj.name}] {company_master_obj.email}",
+                content=f"[{new_company.name}] {master_user.email}",
                 user=UserMaster.objects.filter(is_superuser=True).first(),
-                url=f"/admin/company/list/",
+                url="/admin/company/list/",
                 noti_type="company_create"
             )
 
-            context = {
-                'id': new_company_obj.id,
-                'code': new_company_obj.code,
-                'name': new_company_obj.name,
-            }
-            return JsonResponse(context)
+            return JsonResponse({
+                'id': new_company.id,
+                'code': new_company.code,
+                'name': new_company.name,
+            })
 
         except IntegrityError as e:  # 중복 예외 처리
             transaction.set_rollback(True)
