@@ -11,7 +11,6 @@ venv/
 env/
 
 # --- Django ---
-config/settings.py
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -30,6 +29,7 @@ api/migrations/
 # --- Secrets / runtime tokens ---
 .env
 .env.*
+!.env.example
 ppurio_token*.json
 *.pem
 *.key
